@@ -266,7 +266,7 @@ function TableSelector({ onSelect }) {
     <div className="table-select-wrap">
       <img src="/logo.png" alt="Noisy en Fête" style={{ width: '160px', maxWidth: '60vw', margin: '0 auto 1rem', display: 'block' }} />
       <div style={{ fontFamily: "'Playfair Display', serif", fontSize: "1.8rem" }}>🪑 Votre table</div>
-      <p style={{ color: "var(--warm-gray)", fontSize: "0.85rem", marginTop: "0.5rem" }}>Quel est votre numéro de table ?</p>
+      <p style={{ color: "var(--warm-gray)", fontSize: "0.85rem", marginTop: "0.5rem" }}>Quel est votre numéro de table/emplacement ?</p>
       <div className="table-grid">
         {Array.from({ length: 30 }, (_, i) => i + 1).map(n => (
           <button key={n} className="table-btn" onClick={() => onSelect(n)}>{n}</button>
@@ -723,9 +723,14 @@ function AdminView() {
   };
 
   const updateStock = async (item, newStock) => {
-    const stock = Math.max(0, newStock);
-    await supabase.from('menu').update({ stock, available: stock > 0 }).eq('id', item.id);
-    setMenu(m => m.map(i => i.id === item.id ? { ...i, stock, available: stock > 0 } : i));
+    if (newStock === null) {
+      await supabase.from('menu').update({ stock: null, available: true }).eq('id', item.id);
+      setMenu(m => m.map(i => i.id === item.id ? { ...i, stock: null, available: true } : i));
+    } else {
+      const stock = Math.max(0, newStock);
+      await supabase.from('menu').update({ stock, available: stock > 0 }).eq('id', item.id);
+      setMenu(m => m.map(i => i.id === item.id ? { ...i, stock, available: stock > 0 } : i));
+    }
   };
 
   const startEdit = (item) => {
@@ -820,8 +825,19 @@ function AdminView() {
                 </div>
                 <span className="menu-admin-price">{Number(item.price).toFixed(2)} €</span>
                 <div style={{ display: 'flex', alignItems: 'center', gap: '0.25rem', background: 'var(--cream)', borderRadius: 8, padding: '0.2rem 0.4rem', border: '1.5px solid var(--border)' }}>
-                  <button onClick={() => updateStock(item, (item.stock ?? 99) - 1)} style={{ width: 20, height: 20, border: 'none', background: 'none', cursor: 'pointer', fontWeight: 700, fontSize: '1rem', color: 'var(--dark)' }}>−</button>
-                  <span style={{ minWidth: 24, textAlign: 'center', fontSize: '0.82rem', fontWeight: 600 }}>
+                  <button
+                    onClick={() => {
+                      if (item.stock === null || item.stock === undefined) return;
+                      if (item.stock <= 0) updateStock(item, null);
+                      else updateStock(item, item.stock - 1);
+                    }}
+                    title="Réduire le stock (à 0 = illimité)"
+                    style={{ width: 20, height: 20, border: 'none', background: 'none', cursor: 'pointer', fontWeight: 700, fontSize: '1rem', color: 'var(--dark)' }}>−</button>
+                  <span
+                    style={{ minWidth: 28, textAlign: 'center', fontSize: '0.82rem', fontWeight: 600, cursor: 'pointer', color: item.stock === null || item.stock === undefined ? 'var(--green)' : 'var(--dark)' }}
+                    title="Cliquer pour basculer illimité/limité"
+                    onClick={() => updateStock(item, item.stock === null || item.stock === undefined ? 10 : null)}
+                  >
                     {item.stock === null || item.stock === undefined ? '∞' : item.stock}
                   </span>
                   <button onClick={() => updateStock(item, (item.stock ?? 0) + 1)} style={{ width: 20, height: 20, border: 'none', background: 'none', cursor: 'pointer', fontWeight: 700, fontSize: '1rem', color: 'var(--dark)' }}>+</button>
