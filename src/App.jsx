@@ -302,9 +302,9 @@ function NotificationBanner({ onAccept, onDecline }) {
       </div>
       <div style={{ fontSize: '0.78rem', color: 'var(--warm-gray)', lineHeight: 1.6, marginBottom: '1rem' }}>
         <span style={{ display: 'block' }}>✅ <strong>Android :</strong> acceptez simplement la notification ci-dessous</span>
-        <span style={{ display: 'block', marginTop: '0.3rem' }}>🍎 <strong>iPhone :</strong> ajoutez d'abord ce site à votre écran d'accueil
+        <span style={{ display: 'block', marginTop: '0.3rem' }}>🍎 <strong>iPhone :</strong> ajoutez d&apos;abord ce site à votre écran d&apos;accueil
           <span style={{ display: 'block', paddingLeft: '1.2rem', color: '#aaa' }}>
-            Safari → icône partager ⬆️ → "Sur l'écran d'accueil" → revenez ici
+            Safari → icône partager ⬆️ → "Sur l&apos;écran d&apos;accueil" → revenez ici
           </span>
         </span>
       </div>
@@ -313,7 +313,7 @@ function NotificationBanner({ onAccept, onDecline }) {
           flex: 1, padding: '0.6rem', borderRadius: 8, border: 'none',
           background: 'var(--gold)', color: 'var(--dark)', fontWeight: 700,
           cursor: 'pointer', fontFamily: "'DM Sans', sans-serif", fontSize: '0.85rem'
-        }}>Oui, m'avertir</button>
+        }}>Oui, m&apos;avertir</button>
         <button onClick={onDecline} style={{
           flex: 1, padding: '0.6rem', borderRadius: 8,
           border: '1.5px solid var(--border)', background: 'white',
@@ -944,8 +944,7 @@ function AdminView() {
                   o.status
                 ]);
               });
-              const csv = rows.map(r => r.map(c => `"${c}"`).join(';')).join('
-');
+              const csv = rows.map(r => r.map(c => `"${c}"`).join(';')).join('\n');
               const blob = new Blob(['﻿' + csv], { type: 'text/csv;charset=utf-8;' });
               const url = URL.createObjectURL(blob);
               const a = document.createElement('a');
