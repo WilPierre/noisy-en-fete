@@ -581,6 +581,17 @@ function ClientView() {
                   <div className="item-info">
                     <div className="item-name">{item.name}</div>
                     <div className="item-price">{Number(item.price).toFixed(2)} €</div>
+                    {settings.loyalty_active === 'true' && settings.loyalty_item === item.name && (
+                      <div style={{
+                        display: 'inline-flex', alignItems: 'center', gap: '0.3rem',
+                        marginTop: '0.3rem', background: '#FFF8EE',
+                        border: '1px solid var(--gold)', borderRadius: 6,
+                        padding: '0.2rem 0.5rem', fontSize: '0.72rem',
+                        color: 'var(--gold)', fontWeight: 600
+                      }}>
+                        🎁 1 offerte toutes les {settings.loyalty_every} achetées
+                      </div>
+                    )}
                   </div>
                   <div className="qty-ctrl">
                     <button className="qty-btn" onClick={() => setQty(item.id, (cart[item.id] || 0) - 1)}>−</button>
