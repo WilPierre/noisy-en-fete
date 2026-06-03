@@ -190,7 +190,7 @@ function PaymentForm({ totalPrice, tableNum, cartItems, onSuccess }) {
 
       // 4. Marquer comme payé + envoyer en cuisine
       await supabase.from('orders').update({ paid: true, status: 'en attente' }).eq('id', order.id);
-      onSuccess();
+      onSuccess(order.id);
     } catch (err) {
       setError(err.message);
     }
@@ -238,6 +238,54 @@ function TableSelector({ onSelect }) {
   );
 }
 
+// ─── NOTIFICATION HELPER ─────────────────────────────────────────────────────
+async function requestNotificationPermission() {
+  if (!('Notification' in window)) return false;
+  if (Notification.permission === 'granted') return true;
+  const result = await Notification.requestPermission();
+  return result === 'granted';
+}
+
+function sendNotification(title, body) {
+  if (Notification.permission === 'granted') {
+    new Notification(title, { body, icon: '/favicon.ico' });
+  }
+}
+
+// ─── NOTIFICATION BANNER ──────────────────────────────────────────────────────
+function NotificationBanner({ onAccept, onDecline }) {
+  return (
+    <div style={{
+      background: 'white', border: '1.5px solid var(--border)', borderRadius: 16,
+      padding: '1.2rem', margin: '1rem 0', boxShadow: '0 4px 20px rgba(0,0,0,0.08)'
+    }}>
+      <div style={{ fontWeight: 600, fontSize: '0.95rem', marginBottom: '0.5rem' }}>
+        📳 Être notifié quand votre commande est prête ?
+      </div>
+      <div style={{ fontSize: '0.78rem', color: 'var(--warm-gray)', lineHeight: 1.6, marginBottom: '1rem' }}>
+        <span style={{ display: 'block' }}>✅ <strong>Android :</strong> acceptez simplement la notification ci-dessous</span>
+        <span style={{ display: 'block', marginTop: '0.3rem' }}>🍎 <strong>iPhone :</strong> ajoutez d'abord ce site à votre écran d'accueil
+          <span style={{ display: 'block', paddingLeft: '1.2rem', color: '#aaa' }}>
+            Safari → icône partager ⬆️ → "Sur l'écran d'accueil" → revenez ici
+          </span>
+        </span>
+      </div>
+      <div style={{ display: 'flex', gap: '0.5rem' }}>
+        <button onClick={onAccept} style={{
+          flex: 1, padding: '0.6rem', borderRadius: 8, border: 'none',
+          background: 'var(--gold)', color: 'var(--dark)', fontWeight: 700,
+          cursor: 'pointer', fontFamily: "'DM Sans', sans-serif", fontSize: '0.85rem'
+        }}>Oui, m'avertir</button>
+        <button onClick={onDecline} style={{
+          flex: 1, padding: '0.6rem', borderRadius: 8,
+          border: '1.5px solid var(--border)', background: 'white',
+          cursor: 'pointer', fontFamily: "'DM Sans', sans-serif", fontSize: '0.85rem'
+        }}>Non merci</button>
+      </div>
+    </div>
+  );
+}
+
 // ─── CLIENT VIEW ──────────────────────────────────────────────────────────────
 function ClientView() {
   const [tableNum, setTableNum] = useState(null);
@@ -247,6 +295,9 @@ function ClientView() {
   const [showCart, setShowCart] = useState(false);
   const [success, setSuccess] = useState(false);
   const [loading, setLoading] = useState(true);
+  const [orderId, setOrderId] = useState(null);
+  const [notifState, setNotifState] = useState('ask');
+  const [notified, setNotified] = useState(false);
 
   useEffect(() => {
     supabase.from('menu').select('*').eq('available', true).order('category').then(({ data }) => {
@@ -254,6 +305,26 @@ function ClientView() {
       setLoading(false);
     });
   }, []);
+
+  useEffect(() => {
+    if (!orderId || notifState !== 'accepted') return;
+    const channel = supabase.channel(`order-${orderId}`)
+      .on('postgres_changes', {
+        event: 'UPDATE', schema: 'public', table: 'orders',
+        filter: `id=eq.${orderId}`
+      }, (payload) => {
+        if (payload.new.status === 'prêt' && !notified) {
+          sendNotification('🎉 Votre commande est prête !', 'Rendez-vous au comptoir ou un serveur arrive.');
+          setNotified(true);
+        }
+      }).subscribe();
+    return () => supabase.removeChannel(channel);
+  }, [orderId, notifState, notified]);
+
+  const handleAcceptNotif = async () => {
+    const granted = await requestNotificationPermission();
+    setNotifState(granted ? 'accepted' : 'declined');
+  };
 
   const categories = ['Tous', ...new Set(menu.map(i => i.category))];
   const filtered = activeCategory === 'Tous' ? menu : menu.filter(i => i.category === activeCategory);
@@ -272,8 +343,15 @@ function ClientView() {
       <div className="success-box">
         <div className="success-icon">✅</div>
         <div className="success-title">Commande & paiement confirmés !</div>
-        <p className="success-sub">Votre paiement a été accepté.<br />Votre commande est en cours de préparation.<br />Un serveur vous apportera vos plats sous peu.</p>
-        <button className="new-order-btn" onClick={() => { setSuccess(false); setCart({}); setTableNum(null); }}>
+        <p className="success-sub">
+          Votre paiement a été accepté.<br />
+          Votre commande est en cours de préparation.
+          {notifState === 'accepted'
+            ? <><br /><strong>📳 Vous serez notifié dès qu'elle sera prête !</strong></>
+            : <><br />Un serveur vous apportera vos plats sous peu.</>
+          }
+        </p>
+        <button className="new-order-btn" onClick={() => { setSuccess(false); setCart({}); setTableNum(null); setOrderId(null); setNotifState('ask'); setNotified(false); }}>
           Nouvelle commande
         </button>
       </div>
@@ -289,6 +367,18 @@ function ClientView() {
       <div style={{ textAlign: 'center' }}>
         <span className="table-badge">🪑 Table {tableNum}</span>
       </div>
+
+      {notifState === 'ask' && (
+        <NotificationBanner
+          onAccept={handleAcceptNotif}
+          onDecline={() => setNotifState('declined')}
+        />
+      )}
+      {notifState === 'accepted' && (
+        <div style={{ textAlign:'center', fontSize:'0.78rem', color:'var(--green)', marginBottom:'0.5rem' }}>
+          📳 Notifications activées — vous serez alerté quand votre commande est prête
+        </div>
+      )}
 
       {loading ? (
         <div className="empty-state"><div className="pulse">Chargement du menu...</div></div>
@@ -348,7 +438,7 @@ function ClientView() {
                 totalPrice={totalPrice}
                 tableNum={tableNum}
                 cartItems={cartItems}
-                onSuccess={() => { setSuccess(true); setCart({}); setShowCart(false); }}
+                onSuccess={(id) => { setOrderId(id); setSuccess(true); setCart({}); setShowCart(false); }}
               />
             </Elements>
           </div>
@@ -529,7 +619,7 @@ function AdminView() {
 }
 
 // ─── PIN MODAL ────────────────────────────────────────────────────────────────
-const STAFF_PIN = '2010'; // Change ce code ici
+const STAFF_PIN = '1234'; // Change ce code ici
 
 function PinModal({ title, onSuccess, onClose }) {
   const [pin, setPin] = useState('');
