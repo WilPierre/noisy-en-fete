@@ -229,7 +229,7 @@ function TableSelector({ onSelect }) {
     <div className="table-select-wrap">
       <img src="/logo.png" alt="Noisy en Fête" style={{ width: '160px', maxWidth: '60vw', margin: '0 auto 1rem', display: 'block' }} />
       <div style={{ fontFamily: "'Playfair Display', serif", fontSize: "1.8rem" }}>🪑 Votre table</div>
-      <p style={{ color: "var(--warm-gray)", fontSize: "0.85rem", marginTop: "0.5rem" }}>Quel est votre numéro de table ?</p>
+      <p style={{ color: "var(--warm-gray)", fontSize: "0.85rem", marginTop: "0.5rem" }}>Quel est votre numéro de table/emplacement ?</p>
       <div className="table-grid">
         {Array.from({ length: 24 }, (_, i) => i + 1).map(n => (
           <button key={n} className="table-btn" onClick={() => onSelect(n)}>{n}</button>
@@ -315,7 +315,7 @@ function ClientView() {
         filter: `id=eq.${orderId}`
       }, (payload) => {
         if (payload.new.status === 'prêt' && !notified) {
-          sendNotification('🎉 Votre commande est prête !', 'Rendez-vous au comptoir ou un serveur arrive.');
+          sendNotification('🎉 Votre commande est prête !', 'Rendez-vous au comptoir pour la récupérer.');
           setNotified(true);
         }
       }).subscribe();
