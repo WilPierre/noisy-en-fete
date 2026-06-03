@@ -67,7 +67,6 @@ const css = `
   .cart-line { display: flex; justify-content: space-between; align-items: center; padding: 0.6rem 0; border-bottom: 1px solid var(--border); font-size: 0.9rem; }
   .cart-total-line { display: flex; justify-content: space-between; font-weight: 700; font-size: 1.1rem; padding: 0.8rem 0; border-top: 2px solid var(--dark); margin-top: 0.5rem; }
 
-  /* STRIPE CARD */
   .payment-section { margin-top: 1.2rem; }
   .payment-title { font-size: 0.85rem; font-weight: 600; color: var(--warm-gray); margin-bottom: 0.6rem; display: flex; align-items: center; gap: 0.4rem; }
   .card-element-wrap { background: var(--cream); border: 1.5px solid var(--border); border-radius: 10px; padding: 0.9rem 1rem; transition: border-color 0.2s; }
@@ -164,16 +163,13 @@ function PaymentForm({ totalPrice, tableNum, cartItems, onSuccess }) {
     if (!stripe || !elements) return;
     setError('');
     setPaying(true);
-
     try {
-      // 1. Créer la commande dans Supabase (status: en attente paiement)
       const { data: order, error: dbErr } = await supabase
         .from('orders')
         .insert({ table_num: tableNum, items: cartItems, total: totalPrice, paid: false, status: 'en attente paiement' })
         .select().single();
       if (dbErr) throw new Error('Erreur base de données');
 
-      // 2. Créer le PaymentIntent via notre fonction Vercel
       const res = await fetch('/api/create-payment-intent', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
@@ -182,13 +178,11 @@ function PaymentForm({ totalPrice, tableNum, cartItems, onSuccess }) {
       const { clientSecret, error: apiErr } = await res.json();
       if (apiErr) throw new Error(apiErr);
 
-      // 3. Confirmer le paiement CB
       const { error: stripeErr } = await stripe.confirmCardPayment(clientSecret, {
         payment_method: { card: elements.getElement(CardElement) },
       });
       if (stripeErr) throw new Error(stripeErr.message);
 
-      // 4. Marquer comme payé + envoyer en cuisine
       await supabase.from('orders').update({ paid: true, status: 'en attente' }).eq('id', order.id);
       onSuccess(order.id);
     } catch (err) {
@@ -229,9 +223,9 @@ function TableSelector({ onSelect }) {
     <div className="table-select-wrap">
       <img src="/logo.png" alt="Noisy en Fête" style={{ width: '160px', maxWidth: '60vw', margin: '0 auto 1rem', display: 'block' }} />
       <div style={{ fontFamily: "'Playfair Display', serif", fontSize: "1.8rem" }}>🪑 Votre table</div>
-      <p style={{ color: "var(--warm-gray)", fontSize: "0.85rem", marginTop: "0.5rem" }}>Quel est votre numéro de table/emplacement ?</p>
+      <p style={{ color: "var(--warm-gray)", fontSize: "0.85rem", marginTop: "0.5rem" }}>Quel est votre numéro de table ?</p>
       <div className="table-grid">
-        {Array.from({ length: 24 }, (_, i) => i + 1).map(n => (
+        {Array.from({ length: 30 }, (_, i) => i + 1).map(n => (
           <button key={n} className="table-btn" onClick={() => onSelect(n)}>{n}</button>
         ))}
       </div>
@@ -239,7 +233,7 @@ function TableSelector({ onSelect }) {
   );
 }
 
-// ─── NOTIFICATION HELPER ─────────────────────────────────────────────────────
+// ─── NOTIFICATION HELPER ──────────────────────────────────────────────────────
 async function requestNotificationPermission() {
   if (!('Notification' in window)) return false;
   if (Notification.permission === 'granted') return true;
@@ -332,10 +326,7 @@ function ClientView() {
   const totalItems = Object.values(cart).reduce((s, q) => s + q, 0);
   const totalPrice = menu.reduce((s, item) => s + (cart[item.id] || 0) * item.price, 0);
   const setQty = (id, qty) => setCart(c => ({ ...c, [id]: Math.max(0, qty) }));
-
-  const cartItems = menu.filter(i => cart[i.id] > 0).map(i => ({
-    name: i.name, qty: cart[i.id], price: i.price, emoji: i.emoji
-  }));
+  const cartItems = menu.filter(i => cart[i.id] > 0).map(i => ({ name: i.name, qty: cart[i.id], price: i.price, emoji: i.emoji }));
 
   if (!tableNum) return <TableSelector onSelect={setTableNum} />;
 
@@ -370,13 +361,10 @@ function ClientView() {
       </div>
 
       {notifState === 'ask' && (
-        <NotificationBanner
-          onAccept={handleAcceptNotif}
-          onDecline={() => setNotifState('declined')}
-        />
+        <NotificationBanner onAccept={handleAcceptNotif} onDecline={() => setNotifState('declined')} />
       )}
       {notifState === 'accepted' && (
-        <div style={{ textAlign:'center', fontSize:'0.78rem', color:'var(--green)', marginBottom:'0.5rem' }}>
+        <div style={{ textAlign: 'center', fontSize: '0.78rem', color: 'var(--green)', marginBottom: '0.5rem' }}>
           📳 Notifications activées — vous serez alerté quand votre commande est prête
         </div>
       )}
@@ -455,9 +443,7 @@ function KitchenView() {
 
   const fetchOrders = useCallback(async () => {
     const { data } = await supabase.from('orders')
-      .select('*')
-      .eq('paid', true)
-      .neq('status', 'servi')
+      .select('*').eq('paid', true).neq('status', 'servi')
       .order('created_at', { ascending: true });
     if (data) setOrders(data);
   }, []);
@@ -531,16 +517,31 @@ function AdminView() {
   const [menu, setMenu] = useState([]);
   const [orders, setOrders] = useState([]);
   const [form, setForm] = useState({ name: '', category: 'Plats', price: '', emoji: '🍽' });
+  const [activeTab, setActiveTab] = useState('menu');
+  const [resetting, setResetting] = useState(false);
   const appUrl = window.location.origin;
+
+  const loadOrders = () => supabase.from('orders').select('*').then(({ data }) => data && setOrders(data));
 
   useEffect(() => {
     supabase.from('menu').select('*').order('category').then(({ data }) => data && setMenu(data));
-    supabase.from('orders').select('*').then(({ data }) => data && setOrders(data));
+    loadOrders();
   }, []);
 
-  const totalRevenue = orders.filter(o => o.paid).reduce((s, o) => s + Number(o.total), 0);
-  const todayOrders = orders.filter(o => o.paid && new Date(o.created_at).toDateString() === new Date().toDateString()).length;
-  const pending = orders.filter(o => o.paid && o.status !== 'servi').length;
+  const paidOrders = orders.filter(o => o.paid);
+  const totalRevenue = paidOrders.reduce((s, o) => s + Number(o.total), 0);
+  const todayOrders = paidOrders.filter(o => new Date(o.created_at).toDateString() === new Date().toDateString()).length;
+  const pending = paidOrders.filter(o => o.status !== 'servi').length;
+
+  const salesByItem = {};
+  paidOrders.forEach(order => {
+    order.items.forEach(item => {
+      if (!salesByItem[item.name]) salesByItem[item.name] = { name: item.name, emoji: item.emoji, qty: 0, revenue: 0 };
+      salesByItem[item.name].qty += item.qty;
+      salesByItem[item.name].revenue += item.qty * item.price;
+    });
+  });
+  const salesList = Object.values(salesByItem).sort((a, b) => b.qty - a.qty);
 
   const addItem = async () => {
     if (!form.name || !form.price) return;
@@ -558,63 +559,144 @@ function AdminView() {
     setMenu(m => m.map(i => i.id === item.id ? { ...i, available: !i.available } : i));
   };
 
+  const handleReset = async () => {
+    if (!window.confirm('⚠️ Supprimer TOUTES les commandes de la soirée ? Cette action est irréversible.')) return;
+    setResetting(true);
+    await supabase.from('orders').delete().neq('id', 0);
+    await loadOrders();
+    setResetting(false);
+    alert('✅ Remise à zéro effectuée ! Prêt pour la prochaine soirée.');
+  };
+
+  const tabStyle = (tab) => ({
+    padding: '0.5rem 1.2rem', borderRadius: 100, border: '1.5px solid var(--border)',
+    cursor: 'pointer', fontFamily: "'DM Sans', sans-serif", fontWeight: 600, fontSize: '0.85rem',
+    background: activeTab === tab ? 'var(--dark)' : 'white',
+    color: activeTab === tab ? 'white' : 'var(--dark)',
+    transition: 'all 0.2s'
+  });
+
   return (
     <div className="admin-wrap">
       <div className="view-title">⚙️ Administration</div>
-      <div className="view-sub">Gérez votre menu et suivez les commandes</div>
+      <div className="view-sub">Gérez votre restaurant</div>
+
       <div className="admin-grid">
-        <div className="stat-card"><div className="stat-num">{todayOrders}</div><div className="stat-label">Commandes aujourd'hui</div></div>
+        <div className="stat-card"><div className="stat-num">{todayOrders}</div><div className="stat-label">Commandes du soir</div></div>
         <div className="stat-card"><div className="stat-num">{pending}</div><div className="stat-label">En cours</div></div>
-        <div className="stat-card"><div className="stat-num">{totalRevenue.toFixed(0)} €</div><div className="stat-label">Chiffre d'affaires</div></div>
+        <div className="stat-card"><div className="stat-num">{totalRevenue.toFixed(0)} €</div><div className="stat-label">CA total</div></div>
       </div>
 
-      <div className="section-title">Menu ({menu.length} articles)</div>
-      {menu.map(item => (
-        <div key={item.id} className="menu-admin-item">
-          <span style={{ fontSize: '1.3rem' }}>{item.emoji}</span>
-          <div className="menu-admin-info">
-            <div className="menu-admin-name">{item.name}</div>
-            <div className="menu-admin-cat">{item.category}</div>
+      <div style={{ display: 'flex', gap: '0.5rem', margin: '1.5rem 0 1rem', flexWrap: 'wrap' }}>
+        <button style={tabStyle('menu')} onClick={() => setActiveTab('menu')}>🍽 Menu</button>
+        <button style={tabStyle('historique')} onClick={() => setActiveTab('historique')}>📊 Historique</button>
+        <button style={tabStyle('qr')} onClick={() => setActiveTab('qr')}>📱 QR Code</button>
+      </div>
+
+      {/* TAB MENU */}
+      {activeTab === 'menu' && <>
+        <div className="section-title">Menu ({menu.length} articles)</div>
+        {menu.map(item => (
+          <div key={item.id} className="menu-admin-item">
+            <span style={{ fontSize: '1.3rem' }}>{item.emoji}</span>
+            <div className="menu-admin-info">
+              <div className="menu-admin-name">{item.name}</div>
+              <div className="menu-admin-cat">{item.category}</div>
+            </div>
+            <span className="menu-admin-price">{Number(item.price).toFixed(2)} €</span>
+            <button className={`avail-toggle ${item.available ? 'on' : 'off'}`} onClick={() => toggleAvail(item)}>
+              {item.available ? '✓ Dispo' : '✗ Indispo'}
+            </button>
+            <button className="del-btn" onClick={() => delItem(item.id)}>✕</button>
           </div>
-          <span className="menu-admin-price">{Number(item.price).toFixed(2)} €</span>
-          <button className={`avail-toggle ${item.available ? 'on' : 'off'}`} onClick={() => toggleAvail(item)}>
-            {item.available ? '✓ Dispo' : '✗ Indispo'}
-          </button>
-          <button className="del-btn" onClick={() => delItem(item.id)}>✕</button>
-        </div>
-      ))}
-
-      <div className="add-item-form">
-        <div style={{ fontWeight: 600, marginBottom: '0.8rem', fontSize: '0.9rem' }}>+ Ajouter un plat</div>
-        <div className="form-row">
-          <div className="form-field"><label>Emoji</label><input value={form.emoji} onChange={e => setForm(f => ({ ...f, emoji: e.target.value }))} /></div>
-          <div className="form-field"><label>Catégorie</label>
-            <select value={form.category} onChange={e => setForm(f => ({ ...f, category: e.target.value }))}>
-              {['Entrées', 'Plats', 'Desserts', 'Boissons'].map(c => <option key={c}>{c}</option>)}
-            </select>
+        ))}
+        <div className="add-item-form">
+          <div style={{ fontWeight: 600, marginBottom: '0.8rem', fontSize: '0.9rem' }}>+ Ajouter un plat</div>
+          <div className="form-row">
+            <div className="form-field"><label>Emoji</label><input value={form.emoji} onChange={e => setForm(f => ({ ...f, emoji: e.target.value }))} /></div>
+            <div className="form-field"><label>Catégorie</label>
+              <select value={form.category} onChange={e => setForm(f => ({ ...f, category: e.target.value }))}>
+                {['Entrées', 'Plats', 'Desserts', 'Boissons'].map(c => <option key={c}>{c}</option>)}
+              </select>
+            </div>
           </div>
+          <div className="form-row">
+            <div className="form-field"><label>Nom du plat</label><input value={form.name} onChange={e => setForm(f => ({ ...f, name: e.target.value }))} placeholder="Ex: Tiramisu" /></div>
+            <div className="form-field"><label>Prix (€)</label><input type="number" value={form.price} onChange={e => setForm(f => ({ ...f, price: e.target.value }))} placeholder="0.00" /></div>
+          </div>
+          <button className="add-btn" onClick={addItem}>Ajouter au menu</button>
         </div>
-        <div className="form-row">
-          <div className="form-field"><label>Nom du plat</label><input value={form.name} onChange={e => setForm(f => ({ ...f, name: e.target.value }))} placeholder="Ex: Tiramisu" /></div>
-          <div className="form-field"><label>Prix (€)</label><input type="number" value={form.price} onChange={e => setForm(f => ({ ...f, price: e.target.value }))} placeholder="0.00" /></div>
-        </div>
-        <button className="add-btn" onClick={addItem}>Ajouter au menu</button>
-      </div>
+      </>}
 
-      <div className="section-title">QR Code unique</div>
-      <div className="qr-section">
-        <p style={{ fontSize: '0.85rem', color: 'var(--warm-gray)', marginBottom: '0.5rem' }}>
-          Un seul QR code pour toutes les tables. Le client choisit son numéro à l'arrivée.
-        </p>
-        <img
-          src={`https://api.qrserver.com/v1/create-qr-code/?size=200x200&data=${encodeURIComponent(appUrl)}&bgcolor=ffffff&color=1A1208`}
-          alt="QR Code"
-          width={200} height={200}
-          style={{ display: 'block', margin: '1rem auto', borderRadius: 8 }}
-        />
-        <div className="qr-url">{appUrl}</div>
-        <button className="print-btn" onClick={() => window.print()}>🖨 Imprimer le QR Code</button>
-      </div>
+      {/* TAB HISTORIQUE */}
+      {activeTab === 'historique' && <>
+        <div className="section-title">Ventes de la soirée</div>
+        {salesList.length === 0 ? (
+          <div className="empty-state"><div className="empty-icon">📊</div><div>Aucune vente pour le moment</div></div>
+        ) : <>
+          {salesList.map((item, i) => (
+            <div key={i} className="menu-admin-item">
+              <span style={{ fontSize: '1.3rem' }}>{item.emoji}</span>
+              <div className="menu-admin-info">
+                <div className="menu-admin-name">{item.name}</div>
+                <div className="menu-admin-cat">{item.qty} vendus</div>
+              </div>
+              <span className="menu-admin-price">{item.revenue.toFixed(2)} €</span>
+            </div>
+          ))}
+          <div style={{ background: 'var(--dark)', color: 'white', borderRadius: 12, padding: '1rem 1.2rem', marginTop: '1rem', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+            <span style={{ fontWeight: 600 }}>Total soirée</span>
+            <span style={{ fontFamily: "'Playfair Display', serif", fontSize: '1.3rem', color: 'var(--gold)' }}>{totalRevenue.toFixed(2)} €</span>
+          </div>
+
+          <div className="section-title" style={{ marginTop: '1.5rem' }}>Détail des commandes ({paidOrders.length})</div>
+          {paidOrders.slice().reverse().map(order => (
+            <div key={order.id} style={{ background: 'white', border: '1.5px solid var(--border)', borderRadius: 12, padding: '0.9rem 1rem', marginBottom: '0.5rem' }}>
+              <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: '0.4rem' }}>
+                <span style={{ fontWeight: 600 }}>Table {order.table_num} — #{order.id}</span>
+                <span style={{ color: 'var(--gold)', fontWeight: 700 }}>{Number(order.total).toFixed(2)} €</span>
+              </div>
+              <div style={{ fontSize: '0.8rem', color: 'var(--warm-gray)' }}>
+                {order.items.map((it, i) => `${it.emoji} ${it.name} ×${it.qty}`).join(' · ')}
+              </div>
+              <div style={{ fontSize: '0.72rem', color: '#ccc', marginTop: '0.3rem' }}>
+                {new Date(order.created_at).toLocaleTimeString('fr-FR', { hour: '2-digit', minute: '2-digit' })} — {order.status}
+              </div>
+            </div>
+          ))}
+
+          <div style={{ marginTop: '2rem', padding: '1.2rem', background: '#FFF5F5', border: '1.5px solid #F5C6CB', borderRadius: 14 }}>
+            <div style={{ fontWeight: 600, marginBottom: '0.4rem', color: 'var(--red)' }}>🔄 Remise à zéro</div>
+            <p style={{ fontSize: '0.82rem', color: 'var(--warm-gray)', marginBottom: '1rem' }}>
+              Efface toutes les commandes de la soirée. À faire en fin de service, avant la prochaine soirée.
+            </p>
+            <button onClick={handleReset} disabled={resetting} style={{
+              padding: '0.7rem 1.5rem', background: 'var(--red)', color: 'white',
+              border: 'none', borderRadius: 8, cursor: 'pointer', fontWeight: 700,
+              fontFamily: "'DM Sans', sans-serif", opacity: resetting ? 0.6 : 1
+            }}>
+              {resetting ? '⏳ Remise à zéro...' : '🗑 Effacer toutes les commandes'}
+            </button>
+          </div>
+        </>}
+      </>}
+
+      {/* TAB QR */}
+      {activeTab === 'qr' && <>
+        <div className="section-title">QR Code unique</div>
+        <div className="qr-section">
+          <p style={{ fontSize: '0.85rem', color: 'var(--warm-gray)', marginBottom: '0.5rem' }}>
+            Un seul QR code pour toutes les tables. Le client choisit son numéro à l'arrivée.
+          </p>
+          <img
+            src={`https://api.qrserver.com/v1/create-qr-code/?size=200x200&data=${encodeURIComponent(appUrl)}&bgcolor=ffffff&color=1A1208`}
+            alt="QR Code" width={200} height={200}
+            style={{ display: 'block', margin: '1rem auto', borderRadius: 8 }}
+          />
+          <div className="qr-url">{appUrl}</div>
+          <button className="print-btn" onClick={() => window.print()}>🖨 Imprimer le QR Code</button>
+        </div>
+      </>}
     </div>
   );
 }
@@ -632,31 +714,28 @@ function PinModal({ title, onSuccess, onClose }) {
   };
 
   return (
-    <div style={{ position:'fixed', inset:0, background:'rgba(0,0,0,0.6)', display:'flex', alignItems:'center', justifyContent:'center', zIndex:200 }}>
-      <div style={{ background:'white', borderRadius:20, padding:'2rem', width:280, textAlign:'center', boxShadow:'0 20px 60px rgba(0,0,0,0.3)' }}>
-        <div style={{ fontSize:'1.8rem', marginBottom:'0.5rem' }}>🔒</div>
-        <div style={{ fontFamily:"'Playfair Display', serif", fontSize:'1.2rem', marginBottom:'1.2rem' }}>{title}</div>
+    <div style={{ position: 'fixed', inset: 0, background: 'rgba(0,0,0,0.6)', display: 'flex', alignItems: 'center', justifyContent: 'center', zIndex: 200 }}>
+      <div style={{ background: 'white', borderRadius: 20, padding: '2rem', width: 280, textAlign: 'center', boxShadow: '0 20px 60px rgba(0,0,0,0.3)' }}>
+        <div style={{ fontSize: '1.8rem', marginBottom: '0.5rem' }}>🔒</div>
+        <div style={{ fontFamily: "'Playfair Display', serif", fontSize: '1.2rem', marginBottom: '1.2rem' }}>{title}</div>
         <input
-          type="password"
-          value={pin}
+          type="password" value={pin}
           onChange={e => setPin(e.target.value)}
           onKeyDown={e => e.key === 'Enter' && check()}
-          placeholder="Code PIN"
-          maxLength={6}
-          autoFocus
+          placeholder="Code PIN" maxLength={6} autoFocus
           style={{
-            width:'100%', padding:'0.75rem', borderRadius:10, textAlign:'center',
+            width: '100%', padding: '0.75rem', borderRadius: 10, textAlign: 'center',
             border: error ? '2px solid #8B2020' : '2px solid #E8E0D4',
-            fontSize:'1.2rem', letterSpacing:'0.3em', outline:'none',
+            fontSize: '1.2rem', letterSpacing: '0.3em', outline: 'none',
             background: error ? '#FFF0F0' : '#FAF7F2',
-            fontFamily:"'DM Sans', sans-serif", marginBottom:'1rem',
-            transition:'border-color 0.2s, background 0.2s'
+            fontFamily: "'DM Sans', sans-serif", marginBottom: '1rem',
+            transition: 'border-color 0.2s, background 0.2s'
           }}
         />
-        {error && <div style={{ color:'#8B2020', fontSize:'0.82rem', marginBottom:'0.8rem' }}>Code incorrect</div>}
-        <div style={{ display:'flex', gap:'0.5rem' }}>
-          <button onClick={onClose} style={{ flex:1, padding:'0.6rem', borderRadius:8, border:'1.5px solid #E8E0D4', background:'white', cursor:'pointer', fontFamily:"'DM Sans', sans-serif", fontWeight:500 }}>Annuler</button>
-          <button onClick={check} style={{ flex:1, padding:'0.6rem', borderRadius:8, border:'none', background:'#C8953A', color:'white', cursor:'pointer', fontFamily:"'DM Sans', sans-serif", fontWeight:700 }}>Entrer</button>
+        {error && <div style={{ color: '#8B2020', fontSize: '0.82rem', marginBottom: '0.8rem' }}>Code incorrect</div>}
+        <div style={{ display: 'flex', gap: '0.5rem' }}>
+          <button onClick={onClose} style={{ flex: 1, padding: '0.6rem', borderRadius: 8, border: '1.5px solid #E8E0D4', background: 'white', cursor: 'pointer', fontFamily: "'DM Sans', sans-serif", fontWeight: 500 }}>Annuler</button>
+          <button onClick={check} style={{ flex: 1, padding: '0.6rem', borderRadius: 8, border: 'none', background: '#C8953A', color: 'white', cursor: 'pointer', fontFamily: "'DM Sans', sans-serif", fontWeight: 700 }}>Entrer</button>
         </div>
       </div>
     </div>
