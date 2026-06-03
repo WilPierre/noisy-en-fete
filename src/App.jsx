@@ -230,7 +230,7 @@ function TableSelector({ onSelect }) {
       <div style={{ fontFamily: "'Playfair Display', serif", fontSize: "1.8rem" }}>🪑 Votre table</div>
       <p style={{ color: "var(--warm-gray)", fontSize: "0.85rem", marginTop: "0.5rem" }}>Quel est votre numéro de table ?</p>
       <div className="table-grid">
-        {Array.from({ length: 12 }, (_, i) => i + 1).map(n => (
+        {Array.from({ length: 30 }, (_, i) => i + 1).map(n => (
           <button key={n} className="table-btn" onClick={() => onSelect(n)}>{n}</button>
         ))}
       </div>
