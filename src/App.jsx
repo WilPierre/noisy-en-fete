@@ -1332,6 +1332,16 @@ export default function App() {
         {view === 'client' && <ClientView />}
         {view === 'kitchen' && <KitchenView />}
         {view === 'admin' && <AdminView />}
+        <footer style={{
+          textAlign: 'center', padding: '1.5rem', fontSize: '0.75rem',
+          color: 'var(--warm-gray)', borderTop: '1px solid var(--border)',
+          marginTop: '2rem'
+        }}>
+          <a href="https://noisyenfete.fr" target="_blank" rel="noreferrer"
+            style={{ color: 'var(--gold)', fontWeight: 600, textDecoration: 'none' }}>
+            🎉 noisyenfete.fr
+          </a>
+        </footer>
         {pinTarget && (
           <PinModal
             title={pinTarget === 'kitchen' ? 'Accès Cuisine' : 'Accès Administration'}
