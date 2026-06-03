@@ -528,22 +528,80 @@ function AdminView() {
   );
 }
 
+// ─── PIN MODAL ────────────────────────────────────────────────────────────────
+const STAFF_PIN = '1234'; // Change ce code ici
+
+function PinModal({ title, onSuccess, onClose }) {
+  const [pin, setPin] = useState('');
+  const [error, setError] = useState(false);
+
+  const check = () => {
+    if (pin === STAFF_PIN) { onSuccess(); }
+    else { setError(true); setPin(''); setTimeout(() => setError(false), 1000); }
+  };
+
+  return (
+    <div style={{ position:'fixed', inset:0, background:'rgba(0,0,0,0.6)', display:'flex', alignItems:'center', justifyContent:'center', zIndex:200 }}>
+      <div style={{ background:'white', borderRadius:20, padding:'2rem', width:280, textAlign:'center', boxShadow:'0 20px 60px rgba(0,0,0,0.3)' }}>
+        <div style={{ fontSize:'1.8rem', marginBottom:'0.5rem' }}>🔒</div>
+        <div style={{ fontFamily:"'Playfair Display', serif", fontSize:'1.2rem', marginBottom:'1.2rem' }}>{title}</div>
+        <input
+          type="password"
+          value={pin}
+          onChange={e => setPin(e.target.value)}
+          onKeyDown={e => e.key === 'Enter' && check()}
+          placeholder="Code PIN"
+          maxLength={6}
+          autoFocus
+          style={{
+            width:'100%', padding:'0.75rem', borderRadius:10, textAlign:'center',
+            border: error ? '2px solid #8B2020' : '2px solid #E8E0D4',
+            fontSize:'1.2rem', letterSpacing:'0.3em', outline:'none',
+            background: error ? '#FFF0F0' : '#FAF7F2',
+            fontFamily:"'DM Sans', sans-serif", marginBottom:'1rem',
+            transition:'border-color 0.2s, background 0.2s'
+          }}
+        />
+        {error && <div style={{ color:'#8B2020', fontSize:'0.82rem', marginBottom:'0.8rem' }}>Code incorrect</div>}
+        <div style={{ display:'flex', gap:'0.5rem' }}>
+          <button onClick={onClose} style={{ flex:1, padding:'0.6rem', borderRadius:8, border:'1.5px solid #E8E0D4', background:'white', cursor:'pointer', fontFamily:"'DM Sans', sans-serif", fontWeight:500 }}>Annuler</button>
+          <button onClick={check} style={{ flex:1, padding:'0.6rem', borderRadius:8, border:'none', background:'#C8953A', color:'white', cursor:'pointer', fontFamily:"'DM Sans', sans-serif", fontWeight:700 }}>Entrer</button>
+        </div>
+      </div>
+    </div>
+  );
+}
+
 // ─── ROOT ─────────────────────────────────────────────────────────────────────
 export default function App() {
   const [view, setView] = useState('client');
+  const [pinTarget, setPinTarget] = useState(null);
+
+  const requestView = (target) => {
+    if (target === 'client') { setView('client'); return; }
+    setPinTarget(target);
+  };
+
   return (
     <>
       <style>{css}</style>
       <div className="app">
         <nav className="nav">
           <span className="nav-title">🎉 {RESTAURANT}</span>
-          <button className={`nav-btn ${view === 'client' ? 'active' : ''}`} onClick={() => setView('client')}>📱 Client</button>
-          <button className={`nav-btn ${view === 'kitchen' ? 'active' : ''}`} onClick={() => setView('kitchen')}>🍳 Cuisine</button>
-          <button className={`nav-btn ${view === 'admin' ? 'active' : ''}`} onClick={() => setView('admin')}>⚙️ Admin</button>
+          <button className={`nav-btn ${view === 'client' ? 'active' : ''}`} onClick={() => requestView('client')}>📱 Commander</button>
+          <button className={`nav-btn ${view === 'kitchen' ? 'active' : ''}`} onClick={() => requestView('kitchen')}>🍳</button>
+          <button className={`nav-btn ${view === 'admin' ? 'active' : ''}`} onClick={() => requestView('admin')}>⚙️</button>
         </nav>
         {view === 'client' && <ClientView />}
         {view === 'kitchen' && <KitchenView />}
         {view === 'admin' && <AdminView />}
+        {pinTarget && (
+          <PinModal
+            title={pinTarget === 'kitchen' ? 'Accès Cuisine' : 'Accès Administration'}
+            onSuccess={() => { setView(pinTarget); setPinTarget(null); }}
+            onClose={() => setPinTarget(null)}
+          />
+        )}
       </div>
     </>
   );
