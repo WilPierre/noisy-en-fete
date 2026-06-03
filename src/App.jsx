@@ -356,7 +356,10 @@ function useSettings() {
 }
 
 async function saveSetting(key, value) {
-  await supabase.from('settings').upsert({ key, value }, { onConflict: 'key' });
+  const { error } = await supabase.from('settings').update({ value }).eq('key', key);
+  if (error) {
+    await supabase.from('settings').insert({ key, value });
+  }
 }
 
 // ─── CLOSED BANNER ───────────────────────────────────────────────────────────
