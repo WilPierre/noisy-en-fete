@@ -565,6 +565,7 @@ function AdminView() {
     await supabase.from('orders').delete().neq('id', 0);
     setOrders([]);
     setResetting(false);
+    setActiveTab('menu');
     alert('✅ Remise à zéro effectuée ! Prêt pour la prochaine soirée.');
   };
 
