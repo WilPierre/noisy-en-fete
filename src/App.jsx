@@ -153,7 +153,7 @@ const css = `
 `;
 
 // ─── STRIPE PAYMENT FORM ──────────────────────────────────────────────────────
-function PaymentForm({ totalPrice, tableNum, cartItems, onSuccess }) {
+function PaymentForm({ totalPrice, tableNum, cartItems, comment, onSuccess }) {
   const stripe = useStripe();
   const elements = useElements();
   const [paying, setPaying] = useState(false);
@@ -171,7 +171,7 @@ function PaymentForm({ totalPrice, tableNum, cartItems, onSuccess }) {
     try {
       const { data: order, error: dbErr } = await supabase
         .from('orders')
-        .insert({ table_num: tableNum, items: cartItems, total: totalPrice, tip: tipAmount, paid: false, status: 'en attente paiement' })
+        .insert({ table_num: tableNum, items: cartItems, total: totalPrice, tip: tipAmount, comment: comment || '', paid: false, status: 'en attente paiement' })
         .select().single();
       if (dbErr) throw new Error('Erreur base de données');
 
@@ -443,6 +443,8 @@ function ClientView() {
   const [orderId, setOrderId] = useState(null);
   const [notifState, setNotifState] = useState('ask');
   const [notified, setNotified] = useState(false);
+  const [comment, setComment] = useState('');
+  const [selectedExtras, setSelectedExtras] = useState({});
   const settings = useSettings();
 
   // Vérifier si les commandes sont fermées
@@ -485,9 +487,32 @@ function ClientView() {
   const categories = ['Tous', ...new Set(menu.map(i => i.category))];
   const filtered = activeCategory === 'Tous' ? menu : menu.filter(i => i.category === activeCategory);
   const totalItems = Object.values(cart).reduce((s, q) => s + q, 0);
-  const totalPrice = menu.reduce((s, item) => s + (cart[item.id] || 0) * item.price, 0);
+  const basePrice = menu.reduce((s, item) => s + (cart[item.id] || 0) * item.price, 0);
   const setQty = (id, qty) => setCart(c => ({ ...c, [id]: Math.max(0, qty) }));
-  const cartItems = menu.filter(i => cart[i.id] > 0).map(i => ({ name: i.name, qty: cart[i.id], price: i.price, emoji: i.emoji }));
+  const extrasTotal = Object.entries(selectedExtras).reduce((sum, [id, exs]) => {
+    const qty = cart[parseInt(id)] || 0;
+    return sum + qty * exs.reduce((s, e) => s + Number(e.price), 0);
+  }, 0);
+  const cartItems = (() => {
+    const items = menu.filter(i => cart[i.id] > 0).map(i => ({
+      name: i.name, qty: cart[i.id], price: i.price, emoji: i.emoji,
+      extras: selectedExtras[i.id] || [], free: 0
+    }));
+    // Appliquer la fidélité
+    const ls = settings;
+    if (ls.loyalty_active === 'true' && ls.loyalty_item && ls.loyalty_every) {
+      const every = parseInt(ls.loyalty_every);
+      items.forEach(item => {
+        if (item.name === ls.loyalty_item && item.qty >= every) {
+          item.free = Math.floor(item.qty / every);
+        }
+      });
+    }
+    return items;
+  })();
+
+  const loyaltyDiscount = cartItems.reduce((s, i) => s + i.free * i.price, 0);
+  const totalPrice = basePrice + extrasTotal - loyaltyDiscount;
 
   if (isClosed) return <ClosedBanner closingTime={settings.closing_time || '22:00'} />;
   if (!tableNum) return <TableSelector onSelect={setTableNum} welcomeMsg={settings.welcome} />;
@@ -550,17 +575,41 @@ function ClientView() {
           </div>
           <div className="menu-grid">
             {filtered.map(item => (
-              <div key={item.id} className="menu-item">
-                <div className="item-emoji">{item.emoji}</div>
-                <div className="item-info">
-                  <div className="item-name">{item.name}</div>
-                  <div className="item-price">{Number(item.price).toFixed(2)} €</div>
+              <div key={item.id} className="menu-item" style={{ flexDirection: 'column', alignItems: 'stretch' }}>
+                <div style={{ display: 'flex', alignItems: 'center', gap: '1rem' }}>
+                  <div className="item-emoji">{item.emoji}</div>
+                  <div className="item-info">
+                    <div className="item-name">{item.name}</div>
+                    <div className="item-price">{Number(item.price).toFixed(2)} €</div>
+                  </div>
+                  <div className="qty-ctrl">
+                    <button className="qty-btn" onClick={() => setQty(item.id, (cart[item.id] || 0) - 1)}>−</button>
+                    <span className="qty-num">{cart[item.id] || 0}</span>
+                    <button className="qty-btn" onClick={() => setQty(item.id, (cart[item.id] || 0) + 1)}>+</button>
+                  </div>
                 </div>
-                <div className="qty-ctrl">
-                  <button className="qty-btn" onClick={() => setQty(item.id, (cart[item.id] || 0) - 1)}>−</button>
-                  <span className="qty-num">{cart[item.id] || 0}</span>
-                  <button className="qty-btn" onClick={() => setQty(item.id, (cart[item.id] || 0) + 1)}>+</button>
-                </div>
+                {cart[item.id] > 0 && item.extras && item.extras.length > 0 && (
+                  <div style={{ marginTop: '0.6rem', paddingTop: '0.6rem', borderTop: '1px solid var(--border)' }}>
+                    <div style={{ fontSize: '0.75rem', color: 'var(--warm-gray)', marginBottom: '0.3rem' }}>Suppléments :</div>
+                    {item.extras.map((ex, i) => (
+                      <label key={i} style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', marginBottom: '0.2rem', cursor: 'pointer' }}>
+                        <input type="checkbox"
+                          checked={!!(selectedExtras[item.id] || []).find(e => e.name === ex.name)}
+                          onChange={e => {
+                            const cur = selectedExtras[item.id] || [];
+                            setSelectedExtras(prev => ({
+                              ...prev,
+                              [item.id]: e.target.checked ? [...cur, ex] : cur.filter(x => x.name !== ex.name)
+                            }));
+                          }}
+                          style={{ accentColor: 'var(--gold)' }}
+                        />
+                        <span style={{ fontSize: '0.82rem' }}>{ex.name}</span>
+                        <span style={{ fontSize: '0.78rem', color: 'var(--gold)', fontWeight: 600 }}>+{Number(ex.price).toFixed(2)} €</span>
+                      </label>
+                    ))}
+                  </div>
+                )}
               </div>
             ))}
           </div>
@@ -583,21 +632,53 @@ function ClientView() {
             <div className="modal-handle" />
             <div className="modal-title">Ma commande — Table {tableNum}</div>
             {cartItems.map((item, i) => (
-              <div key={i} className="cart-line">
-                <span>{item.emoji} {item.name} × {item.qty}</span>
-                <span style={{ fontWeight: 600 }}>{(item.price * item.qty).toFixed(2)} €</span>
+              <div key={i}>
+                <div className="cart-line">
+                  <span>{item.emoji} {item.name} × {item.qty}</span>
+                  <span style={{ fontWeight: 600 }}>{(item.price * item.qty).toFixed(2)} €</span>
+                </div>
+                {item.extras && item.extras.map((ex, j) => (
+                  <div key={j} className="cart-line" style={{ paddingLeft: '1rem', fontSize: '0.8rem', color: 'var(--warm-gray)' }}>
+                    <span>↳ {ex.name} × {item.qty}</span>
+                    <span>+{(Number(ex.price) * item.qty).toFixed(2)} €</span>
+                  </div>
+                ))}
               </div>
             ))}
+            {loyaltyDiscount > 0 && (
+              <div className="cart-line" style={{ color: 'var(--green)', fontWeight: 600 }}>
+                <span>🎁 {cartItems.find(i => i.free > 0)?.free}× {settings.loyalty_item} offert(s) !</span>
+                <span>-{loyaltyDiscount.toFixed(2)} €</span>
+              </div>
+            )}
             <div className="cart-total-line">
               <span>Total</span>
               <span style={{ color: 'var(--gold)' }}>{totalPrice.toFixed(2)} €</span>
+            </div>
+            <div style={{ marginTop: '1rem' }}>
+              <div style={{ fontSize: '0.82rem', fontWeight: 600, color: 'var(--warm-gray)', marginBottom: '0.4rem' }}>
+                💬 Commentaire / demande spéciale
+              </div>
+              <textarea
+                value={comment}
+                onChange={e => setComment(e.target.value)}
+                placeholder="Ex: sans oignons, sans frites, allergie aux noix..."
+                rows={2}
+                style={{
+                  width: '100%', padding: '0.6rem 0.75rem', borderRadius: 8,
+                  border: '1.5px solid var(--border)', fontFamily: "'DM Sans', sans-serif",
+                  fontSize: '0.85rem', outline: 'none', background: 'var(--cream)',
+                  resize: 'none', lineHeight: 1.5
+                }}
+              />
             </div>
             <Elements stripe={stripePromise}>
               <PaymentForm
                 totalPrice={totalPrice}
                 tableNum={tableNum}
                 cartItems={cartItems}
-                onSuccess={(id) => { setOrderId(id); setSuccess(true); setCart({}); setShowCart(false); }}
+                comment={comment}
+                onSuccess={(id) => { setOrderId(id); setSuccess(true); setCart({}); setShowCart(false); setComment(''); }}
               />
             </Elements>
           </div>
@@ -695,6 +776,16 @@ function KitchenView() {
                 <span className={`status-badge ${badgeClass[order.status]}`}>{order.status}</span>
               </div>
               <div className="order-time">⏱ {elapsed(order.created_at)}</div>
+              {order.comment && (
+                <div style={{ background: '#FFF8EE', border: '1px solid var(--gold)', borderRadius: 8, padding: '0.4rem 0.7rem', marginBottom: '0.4rem', fontSize: '0.82rem', color: 'var(--dark)' }}>
+                  💬 {order.comment}
+                </div>
+              )}
+              {order.items.some(i => i.free > 0) && (
+                <div style={{ background: '#D4EDDA', border: '1px solid #C3E6CB', borderRadius: 8, padding: '0.4rem 0.7rem', marginBottom: '0.6rem', fontSize: '0.82rem', color: '#155724', fontWeight: 600 }}>
+                  🎁 {order.items.filter(i => i.free > 0).map(i => `${i.free}× ${i.name} OFFERT`).join(', ')}
+                </div>
+              )}
               <div className="order-items">
                 {order.items.map((item, i) => (
                   <div key={i} className="order-item-line">
@@ -721,18 +812,29 @@ function ConfigTab() {
   const settings = useSettings();
   const [welcome, setWelcome] = useState('');
   const [closingTime, setClosingTime] = useState('22:00');
+  const [loyaltyItem, setLoyaltyItem] = useState('');
+  const [loyaltyEvery, setLoyaltyEvery] = useState('4');
+  const [loyaltyActive, setLoyaltyActive] = useState(false);
+  const [loyaltyMenu, setLoyaltyMenu] = useState([]);
   const [saved, setSaved] = useState(false);
 
   useEffect(() => {
     setWelcome(settings.welcome || '');
     setClosingTime(settings.closing_time || '22:00');
-  }, [settings.welcome, settings.closing_time]);
+    setLoyaltyItem(settings.loyalty_item || '');
+    setLoyaltyEvery(settings.loyalty_every || '4');
+    setLoyaltyActive(settings.loyalty_active === 'true');
+    supabase.from('menu').select('id,name,emoji,price').order('category').then(({ data }) => data && setLoyaltyMenu(data));
+  }, [settings.welcome, settings.closing_time, settings.loyalty_item, settings.loyalty_every, settings.loyalty_active]);
 
   const isClosed = settings.closed === 'true';
 
   const save = async () => {
     await saveSetting('welcome', welcome);
     await saveSetting('closing_time', closingTime);
+    await saveSetting('loyalty_item', loyaltyItem);
+    await saveSetting('loyalty_every', loyaltyEvery);
+    await saveSetting('loyalty_active', loyaltyActive ? 'true' : 'false');
     setSaved(true);
     setTimeout(() => setSaved(false), 2000);
   };
@@ -805,6 +907,42 @@ function ConfigTab() {
             resize: 'vertical', lineHeight: 1.5
           }}
         />
+      </div>
+
+      {/* Fidélité */}
+      <div style={{ background: 'white', border: '1.5px solid var(--border)', borderRadius: 14, padding: '1.2rem', marginBottom: '1rem' }}>
+        <div style={{ fontWeight: 600, marginBottom: '0.3rem' }}>🎁 Offre fidélité</div>
+        <div style={{ fontSize: '0.78rem', color: 'var(--warm-gray)', marginBottom: '0.75rem' }}>
+          Choisissez un produit et définissez à partir de combien d&apos;achats le suivant est offert.
+        </div>
+        <div style={{ display: 'flex', flexDirection: 'column', gap: '0.5rem', marginBottom: '0.75rem' }}>
+          <div className="form-field">
+            <label>Produit concerné</label>
+            <select value={loyaltyItem} onChange={e => setLoyaltyItem(e.target.value)}
+              style={{ padding: '0.55rem 0.75rem', borderRadius: 8, border: '1.5px solid var(--border)', fontFamily: "'DM Sans', sans-serif", fontSize: '0.9rem', background: 'var(--cream)', outline: 'none' }}>
+              <option value="">-- Aucun --</option>
+              {loyaltyMenu.map(item => (
+                <option key={item.id} value={item.name}>{item.emoji} {item.name} ({Number(item.price).toFixed(2)} €)</option>
+              ))}
+            </select>
+          </div>
+          <div className="form-field">
+            <label>Offert tous les combien d&apos;achats ?</label>
+            <input type="number" min="2" max="20" value={loyaltyEvery}
+              onChange={e => setLoyaltyEvery(e.target.value)}
+              style={{ padding: '0.55rem 0.75rem', borderRadius: 8, border: '1.5px solid var(--border)', fontFamily: "'DM Sans', sans-serif", fontSize: '0.9rem', background: 'var(--cream)', outline: 'none', maxWidth: 120 }}
+            />
+          </div>
+          <div style={{ display: 'flex', gap: '0.5rem', alignItems: 'center' }}>
+            <input type="checkbox" id="loyaltyActive" checked={loyaltyActive} onChange={e => setLoyaltyActive(e.target.checked)} style={{ accentColor: 'var(--gold)' }} />
+            <label htmlFor="loyaltyActive" style={{ fontSize: '0.85rem', cursor: 'pointer' }}>Activer cette offre</label>
+          </div>
+        </div>
+        {loyaltyItem && loyaltyEvery && loyaltyActive && (
+          <div style={{ background: '#FFF8EE', border: '1px solid var(--gold)', borderRadius: 8, padding: '0.6rem 0.9rem', fontSize: '0.82rem', color: 'var(--dark)' }}>
+            🎁 1 {loyaltyItem} offert toutes les {loyaltyEvery} achetées
+          </div>
+        )}
       </div>
 
       <button onClick={save} style={{
@@ -946,7 +1084,11 @@ function AdminView() {
 
   const saveEdit = async (id) => {
     if (!editForm.name || !editForm.price) return;
-    await supabase.from('menu').update({ name: editForm.name, price: parseFloat(editForm.price), emoji: editForm.emoji, category: editForm.category }).eq('id', id);
+    await supabase.from('menu').update({
+      name: editForm.name, price: parseFloat(editForm.price),
+      emoji: editForm.emoji, category: editForm.category,
+      extras: editForm.extras || []
+    }).eq('id', id);
     setMenu(m => m.map(i => i.id === id ? { ...i, ...editForm, price: parseFloat(editForm.price) } : i));
     setEditingId(null);
   };
@@ -1017,6 +1159,29 @@ function AdminView() {
                     <label>Prix (€)</label>
                     <input type="number" value={editForm.price} onChange={e => setEditForm(f => ({ ...f, price: e.target.value }))} />
                   </div>
+                </div>
+                {/* Suppléments */}
+                <div style={{ marginBottom: '0.75rem' }}>
+                  <div style={{ fontSize: '0.78rem', fontWeight: 600, color: 'var(--warm-gray)', marginBottom: '0.4rem' }}>➕ Suppléments disponibles</div>
+                  {(editForm.extras || []).map((ex, i) => (
+                    <div key={i} style={{ display: 'flex', gap: '0.4rem', marginBottom: '0.3rem', alignItems: 'center' }}>
+                      <input value={ex.name} onChange={e => {
+                        const extras = [...(editForm.extras||[])]; extras[i] = {...extras[i], name: e.target.value};
+                        setEditForm(f => ({...f, extras}));
+                      }} placeholder="Ex: Chantilly" style={{ flex: 2, padding: '0.4rem 0.6rem', borderRadius: 6, border: '1.5px solid var(--border)', fontFamily: "'DM Sans', sans-serif", fontSize: '0.82rem', outline: 'none', background: 'var(--cream)' }} />
+                      <input type="number" value={ex.price} onChange={e => {
+                        const extras = [...(editForm.extras||[])]; extras[i] = {...extras[i], price: e.target.value};
+                        setEditForm(f => ({...f, extras}));
+                      }} placeholder="0.50" style={{ flex: 1, padding: '0.4rem 0.6rem', borderRadius: 6, border: '1.5px solid var(--border)', fontFamily: "'DM Sans', sans-serif", fontSize: '0.82rem', outline: 'none', background: 'var(--cream)' }} />
+                      <span style={{ fontSize: '0.75rem', color: 'var(--warm-gray)' }}>€</span>
+                      <button onClick={() => setEditForm(f => ({...f, extras: f.extras.filter((_,j) => j!==i)}))}
+                        style={{ padding: '0.3rem 0.5rem', background: 'transparent', border: '1px solid var(--border)', borderRadius: 6, cursor: 'pointer', color: 'var(--red)', fontSize: '0.8rem' }}>✕</button>
+                    </div>
+                  ))}
+                  <button onClick={() => setEditForm(f => ({...f, extras: [...(f.extras||[]), {name:'', price:''}]}))}
+                    style={{ padding: '0.3rem 0.8rem', background: 'var(--cream)', border: '1.5px dashed var(--border)', borderRadius: 6, cursor: 'pointer', fontSize: '0.78rem', fontFamily: "'DM Sans', sans-serif", color: 'var(--dark)' }}>
+                    + Ajouter un supplément
+                  </button>
                 </div>
                 <div style={{ display: 'flex', gap: '0.5rem' }}>
                   <button onClick={() => saveEdit(item.id)} style={{ padding: '0.5rem 1.2rem', background: 'var(--green)', color: 'white', border: 'none', borderRadius: 8, cursor: 'pointer', fontWeight: 700, fontFamily: "'DM Sans', sans-serif" }}>✅ Enregistrer</button>
