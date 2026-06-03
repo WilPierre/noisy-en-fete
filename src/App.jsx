@@ -266,7 +266,7 @@ function TableSelector({ onSelect }) {
     <div className="table-select-wrap">
       <img src="/logo.png" alt="Noisy en Fête" style={{ width: '160px', maxWidth: '60vw', margin: '0 auto 1rem', display: 'block' }} />
       <div style={{ fontFamily: "'Playfair Display', serif", fontSize: "1.8rem" }}>🪑 Votre table</div>
-      <p style={{ color: "var(--warm-gray)", fontSize: "0.85rem", marginTop: "0.5rem" }}>Quel est votre numéro de table ?</p>
+      <p style={{ color: "var(--warm-gray)", fontSize: "0.85rem", marginTop: "0.5rem" }}>Quel est votre numéro de table/emplacement ?</p>
       <div className="table-grid">
         {Array.from({ length: 30 }, (_, i) => i + 1).map(n => (
           <button key={n} className="table-btn" onClick={() => onSelect(n)}>{n}</button>
