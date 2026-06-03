@@ -261,12 +261,19 @@ function PaymentForm({ totalPrice, tableNum, cartItems, onSuccess }) {
 }
 
 // ─── TABLE SELECTOR ───────────────────────────────────────────────────────────
-function TableSelector({ onSelect }) {
+function TableSelector({ onSelect, welcomeMsg }) {
   return (
     <div className="table-select-wrap">
       <img src="/logo.png" alt="Noisy en Fête" style={{ width: '160px', maxWidth: '60vw', margin: '0 auto 1rem', display: 'block' }} />
+      {welcomeMsg && (
+        <div style={{
+          background: 'var(--gold)', color: 'var(--dark)', borderRadius: 12,
+          padding: '0.75rem 1rem', marginBottom: '1rem', fontSize: '0.88rem',
+          fontWeight: 500, lineHeight: 1.5
+        }}>🎉 {welcomeMsg}</div>
+      )}
       <div style={{ fontFamily: "'Playfair Display', serif", fontSize: "1.8rem" }}>🪑 Votre table</div>
-      <p style={{ color: "var(--warm-gray)", fontSize: "0.85rem", marginTop: "0.5rem" }}>Quel est votre numéro de table/emplacement ?</p>
+      <p style={{ color: "var(--warm-gray)", fontSize: "0.85rem", marginTop: "0.5rem" }}>Quel est votre numéro de table ?</p>
       <div className="table-grid">
         {Array.from({ length: 30 }, (_, i) => i + 1).map(n => (
           <button key={n} className="table-btn" onClick={() => onSelect(n)}>{n}</button>
@@ -320,6 +327,53 @@ function NotificationBanner({ onAccept, onDecline }) {
           cursor: 'pointer', fontFamily: "'DM Sans', sans-serif", fontSize: '0.85rem'
         }}>Non merci</button>
       </div>
+    </div>
+  );
+}
+
+// ─── SETTINGS (message accueil + heure fermeture) ────────────────────────────
+function useSettings() {
+  const [settings, setSettings] = useState({ welcome: '', closing_time: '22:00', closed: false });
+
+  useEffect(() => {
+    supabase.from('settings').select('*').then(({ data }) => {
+      if (data) data.forEach(row => setSettings(s => ({ ...s, [row.key]: row.value })));
+    });
+    const channel = supabase.channel('settings-watch')
+      .on('postgres_changes', { event: '*', schema: 'public', table: 'settings' }, () => {
+        supabase.from('settings').select('*').then(({ data }) => {
+          if (data) {
+            const s = {};
+            data.forEach(row => s[row.key] = row.value);
+            setSettings(prev => ({ ...prev, ...s }));
+          }
+        });
+      }).subscribe();
+    return () => supabase.removeChannel(channel);
+  }, []);
+
+  return settings;
+}
+
+async function saveSetting(key, value) {
+  await supabase.from('settings').upsert({ key, value }, { onConflict: 'key' });
+}
+
+// ─── CLOSED BANNER ───────────────────────────────────────────────────────────
+function ClosedBanner({ closingTime }) {
+  return (
+    <div style={{
+      background: 'var(--dark)', color: 'white', textAlign: 'center',
+      padding: '3rem 1.5rem', minHeight: '60vh', display: 'flex',
+      flexDirection: 'column', alignItems: 'center', justifyContent: 'center'
+    }}>
+      <div style={{ fontSize: '3rem', marginBottom: '1rem' }}>🔒</div>
+      <div style={{ fontFamily: "'Playfair Display', serif", fontSize: '1.8rem', color: 'var(--gold)', marginBottom: '0.75rem' }}>
+        Les commandes sont fermées
+      </div>
+      <p style={{ color: 'var(--warm-gray)', fontSize: '0.9rem', maxWidth: 300 }}>
+        La prise de commande s&apos;est terminée à {closingTime}.<br />Merci pour votre visite !
+      </p>
     </div>
   );
 }
@@ -386,6 +440,16 @@ function ClientView() {
   const [orderId, setOrderId] = useState(null);
   const [notifState, setNotifState] = useState('ask');
   const [notified, setNotified] = useState(false);
+  const settings = useSettings();
+
+  // Vérifier si les commandes sont fermées
+  const isClosed = () => {
+    if (settings.closed === 'true') return true;
+    const now = new Date();
+    const [h, m] = (settings.closing_time || '22:00').split(':').map(Number);
+    const closing = new Date(); closing.setHours(h, m, 0, 0);
+    return now >= closing;
+  };
 
   useEffect(() => {
     supabase.from('menu').select('*').eq('available', true).order('category').then(({ data }) => {
@@ -421,7 +485,8 @@ function ClientView() {
   const setQty = (id, qty) => setCart(c => ({ ...c, [id]: Math.max(0, qty) }));
   const cartItems = menu.filter(i => cart[i.id] > 0).map(i => ({ name: i.name, qty: cart[i.id], price: i.price, emoji: i.emoji }));
 
-  if (!tableNum) return <TableSelector onSelect={setTableNum} />;
+  if (isClosed()) return <ClosedBanner closingTime={settings.closing_time || '22:00'} />;
+  if (!tableNum) return <TableSelector onSelect={setTableNum} welcomeMsg={settings.welcome} />;
 
   if (success) return (
     <div className="client-wrap">
@@ -541,13 +606,37 @@ function ClientView() {
 // ─── KITCHEN VIEW ─────────────────────────────────────────────────────────────
 function KitchenView() {
   const [orders, setOrders] = useState([]);
+  const [soundEnabled, setSoundEnabled] = useState(true);
+  const prevCountRef = useCallback((n) => { prevCountRef.current = n; }, []);
+  const orderCountRef = useState(0);
+
+  const playBeep = () => {
+    try {
+      const ctx = new (window.AudioContext || window.webkitAudioContext)();
+      [0, 0.15, 0.3].forEach(delay => {
+        const osc = ctx.createOscillator();
+        const gain = ctx.createGain();
+        osc.connect(gain); gain.connect(ctx.destination);
+        osc.frequency.value = 880;
+        gain.gain.setValueAtTime(0.3, ctx.currentTime + delay);
+        gain.gain.exponentialRampToValueAtTime(0.001, ctx.currentTime + delay + 0.2);
+        osc.start(ctx.currentTime + delay);
+        osc.stop(ctx.currentTime + delay + 0.2);
+      });
+    } catch(e) {}
+  };
 
   const fetchOrders = useCallback(async () => {
     const { data } = await supabase.from('orders')
       .select('*').eq('paid', true).neq('status', 'servi')
       .order('created_at', { ascending: true });
-    if (data) setOrders(data);
-  }, []);
+    if (data) {
+      const newCount = data.filter(o => o.status === 'en attente').length;
+      if (soundEnabled && newCount > orderCountRef[0]) playBeep();
+      orderCountRef[0] = newCount;
+      setOrders(data);
+    }
+  }, [soundEnabled]);
 
   useEffect(() => {
     fetchOrders();
@@ -572,7 +661,17 @@ function KitchenView() {
 
   return (
     <div className="kitchen-wrap">
-      <div className="view-title">🍳 Écran Cuisine</div>
+      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: '0.25rem' }}>
+        <div className="view-title">🍳 Écran Cuisine</div>
+        <button onClick={() => { setSoundEnabled(s => !s); }} style={{
+          padding: '0.4rem 0.9rem', borderRadius: 100, border: '1.5px solid var(--border)',
+          background: soundEnabled ? '#D4EDDA' : 'white', cursor: 'pointer',
+          fontFamily: "'DM Sans', sans-serif", fontSize: '0.8rem', fontWeight: 600,
+          color: soundEnabled ? '#155724' : 'var(--warm-gray)'
+        }}>
+          {soundEnabled ? '🔔 Son activé' : '🔕 Son désactivé'}
+        </button>
+      </div>
       <div className="view-sub">{orders.length} commande{orders.length !== 1 ? 's' : ''} payée{orders.length !== 1 ? 's' : ''} en cours</div>
       {orders.length === 0 ? (
         <div className="empty-state">
@@ -609,6 +708,105 @@ function KitchenView() {
           ))}
         </div>
       )}
+    </div>
+  );
+}
+
+// ─── CONFIG TAB ──────────────────────────────────────────────────────────────
+function ConfigTab() {
+  const settings = useSettings();
+  const [welcome, setWelcome] = useState('');
+  const [closingTime, setClosingTime] = useState('22:00');
+  const [saved, setSaved] = useState(false);
+
+  useEffect(() => {
+    setWelcome(settings.welcome || '');
+    setClosingTime(settings.closing_time || '22:00');
+  }, [settings.welcome, settings.closing_time]);
+
+  const isClosed = settings.closed === 'true';
+
+  const save = async () => {
+    await saveSetting('welcome', welcome);
+    await saveSetting('closing_time', closingTime);
+    setSaved(true);
+    setTimeout(() => setSaved(false), 2000);
+  };
+
+  const toggleClosed = async () => {
+    await saveSetting('closed', isClosed ? 'false' : 'true');
+  };
+
+  return (
+    <div>
+      <div className="section-title">🛠 Configuration de la soirée</div>
+
+      {/* Statut ouvert/fermé */}
+      <div style={{ background: isClosed ? '#FFF5F5' : '#F0FFF4', border: `1.5px solid ${isClosed ? '#F5C6CB' : '#C3E6CB'}`, borderRadius: 14, padding: '1.2rem', marginBottom: '1rem' }}>
+        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+          <div>
+            <div style={{ fontWeight: 700, color: isClosed ? 'var(--red)' : 'var(--green)' }}>
+              {isClosed ? '🔒 Commandes fermées' : '✅ Commandes ouvertes'}
+            </div>
+            <div style={{ fontSize: '0.78rem', color: 'var(--warm-gray)', marginTop: '0.2rem' }}>
+              {isClosed ? 'Les clients ne peuvent plus commander' : 'Les clients peuvent commander'}
+            </div>
+          </div>
+          <button onClick={toggleClosed} style={{
+            padding: '0.6rem 1.2rem', borderRadius: 8, border: 'none', cursor: 'pointer',
+            fontWeight: 700, fontFamily: "'DM Sans', sans-serif", fontSize: '0.85rem',
+            background: isClosed ? 'var(--green)' : 'var(--red)', color: 'white'
+          }}>
+            {isClosed ? '🟢 Rouvrir' : '🔴 Fermer maintenant'}
+          </button>
+        </div>
+      </div>
+
+      {/* Heure de fermeture automatique */}
+      <div style={{ background: 'white', border: '1.5px solid var(--border)', borderRadius: 14, padding: '1.2rem', marginBottom: '1rem' }}>
+        <div style={{ fontWeight: 600, marginBottom: '0.3rem' }}>🕙 Heure de fermeture automatique</div>
+        <div style={{ fontSize: '0.78rem', color: 'var(--warm-gray)', marginBottom: '0.75rem' }}>
+          Les commandes se ferment automatiquement à cette heure sur toutes les pages. Par défaut : 22h00.
+        </div>
+        <input
+          type="time" value={closingTime}
+          onChange={e => setClosingTime(e.target.value)}
+          style={{
+            padding: '0.6rem 0.9rem', borderRadius: 8, border: '1.5px solid var(--border)',
+            fontFamily: "'DM Sans', sans-serif", fontSize: '1rem', outline: 'none',
+            background: 'var(--cream)', fontWeight: 600
+          }}
+        />
+      </div>
+
+      {/* Message d'accueil */}
+      <div style={{ background: 'white', border: '1.5px solid var(--border)', borderRadius: 14, padding: '1.2rem', marginBottom: '1rem' }}>
+        <div style={{ fontWeight: 600, marginBottom: '0.3rem' }}>🎉 Message d&apos;accueil</div>
+        <div style={{ fontSize: '0.78rem', color: 'var(--warm-gray)', marginBottom: '0.75rem' }}>
+          Affiché aux clients sur la page de sélection de table. Laissez vide pour ne rien afficher.
+        </div>
+        <textarea
+          value={welcome}
+          onChange={e => setWelcome(e.target.value)}
+          placeholder="Ex: Bienvenue à la soirée du 14 juillet ! Bonne dégustation 🎆"
+          rows={3}
+          style={{
+            width: '100%', padding: '0.6rem 0.75rem', borderRadius: 8,
+            border: '1.5px solid var(--border)', fontFamily: "'DM Sans', sans-serif",
+            fontSize: '0.88rem', outline: 'none', background: 'var(--cream)',
+            resize: 'vertical', lineHeight: 1.5
+          }}
+        />
+      </div>
+
+      <button onClick={save} style={{
+        padding: '0.75rem 2rem', background: saved ? 'var(--green)' : 'var(--dark)',
+        color: 'white', border: 'none', borderRadius: 10, cursor: 'pointer',
+        fontWeight: 700, fontFamily: "'DM Sans', sans-serif", fontSize: '0.95rem',
+        transition: 'background 0.3s'
+      }}>
+        {saved ? '✅ Enregistré !' : '💾 Enregistrer les paramètres'}
+      </button>
     </div>
   );
 }
@@ -779,6 +977,7 @@ function AdminView() {
         <button style={tabStyle('historique')} onClick={() => setActiveTab('historique')}>📊 Historique</button>
         <button style={tabStyle('qr')} onClick={() => setActiveTab('qr')}>📱 QR Code</button>
         <button style={tabStyle('archives')} onClick={() => setActiveTab('archives')}>🗄 Archives</button>
+        <button style={tabStyle('config')} onClick={() => setActiveTab('config')}>🛠 Config</button>
       </div>
 
       {/* TAB MENU */}
@@ -920,10 +1119,58 @@ function AdminView() {
               <span className="menu-admin-price">{item.revenue.toFixed(2)} €</span>
             </div>
           ))}
-          <div style={{ background: 'var(--dark)', color: 'white', borderRadius: 12, padding: '1rem 1.2rem', marginTop: '1rem', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-            <span style={{ fontWeight: 600 }}>Total soirée</span>
-            <span style={{ fontFamily: "'Playfair Display', serif", fontSize: '1.3rem', color: 'var(--gold)' }}>{totalRevenue.toFixed(2)} €</span>
+          {/* Récap financier */}
+          <div style={{ background: 'var(--dark)', color: 'white', borderRadius: 12, padding: '1rem 1.2rem', marginTop: '1rem' }}>
+            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '0.5rem' }}>
+              <span style={{ fontWeight: 600 }}>Total commandes</span>
+              <span style={{ fontFamily: "'Playfair Display', serif", fontSize: '1.1rem', color: 'var(--gold)' }}>{totalRevenue.toFixed(2)} €</span>
+            </div>
+            {(() => { const tips = paidOrders.reduce((s,o) => s + Number(o.tip||0), 0); return tips > 0 && (
+              <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '0.5rem', borderTop: '1px solid #333', paddingTop: '0.5rem' }}>
+                <span style={{ color: '#aaa', fontSize: '0.88rem' }}>dont pourboires</span>
+                <span style={{ color: '#C8953A', fontWeight: 600 }}>+{tips.toFixed(2)} €</span>
+              </div>
+            );})()}
+            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', borderTop: '1px solid #333', paddingTop: '0.5rem' }}>
+              <span style={{ fontWeight: 700 }}>Total encaissé</span>
+              <span style={{ fontFamily: "'Playfair Display', serif", fontSize: '1.3rem', color: 'var(--gold)' }}>
+                {(totalRevenue + paidOrders.reduce((s,o) => s + Number(o.tip||0), 0)).toFixed(2)} €
+              </span>
+            </div>
           </div>
+
+          {/* Rapport de fin de soirée */}
+          {paidOrders.length > 0 && (() => {
+            const tips = paidOrders.reduce((s,o) => s + Number(o.tip||0), 0);
+            const times = paidOrders.map(o => new Date(o.created_at));
+            const start = new Date(Math.min(...times)).toLocaleTimeString('fr-FR', {hour:'2-digit', minute:'2-digit'});
+            const end = new Date(Math.max(...times)).toLocaleTimeString('fr-FR', {hour:'2-digit', minute:'2-digit'});
+            const topTable = Object.entries(paidOrders.reduce((acc, o) => {
+              acc[o.table_num] = (acc[o.table_num] || 0) + Number(o.total);
+              return acc;
+            }, {})).sort((a,b) => b[1]-a[1])[0];
+            const topItem = salesList[0];
+            return (
+              <div style={{ background: '#F0F7FF', border: '1.5px solid #BDD0F5', borderRadius: 14, padding: '1.2rem', marginTop: '1rem' }}>
+                <div style={{ fontWeight: 700, marginBottom: '0.8rem', color: 'var(--blue)', fontSize: '0.95rem' }}>📋 Rapport de soirée</div>
+                <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '0.6rem' }}>
+                  {[
+                    ['🕐 Première commande', start],
+                    ['🕐 Dernière commande', end],
+                    ['🪑 Table top dépense', `Table ${topTable?.[0]} (${Number(topTable?.[1]||0).toFixed(2)} €)`],
+                    ['🏆 Plat le + vendu', topItem ? `${topItem.emoji} ${topItem.name} ×${topItem.qty}` : '-'],
+                    ['🧾 Nb commandes', paidOrders.length],
+                    ['🙏 Pourboires', `${tips.toFixed(2)} €`],
+                  ].map(([label, val]) => (
+                    <div key={label} style={{ background: 'white', borderRadius: 8, padding: '0.6rem 0.75rem' }}>
+                      <div style={{ fontSize: '0.72rem', color: 'var(--warm-gray)' }}>{label}</div>
+                      <div style={{ fontWeight: 600, fontSize: '0.85rem', marginTop: '0.2rem' }}>{val}</div>
+                    </div>
+                  ))}
+                </div>
+              </div>
+            );
+          })()}
 
           <div className="section-title" style={{ marginTop: '1.5rem' }}>Détail des commandes ({paidOrders.length})</div>
           {paidOrders.slice().reverse().map(order => (
@@ -987,6 +1234,9 @@ function AdminView() {
         </>}
       </>}
 
+
+      {/* TAB CONFIG */}
+      {activeTab === 'config' && <ConfigTab />}
       {/* TAB ARCHIVES */}
       {activeTab === 'archives' && <ArchivesTab />}
 
