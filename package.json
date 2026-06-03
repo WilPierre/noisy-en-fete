@@ -7,7 +7,9 @@
     "react-dom": "^18.2.0",
     "react-scripts": "5.0.1",
     "@supabase/supabase-js": "^2.39.0",
-    "qrcode.react": "^3.1.0"
+    "qrcode.react": "^3.1.0",
+    "@stripe/stripe-js": "*",
+    "@stripe/react-stripe-js": "*"
   },
   "scripts": {
     "start": "react-scripts start",
@@ -15,7 +17,13 @@
     "test": "react-scripts test"
   },
   "browserslist": {
-    "production": [">0.2%", "not dead", "not op_mini all"],
-    "development": ["last 1 chrome version"]
+    "production": [
+      ">0.2%",
+      "not dead",
+      "not op_mini all"
+    ],
+    "development": [
+      "last 1 chrome version"
+    ]
   }
 }
