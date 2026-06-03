@@ -563,7 +563,7 @@ function AdminView() {
     if (!window.confirm('⚠️ Supprimer TOUTES les commandes de la soirée ? Cette action est irréversible.')) return;
     setResetting(true);
     await supabase.from('orders').delete().neq('id', 0);
-    await loadOrders();
+    setOrders([]);
     setResetting(false);
     alert('✅ Remise à zéro effectuée ! Prêt pour la prochaine soirée.');
   };
