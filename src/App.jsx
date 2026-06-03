@@ -443,13 +443,14 @@ function ClientView() {
   const settings = useSettings();
 
   // Vérifier si les commandes sont fermées
-  const isClosed = () => {
+  const isClosed = (() => {
     if (settings.closed === 'true') return true;
+    if (settings.closed === 'false') return false; // forcé ouvert par l'admin
     const now = new Date();
     const [h, m] = (settings.closing_time || '22:00').split(':').map(Number);
     const closing = new Date(); closing.setHours(h, m, 0, 0);
     return now >= closing;
-  };
+  })();
 
   useEffect(() => {
     supabase.from('menu').select('*').eq('available', true).order('category').then(({ data }) => {
@@ -485,7 +486,7 @@ function ClientView() {
   const setQty = (id, qty) => setCart(c => ({ ...c, [id]: Math.max(0, qty) }));
   const cartItems = menu.filter(i => cart[i.id] > 0).map(i => ({ name: i.name, qty: cart[i.id], price: i.price, emoji: i.emoji }));
 
-  if (isClosed()) return <ClosedBanner closingTime={settings.closing_time || '22:00'} />;
+  if (isClosed) return <ClosedBanner closingTime={settings.closing_time || '22:00'} />;
   if (!tableNum) return <TableSelector onSelect={setTableNum} welcomeMsg={settings.welcome} />;
 
   if (success) return (
@@ -733,32 +734,36 @@ function ConfigTab() {
     setTimeout(() => setSaved(false), 2000);
   };
 
-  const toggleClosed = async () => {
-    await saveSetting('closed', isClosed ? 'false' : 'true');
-  };
-
   return (
     <div>
       <div className="section-title">🛠 Configuration de la soirée</div>
 
       {/* Statut ouvert/fermé */}
-      <div style={{ background: isClosed ? '#FFF5F5' : '#F0FFF4', border: `1.5px solid ${isClosed ? '#F5C6CB' : '#C3E6CB'}`, borderRadius: 14, padding: '1.2rem', marginBottom: '1rem' }}>
-        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-          <div>
-            <div style={{ fontWeight: 700, color: isClosed ? 'var(--red)' : 'var(--green)' }}>
-              {isClosed ? '🔒 Commandes fermées' : '✅ Commandes ouvertes'}
-            </div>
-            <div style={{ fontSize: '0.78rem', color: 'var(--warm-gray)', marginTop: '0.2rem' }}>
-              {isClosed ? 'Les clients ne peuvent plus commander' : 'Les clients peuvent commander'}
-            </div>
-          </div>
-          <button onClick={toggleClosed} style={{
-            padding: '0.6rem 1.2rem', borderRadius: 8, border: 'none', cursor: 'pointer',
+      <div style={{ background: isClosed ? '#FFF5F5' : '#F0FFF4', border: `2px solid ${isClosed ? '#F5C6CB' : '#C3E6CB'}`, borderRadius: 14, padding: '1.2rem', marginBottom: '1rem' }}>
+        <div style={{ fontWeight: 700, fontSize: '1rem', color: isClosed ? 'var(--red)' : 'var(--green)', marginBottom: '0.3rem' }}>
+          {isClosed ? '🔒 Commandes fermées' : '✅ Commandes ouvertes'}
+        </div>
+        <div style={{ fontSize: '0.78rem', color: 'var(--warm-gray)', marginBottom: '0.9rem' }}>
+          {isClosed
+            ? 'Les clients ne peuvent plus passer de commande.'
+            : 'Les clients peuvent commander normalement.'}
+        </div>
+        <div style={{ display: 'flex', gap: '0.5rem', flexWrap: 'wrap' }}>
+          <button onClick={() => saveSetting('closed', 'false')} style={{
+            flex: 1, minWidth: 140, padding: '0.7rem 1rem', borderRadius: 8, border: 'none', cursor: 'pointer',
             fontWeight: 700, fontFamily: "'DM Sans', sans-serif", fontSize: '0.85rem',
-            background: isClosed ? 'var(--green)' : 'var(--red)', color: 'white'
-          }}>
-            {isClosed ? '🟢 Rouvrir' : '🔴 Fermer maintenant'}
-          </button>
+            background: 'var(--green)', color: 'white',
+            opacity: !isClosed ? 0.5 : 1
+          }}>🟢 Forcer l&apos;ouverture</button>
+          <button onClick={() => saveSetting('closed', 'true')} style={{
+            flex: 1, minWidth: 140, padding: '0.7rem 1rem', borderRadius: 8, border: 'none', cursor: 'pointer',
+            fontWeight: 700, fontFamily: "'DM Sans', sans-serif", fontSize: '0.85rem',
+            background: 'var(--red)', color: 'white',
+            opacity: isClosed ? 0.5 : 1
+          }}>🔴 Fermer maintenant</button>
+        </div>
+        <div style={{ fontSize: '0.72rem', color: 'var(--warm-gray)', marginTop: '0.6rem' }}>
+          💡 &quot;Forcer l&apos;ouverture&quot; ignore l&apos;heure de fermeture automatique
         </div>
       </div>
 
