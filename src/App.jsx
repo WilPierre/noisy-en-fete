@@ -613,17 +613,52 @@ function AdminView() {
         ))}
         <div className="add-item-form">
           <div style={{ fontWeight: 600, marginBottom: '0.8rem', fontSize: '0.9rem' }}>+ Ajouter un plat</div>
+
+          {/* Sélecteur d'emoji par catégorie */}
+          <div style={{ marginBottom: '0.8rem' }}>
+            <label style={{ fontSize: '0.78rem', color: 'var(--warm-gray)', fontWeight: 500, display: 'block', marginBottom: '0.4rem' }}>Choisir un emoji</label>
+            {[
+              { label: '🥗 Entrées', emojis: ['🥗','🍲','🧅','🫕','🥚','🧀','🍱','🥙','🫙','🥣','🐟','🦐','🥓','🫛','🍄','🥕','🧆','🫔'] },
+              { label: '🍽 Plats', emojis: ['🥩','🍗','🍖','🌮','🍝','🍜','🍛','🥘','🫚','🐓','🦞','🦑','🥞','🌯','🍔','🌭','🍕','🥫','🍚','🫓'] },
+              { label: '🍮 Desserts', emojis: ['🍮','🍫','🧁','🎂','🍰','🍩','🍪','🥧','🍨','🍦','🍬','🍭','🍯','🫐','🍓','🍒','🍑','🥝'] },
+              { label: '🍷 Boissons', emojis: ['🍷','🍺','🍻','🥂','🍾','🍸','🍹','🧉','☕','🍵','🧃','🥤','💧','🫖','🧊','🍶'] },
+              { label: '➕ Autres', emojis: ['🎉','⭐','🔥','✨','💯','🏆','👌','😋','🤤','❤️','🌿','🫶','🎊','🪄','💎','🌟'] },
+            ].map(group => (
+              <div key={group.label} style={{ marginBottom: '0.5rem' }}>
+                <div style={{ fontSize: '0.72rem', color: 'var(--warm-gray)', marginBottom: '0.3rem' }}>{group.label}</div>
+                <div style={{ display: 'flex', flexWrap: 'wrap', gap: '0.3rem' }}>
+                  {group.emojis.map(e => (
+                    <button key={e} onClick={() => setForm(f => ({ ...f, emoji: e }))}
+                      style={{
+                        width: 36, height: 36, fontSize: '1.2rem', borderRadius: 8, cursor: 'pointer',
+                        border: form.emoji === e ? '2px solid var(--gold)' : '1.5px solid var(--border)',
+                        background: form.emoji === e ? '#FFF8EE' : 'white',
+                        display: 'flex', alignItems: 'center', justifyContent: 'center',
+                        transition: 'all 0.15s'
+                      }}
+                    >{e}</button>
+                  ))}
+                </div>
+              </div>
+            ))}
+          </div>
+
+          <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', marginBottom: '0.75rem', padding: '0.5rem 0.75rem', background: 'var(--cream)', borderRadius: 8, border: '1.5px solid var(--border)' }}>
+            <span style={{ fontSize: '1.4rem' }}>{form.emoji}</span>
+            <span style={{ fontSize: '0.82rem', color: 'var(--warm-gray)' }}>Emoji sélectionné</span>
+          </div>
+
           <div className="form-row">
-            <div className="form-field"><label>Emoji</label><input value={form.emoji} onChange={e => setForm(f => ({ ...f, emoji: e.target.value }))} /></div>
             <div className="form-field"><label>Catégorie</label>
               <select value={form.category} onChange={e => setForm(f => ({ ...f, category: e.target.value }))}>
                 {['Entrées', 'Plats', 'Desserts', 'Boissons'].map(c => <option key={c}>{c}</option>)}
               </select>
             </div>
-          </div>
-          <div className="form-row">
-            <div className="form-field"><label>Nom du plat</label><input value={form.name} onChange={e => setForm(f => ({ ...f, name: e.target.value }))} placeholder="Ex: Tiramisu" /></div>
             <div className="form-field"><label>Prix (€)</label><input type="number" value={form.price} onChange={e => setForm(f => ({ ...f, price: e.target.value }))} placeholder="0.00" /></div>
+          </div>
+          <div className="form-field" style={{ marginBottom: '0.75rem' }}>
+            <label>Nom du plat</label>
+            <input value={form.name} onChange={e => setForm(f => ({ ...f, name: e.target.value }))} placeholder="Ex: Tiramisu" />
           </div>
           <button className="add-btn" onClick={addItem}>Ajouter au menu</button>
         </div>
