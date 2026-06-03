@@ -503,8 +503,8 @@ function ClientView() {
     if (ls.loyalty_active === 'true' && ls.loyalty_item && ls.loyalty_every) {
       const every = parseInt(ls.loyalty_every);
       items.forEach(item => {
-        if (item.name === ls.loyalty_item && item.qty >= every) {
-          item.free = Math.floor(item.qty / every);
+        if (item.name === ls.loyalty_item && item.qty >= every + 1) {
+          item.free = Math.floor(item.qty / (every + 1));
         }
       });
     }
