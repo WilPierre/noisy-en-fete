@@ -543,6 +543,9 @@ function AdminView() {
   });
   const salesList = Object.values(salesByItem).sort((a, b) => b.qty - a.qty);
 
+  const [editingId, setEditingId] = useState(null);
+  const [editForm, setEditForm] = useState({});
+
   const addItem = async () => {
     if (!form.name || !form.price) return;
     const { data } = await supabase.from('menu').insert({ ...form, price: parseFloat(form.price), available: true }).select();
@@ -557,6 +560,18 @@ function AdminView() {
   const toggleAvail = async (item) => {
     await supabase.from('menu').update({ available: !item.available }).eq('id', item.id);
     setMenu(m => m.map(i => i.id === item.id ? { ...i, available: !i.available } : i));
+  };
+
+  const startEdit = (item) => {
+    setEditingId(item.id);
+    setEditForm({ name: item.name, price: item.price, emoji: item.emoji, category: item.category });
+  };
+
+  const saveEdit = async (id) => {
+    if (!editForm.name || !editForm.price) return;
+    await supabase.from('menu').update({ name: editForm.name, price: parseFloat(editForm.price), emoji: editForm.emoji, category: editForm.category }).eq('id', id);
+    setMenu(m => m.map(i => i.id === id ? { ...i, ...editForm, price: parseFloat(editForm.price) } : i));
+    setEditingId(null);
   };
 
   const handleReset = async () => {
@@ -598,17 +613,52 @@ function AdminView() {
       {activeTab === 'menu' && <>
         <div className="section-title">Menu ({menu.length} articles)</div>
         {menu.map(item => (
-          <div key={item.id} className="menu-admin-item">
-            <span style={{ fontSize: '1.3rem' }}>{item.emoji}</span>
-            <div className="menu-admin-info">
-              <div className="menu-admin-name">{item.name}</div>
-              <div className="menu-admin-cat">{item.category}</div>
-            </div>
-            <span className="menu-admin-price">{Number(item.price).toFixed(2)} €</span>
-            <button className={`avail-toggle ${item.available ? 'on' : 'off'}`} onClick={() => toggleAvail(item)}>
-              {item.available ? '✓ Dispo' : '✗ Indispo'}
-            </button>
-            <button className="del-btn" onClick={() => delItem(item.id)}>✕</button>
+          <div key={item.id}>
+            {editingId === item.id ? (
+              <div style={{ background: '#FFFBF0', border: '2px solid var(--gold)', borderRadius: 12, padding: '1rem', marginBottom: '0.5rem' }}>
+                <div style={{ fontWeight: 600, fontSize: '0.85rem', marginBottom: '0.75rem', color: 'var(--gold)' }}>✏️ Modifier "{item.name}"</div>
+                <div className="form-row">
+                  <div className="form-field">
+                    <label>Emoji</label>
+                    <input value={editForm.emoji} onChange={e => setEditForm(f => ({ ...f, emoji: e.target.value }))} style={{ fontSize: '1.2rem' }} />
+                  </div>
+                  <div className="form-field">
+                    <label>Catégorie</label>
+                    <select value={editForm.category} onChange={e => setEditForm(f => ({ ...f, category: e.target.value }))}>
+                      {['Entrées', 'Plats', 'Desserts', 'Boissons'].map(c => <option key={c}>{c}</option>)}
+                    </select>
+                  </div>
+                </div>
+                <div className="form-row">
+                  <div className="form-field">
+                    <label>Nom du plat</label>
+                    <input value={editForm.name} onChange={e => setEditForm(f => ({ ...f, name: e.target.value }))} />
+                  </div>
+                  <div className="form-field">
+                    <label>Prix (€)</label>
+                    <input type="number" value={editForm.price} onChange={e => setEditForm(f => ({ ...f, price: e.target.value }))} />
+                  </div>
+                </div>
+                <div style={{ display: 'flex', gap: '0.5rem' }}>
+                  <button onClick={() => saveEdit(item.id)} style={{ padding: '0.5rem 1.2rem', background: 'var(--green)', color: 'white', border: 'none', borderRadius: 8, cursor: 'pointer', fontWeight: 700, fontFamily: "'DM Sans', sans-serif" }}>✅ Enregistrer</button>
+                  <button onClick={() => setEditingId(null)} style={{ padding: '0.5rem 1rem', background: 'white', border: '1.5px solid var(--border)', borderRadius: 8, cursor: 'pointer', fontFamily: "'DM Sans', sans-serif" }}>Annuler</button>
+                </div>
+              </div>
+            ) : (
+              <div className="menu-admin-item">
+                <span style={{ fontSize: '1.3rem' }}>{item.emoji}</span>
+                <div className="menu-admin-info">
+                  <div className="menu-admin-name">{item.name}</div>
+                  <div className="menu-admin-cat">{item.category}</div>
+                </div>
+                <span className="menu-admin-price">{Number(item.price).toFixed(2)} €</span>
+                <button className={`avail-toggle ${item.available ? 'on' : 'off'}`} onClick={() => toggleAvail(item)}>
+                  {item.available ? '✓ Dispo' : '✗ Indispo'}
+                </button>
+                <button onClick={() => startEdit(item)} style={{ padding: '0.3rem 0.6rem', background: 'transparent', border: '1.5px solid var(--border)', borderRadius: 6, cursor: 'pointer', fontSize: '0.8rem', color: 'var(--blue)', transition: 'all 0.2s' }}>✏️</button>
+                <button className="del-btn" onClick={() => delItem(item.id)}>✕</button>
+              </div>
+            )}
           </div>
         ))}
         <div className="add-item-form">
