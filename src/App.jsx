@@ -581,7 +581,7 @@ function ClientView() {
                   <div className="item-info">
                     <div className="item-name">{item.name}</div>
                     <div className="item-price">{Number(item.price).toFixed(2)} €</div>
-                    {settings.loyalty_active === 'true' && settings.loyalty_item === item.name && (
+                    {settings.loyalty_active === 'true' && settings.loyalty_item && item.name && settings.loyalty_item.trim() === item.name.trim() && (
                       <div style={{
                         display: 'inline-flex', alignItems: 'center', gap: '0.3rem',
                         marginTop: '0.3rem', background: '#FFF8EE',
@@ -589,7 +589,7 @@ function ClientView() {
                         padding: '0.2rem 0.5rem', fontSize: '0.72rem',
                         color: 'var(--gold)', fontWeight: 600
                       }}>
-                        🎁 1 offerte toutes les {settings.loyalty_every} achetées
+                        🎁 1 offerte toutes les {settings.loyalty_every || '4'} achetées
                       </div>
                     )}
                   </div>
