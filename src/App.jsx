@@ -272,7 +272,7 @@ function TableSelector({ onSelect, welcomeMsg }) {
           fontWeight: 500, lineHeight: 1.5
         }}>🎉 {welcomeMsg}</div>
       )}
-      <div style={{ fontFamily: "'Playfair Display', serif", fontSize: "1.8rem" }}>🪑 Votre table</div>
+      <div style={{ fontFamily: "'Playfair Display', serif", fontSize: "1.8rem" }}>Votre table</div>
       <p style={{ color: "var(--warm-gray)", fontSize: "1rem", marginTop: "0.5rem", fontWeight: 500 }}>Quel est votre numéro de table / emplacement ?</p>
       <div className="table-grid">
         {Array.from({ length: 28 }, (_, i) => i + 1).map(n => (
