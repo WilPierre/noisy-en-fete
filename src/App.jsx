@@ -366,52 +366,51 @@ const THEMES = {
 };
 
 function useTheme() {
-  const [theme, setThemeState] = useState('Classique');
-  const [customColors, setCustomColors] = useState({});
+  const settings = useSettings();
 
   useEffect(() => {
-    supabase.from('settings').select('*').then(({ data }) => {
-      if (data) {
-        const s = {};
-        data.forEach(r => s[r.key] = r.value);
-        if (s.theme_name) setThemeState(s.theme_name);
-        if (s.theme_custom) {
-          try { setCustomColors(JSON.parse(s.theme_custom)); } catch(e) {}
-        }
-      }
-    });
-  }, []);
-
-  useEffect(() => {
-    const base = THEMES[theme] || THEMES['Classique'];
-    const merged = { ...base, ...customColors };
+    const themeName = settings.theme_name || 'Classique';
+    const base = THEMES[themeName] || THEMES['Classique'];
+    let custom = {};
+    try { custom = JSON.parse(settings.theme_custom || '{}'); } catch(e) {}
+    const merged = { ...base, ...custom };
     Object.entries(merged).forEach(([k, v]) => document.documentElement.style.setProperty(k, v));
-  }, [theme, customColors]);
-
-  return { theme, customColors, setThemeState, setCustomColors };
+  }, [settings.theme_name, settings.theme_custom]);
 }
 
-// ─── SETTINGS (message accueil + heure fermeture) ────────────────────────────
+// ─── SETTINGS STORE (singleton global) ───────────────────────────────────────
+const _settingsStore = {
+  data: { welcome: '', closing_time: '22:00', closed: 'false', urgent_active: 'false', urgent_msg: '', tracking_active: 'false', fidelite_active: 'false', loyalty_active: 'false', theme_name: 'Classique', theme_custom: '{}', event_name: 'Noisy en Fête' },
+  listeners: new Set(),
+  channel: null,
+  loaded: false,
+
+  subscribe(fn) { this.listeners.add(fn); return () => this.listeners.delete(fn); },
+  notify() { this.listeners.forEach(fn => fn({ ...this.data })); },
+
+  async load() {
+    const { data } = await supabase.from('settings').select('*');
+    if (data) { data.forEach(r => { this.data[r.key] = r.value; }); this.loaded = true; this.notify(); }
+  },
+
+  startRealtime() {
+    if (this.channel) return;
+    this.channel = supabase.channel('settings-global')
+      .on('postgres_changes', { event: '*', schema: 'public', table: 'settings' }, () => this.load())
+      .subscribe();
+  }
+};
+
+// Charger au démarrage
+_settingsStore.load();
+_settingsStore.startRealtime();
+
 function useSettings() {
-  const [settings, setSettings] = useState({ welcome: '', closing_time: '22:00', closed: false });
-
+  const [settings, setSettings] = useState({ ..._settingsStore.data });
   useEffect(() => {
-    supabase.from('settings').select('*').then(({ data }) => {
-      if (data) data.forEach(row => setSettings(s => ({ ...s, [row.key]: row.value })));
-    });
-    const channel = supabase.channel('settings-watch')
-      .on('postgres_changes', { event: '*', schema: 'public', table: 'settings' }, () => {
-        supabase.from('settings').select('*').then(({ data }) => {
-          if (data) {
-            const s = {};
-            data.forEach(row => s[row.key] = row.value);
-            setSettings(prev => ({ ...prev, ...s }));
-          }
-        });
-      }).subscribe();
-    return () => supabase.removeChannel(channel);
+    setSettings({ ..._settingsStore.data });
+    return _settingsStore.subscribe(s => setSettings({ ...s }));
   }, []);
-
   return settings;
 }
 
