@@ -1500,7 +1500,10 @@ export default function App() {
       <style>{css}</style>
       <div className="app">
         <nav className="nav">
-          <span className="nav-title">🎉 {RESTAURANT}</span>
+          <span className="nav-title">
+            <img src="/icon32.png" alt="" style={{ width: 28, height: 28, verticalAlign: 'middle', marginRight: '0.4rem', borderRadius: 4 }} />
+            {RESTAURANT}
+          </span>
           <button className={`nav-btn ${view === 'client' ? 'active' : ''}`} onClick={() => requestView('client')}>📱 Commander</button>
           <button className={`nav-btn ${view === 'kitchen' ? 'active' : ''}`} onClick={() => requestView('kitchen')}>🍳</button>
           <button className={`nav-btn ${view === 'admin' ? 'active' : ''}`} onClick={() => requestView('admin')}>⚙️</button>
