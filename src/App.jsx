@@ -331,6 +331,66 @@ function NotificationBanner({ onAccept, onDecline }) {
   );
 }
 
+// ─── THEME SYSTEM ────────────────────────────────────────────────────────────
+const THEMES = {
+  'Classique': {
+    '--cream': '#FAF7F2', '--dark': '#1A1208', '--gold': '#C8953A',
+    '--gold-light': '#E8B96A', '--green': '#2D5016', '--red': '#8B2020',
+    '--warm-gray': '#8A7F72', '--border': '#E8E0D4', '--blue': '#1A4E7A',
+  },
+  'Nuit': {
+    '--cream': '#1A1A2E', '--dark': '#E0E0E0', '--gold': '#F0C040',
+    '--gold-light': '#FFD700', '--green': '#4CAF50', '--red': '#EF5350',
+    '--warm-gray': '#9E9E9E', '--border': '#333355', '--blue': '#42A5F5',
+  },
+  'Nature': {
+    '--cream': '#F1F8E9', '--dark': '#1B5E20', '--gold': '#558B2F',
+    '--gold-light': '#7CB342', '--green': '#2E7D32', '--red': '#C62828',
+    '--warm-gray': '#6D8C54', '--border': '#C8E6C9', '--blue': '#0277BD',
+  },
+  'Océan': {
+    '--cream': '#E3F2FD', '--dark': '#0D47A1', '--gold': '#0288D1',
+    '--gold-light': '#29B6F6', '--green': '#00695C', '--red': '#D32F2F',
+    '--warm-gray': '#546E7A', '--border': '#BBDEFB', '--blue': '#01579B',
+  },
+  'Fête': {
+    '--cream': '#FFF0F5', '--dark': '#880E4F', '--gold': '#E91E63',
+    '--gold-light': '#F48FB1', '--green': '#388E3C', '--red': '#B71C1C',
+    '--warm-gray': '#AD6988', '--border': '#F8BBD9', '--blue': '#7B1FA2',
+  },
+  'Automne': {
+    '--cream': '#FFF8F0', '--dark': '#3E1F00', '--gold': '#E65100',
+    '--gold-light': '#FF8F00', '--green': '#33691E', '--red': '#B71C1C',
+    '--warm-gray': '#8D6E63', '--border': '#FFE0B2', '--blue': '#1565C0',
+  },
+};
+
+function useTheme() {
+  const [theme, setThemeState] = useState('Classique');
+  const [customColors, setCustomColors] = useState({});
+
+  useEffect(() => {
+    supabase.from('settings').select('*').then(({ data }) => {
+      if (data) {
+        const s = {};
+        data.forEach(r => s[r.key] = r.value);
+        if (s.theme_name) setThemeState(s.theme_name);
+        if (s.theme_custom) {
+          try { setCustomColors(JSON.parse(s.theme_custom)); } catch(e) {}
+        }
+      }
+    });
+  }, []);
+
+  useEffect(() => {
+    const base = THEMES[theme] || THEMES['Classique'];
+    const merged = { ...base, ...customColors };
+    Object.entries(merged).forEach(([k, v]) => document.documentElement.style.setProperty(k, v));
+  }, [theme, customColors]);
+
+  return { theme, customColors, setThemeState, setCustomColors };
+}
+
 // ─── SETTINGS (message accueil + heure fermeture) ────────────────────────────
 function useSettings() {
   const [settings, setSettings] = useState({ welcome: '', closing_time: '22:00', closed: false });
@@ -818,6 +878,156 @@ function KitchenView() {
   );
 }
 
+// ─── THEME TAB ───────────────────────────────────────────────────────────────
+function ThemeTab() {
+  const [selectedTheme, setSelectedTheme] = useState('Classique');
+  const [customColors, setCustomColors] = useState({});
+  const [saved, setSaved] = useState(false);
+  const [preview, setPreview] = useState({});
+
+  useEffect(() => {
+    supabase.from('settings').select('*').then(({ data }) => {
+      if (data) {
+        const s = {};
+        data.forEach(r => s[r.key] = r.value);
+        if (s.theme_name) setSelectedTheme(s.theme_name);
+        if (s.theme_custom) {
+          try { setCustomColors(JSON.parse(s.theme_custom)); } catch(e) {}
+        }
+      }
+    });
+  }, []);
+
+  const applyTheme = (name) => {
+    setSelectedTheme(name);
+    setCustomColors({});
+    const vars = THEMES[name];
+    Object.entries(vars).forEach(([k, v]) => document.documentElement.style.setProperty(k, v));
+  };
+
+  const updateColor = (key, value) => {
+    const updated = { ...customColors, [key]: value };
+    setCustomColors(updated);
+    document.documentElement.style.setProperty(key, value);
+  };
+
+  const save = async () => {
+    await saveSetting('theme_name', selectedTheme);
+    await saveSetting('theme_custom', JSON.stringify(customColors));
+    setSaved(true);
+    setTimeout(() => setSaved(false), 2000);
+  };
+
+  const currentVars = { ...THEMES[selectedTheme], ...customColors };
+
+  const colorFields = [
+    { key: '--cream', label: '🎨 Fond de page' },
+    { key: '--dark', label: '✍️ Texte principal' },
+    { key: '--gold', label: '⭐ Couleur principale' },
+    { key: '--gold-light', label: '✨ Couleur secondaire' },
+    { key: '--border', label: '📐 Bordures' },
+    { key: '--warm-gray', label: '💬 Texte secondaire' },
+    { key: '--green', label: '✅ Succès / Dispo' },
+    { key: '--red', label: '❌ Erreur / Suppression' },
+  ];
+
+  return (
+    <div>
+      <div className="section-title">🎨 Thème de l&apos;interface</div>
+
+      {/* Thèmes prédéfinis */}
+      <div style={{ marginBottom: '1.5rem' }}>
+        <div style={{ fontSize: '0.82rem', color: 'var(--warm-gray)', fontWeight: 500, marginBottom: '0.75rem' }}>
+          Thèmes prédéfinis — cliquez pour prévisualiser
+        </div>
+        <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(130px, 1fr))', gap: '0.75rem' }}>
+          {Object.entries(THEMES).map(([name, vars]) => (
+            <button key={name} onClick={() => applyTheme(name)}
+              style={{
+                borderRadius: 12, border: selectedTheme === name ? '3px solid var(--gold)' : '2px solid var(--border)',
+                cursor: 'pointer', overflow: 'hidden', background: 'white',
+                boxShadow: selectedTheme === name ? '0 4px 16px rgba(0,0,0,0.15)' : 'none',
+                transition: 'all 0.2s'
+              }}>
+              {/* Preview du thème */}
+              <div style={{ background: vars['--cream'], padding: '0.75rem 0.5rem' }}>
+                <div style={{ background: vars['--dark'], borderRadius: 6, padding: '0.3rem 0.5rem', marginBottom: '0.4rem', display: 'flex', gap: '0.3rem', alignItems: 'center' }}>
+                  <div style={{ width: 8, height: 8, borderRadius: '50%', background: vars['--gold'] }} />
+                  <div style={{ height: 4, width: '60%', borderRadius: 2, background: vars['--gold'], opacity: 0.7 }} />
+                </div>
+                <div style={{ background: 'white', borderRadius: 6, padding: '0.3rem 0.5rem', border: `1px solid ${vars['--border']}` }}>
+                  <div style={{ height: 4, width: '80%', borderRadius: 2, background: vars['--dark'], opacity: 0.6, marginBottom: '0.25rem' }} />
+                  <div style={{ height: 4, width: '50%', borderRadius: 2, background: vars['--gold'] }} />
+                </div>
+              </div>
+              <div style={{ padding: '0.4rem', background: selectedTheme === name ? '#FFF8EE' : 'white', fontSize: '0.78rem', fontWeight: 600, color: selectedTheme === name ? 'var(--gold)' : 'var(--dark)', textAlign: 'center', fontFamily: "'DM Sans', sans-serif" }}>
+                {selectedTheme === name ? '✓ ' : ''}{name}
+              </div>
+            </button>
+          ))}
+        </div>
+      </div>
+
+      {/* Personnalisation fine */}
+      <div style={{ background: 'white', border: '1.5px solid var(--border)', borderRadius: 14, padding: '1.2rem', marginBottom: '1rem' }}>
+        <div style={{ fontWeight: 600, marginBottom: '0.75rem', fontSize: '0.9rem' }}>🖌 Personnalisation fine</div>
+        <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '0.75rem' }}>
+          {colorFields.map(({ key, label }) => (
+            <div key={key} style={{ display: 'flex', alignItems: 'center', gap: '0.6rem' }}>
+              <input type="color" value={currentVars[key] || '#ffffff'}
+                onChange={e => updateColor(key, e.target.value)}
+                style={{ width: 36, height: 36, borderRadius: 8, border: '1.5px solid var(--border)', cursor: 'pointer', padding: 2 }}
+              />
+              <div>
+                <div style={{ fontSize: '0.75rem', fontWeight: 600, color: 'var(--dark)' }}>{label}</div>
+                <div style={{ fontSize: '0.68rem', color: 'var(--warm-gray)', fontFamily: 'monospace' }}>{currentVars[key]}</div>
+              </div>
+            </div>
+          ))}
+        </div>
+      </div>
+
+      {/* Aperçu rapide */}
+      <div style={{ background: 'var(--cream)', border: '1.5px solid var(--border)', borderRadius: 14, padding: '1rem', marginBottom: '1rem' }}>
+        <div style={{ fontSize: '0.78rem', color: 'var(--warm-gray)', marginBottom: '0.5rem' }}>👁 Aperçu en direct</div>
+        <div style={{ background: 'var(--dark)', borderRadius: 8, padding: '0.5rem 0.75rem', display: 'flex', gap: '0.5rem', alignItems: 'center', marginBottom: '0.5rem' }}>
+          <div style={{ color: 'var(--gold)', fontWeight: 700, fontSize: '0.85rem' }}>🎉 Noisy en Fête</div>
+          <div style={{ marginLeft: 'auto', background: 'var(--gold)', borderRadius: 100, padding: '0.2rem 0.7rem', fontSize: '0.72rem', fontWeight: 600, color: 'var(--dark)' }}>Commander</div>
+        </div>
+        <div style={{ background: 'white', borderRadius: 8, padding: '0.75rem', border: '1.5px solid var(--border)', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+          <div>
+            <div style={{ fontWeight: 500, fontSize: '0.85rem', color: 'var(--dark)' }}>🍷 Vin rouge</div>
+            <div style={{ color: 'var(--gold)', fontWeight: 600, fontSize: '0.78rem' }}>5.50 €</div>
+          </div>
+          <div style={{ display: 'flex', gap: '0.3rem', alignItems: 'center' }}>
+            <div style={{ width: 24, height: 24, borderRadius: '50%', border: '1.5px solid var(--border)', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: '0.8rem', background: 'white' }}>−</div>
+            <span style={{ fontWeight: 600, fontSize: '0.85rem' }}>0</span>
+            <div style={{ width: 24, height: 24, borderRadius: '50%', border: '1.5px solid var(--border)', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: '0.8rem', background: 'white' }}>+</div>
+          </div>
+        </div>
+      </div>
+
+      <div style={{ display: 'flex', gap: '0.75rem', alignItems: 'center' }}>
+        <button onClick={save} style={{
+          padding: '0.75rem 2rem', background: saved ? 'var(--green)' : 'var(--dark)',
+          color: 'white', border: 'none', borderRadius: 10, cursor: 'pointer',
+          fontWeight: 700, fontFamily: "'DM Sans', sans-serif", fontSize: '0.95rem',
+          transition: 'background 0.3s'
+        }}>
+          {saved ? '✅ Thème enregistré !' : '💾 Enregistrer le thème'}
+        </button>
+        <button onClick={() => applyTheme('Classique')} style={{
+          padding: '0.75rem 1.2rem', background: 'white', color: 'var(--dark)',
+          border: '1.5px solid var(--border)', borderRadius: 10, cursor: 'pointer',
+          fontFamily: "'DM Sans', sans-serif", fontSize: '0.85rem'
+        }}>
+          ↩ Réinitialiser
+        </button>
+      </div>
+    </div>
+  );
+}
+
 // ─── CONFIG TAB ──────────────────────────────────────────────────────────────
 function ConfigTab() {
   const settings = useSettings();
@@ -1139,6 +1349,7 @@ function AdminView() {
         <button style={tabStyle('qr')} onClick={() => setActiveTab('qr')}>📱 QR Code</button>
         <button style={tabStyle('archives')} onClick={() => setActiveTab('archives')}>🗄 Archives</button>
         <button style={tabStyle('config')} onClick={() => setActiveTab('config')}>🛠 Config</button>
+        <button style={tabStyle('theme')} onClick={() => setActiveTab('theme')}>🎨 Thème</button>
       </div>
 
       {/* TAB MENU */}
@@ -1421,6 +1632,9 @@ function AdminView() {
 
       {/* TAB CONFIG */}
       {activeTab === 'config' && <ConfigTab />}
+
+      {/* TAB THEME */}
+      {activeTab === 'theme' && <ThemeTab />}
       {/* TAB ARCHIVES */}
       {activeTab === 'archives' && <ArchivesTab />}
 
@@ -1489,6 +1703,7 @@ function PinModal({ title, onSuccess, onClose }) {
 export default function App() {
   const [view, setView] = useState('client');
   const [pinTarget, setPinTarget] = useState(null);
+  useTheme();
 
   const requestView = (target) => {
     if (target === 'client') { setView('client'); return; }
@@ -1501,7 +1716,7 @@ export default function App() {
       <div className="app">
         <nav className="nav">
           <span className="nav-title">
-            <img src="/icon32.png" alt="" style={{ width: 60, height: 60, verticalAlign: 'middle', marginRight: '0.4rem', borderRadius: 4 }} />
+            <img src="/icon32.png" alt="" style={{ width: 40, height: 40, verticalAlign: 'middle', marginRight: '0.4rem', borderRadius: 4 }} />
             {RESTAURANT}
           </span>
           <button className={`nav-btn ${view === 'client' ? 'active' : ''}`} onClick={() => requestView('client')}>📱 Commander</button>
