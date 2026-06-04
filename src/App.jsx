@@ -441,6 +441,61 @@ function ClosedBanner({ closingTime }) {
   );
 }
 
+// ─── PROMO CODE FIELD ────────────────────────────────────────────────────────
+function PromoCodeField({ onApply }) {
+  const [code, setCode] = useState('');
+  const [status, setStatus] = useState('');
+  const [applied, setApplied] = useState(false);
+
+  const checkCode = async () => {
+    if (!code.trim()) return;
+    const { data } = await supabase.from('promos')
+      .select('*').eq('code', code.toUpperCase().trim()).eq('active', true).single();
+
+    if (!data) { setStatus('❌ Code invalide ou inactif'); return; }
+    if (data.uses >= data.max_uses) { setStatus('❌ Ce code a atteint sa limite d'utilisation'); return; }
+
+    // Incrémenter le compteur d'utilisations
+    await supabase.from('promos').update({ uses: data.uses + 1 }).eq('id', data.id);
+    onApply(data.discount);
+    setApplied(true);
+    setStatus(`✅ Code appliqué ! -${data.discount}% sur votre commande`);
+  };
+
+  if (applied) return (
+    <div style={{ background: '#D4EDDA', border: '1px solid #C3E6CB', borderRadius: 10, padding: '0.6rem 0.9rem', marginTop: '0.75rem', fontSize: '0.82rem', color: '#155724', fontWeight: 600 }}>
+      {status}
+    </div>
+  );
+
+  return (
+    <div style={{ marginTop: '0.75rem' }}>
+      <div style={{ fontSize: '0.82rem', fontWeight: 600, color: 'var(--warm-gray)', marginBottom: '0.4rem' }}>🏷 Code promo</div>
+      <div style={{ display: 'flex', gap: '0.5rem' }}>
+        <input
+          value={code} onChange={e => setCode(e.target.value.toUpperCase())}
+          onKeyDown={e => e.key === 'Enter' && checkCode()}
+          placeholder="Ex: MERCI10"
+          style={{
+            flex: 1, padding: '0.55rem 0.75rem', borderRadius: 8,
+            border: '1.5px solid var(--border)', fontFamily: "'DM Sans', sans-serif",
+            fontSize: '0.9rem', outline: 'none', background: 'var(--cream)',
+            textTransform: 'uppercase', fontWeight: 600, letterSpacing: '0.05em'
+          }}
+        />
+        <button onClick={checkCode} style={{
+          padding: '0.55rem 1rem', borderRadius: 8, border: 'none',
+          background: 'var(--dark)', color: 'white', fontWeight: 600,
+          cursor: 'pointer', fontFamily: "'DM Sans', sans-serif", fontSize: '0.82rem'
+        }}>Appliquer</button>
+      </div>
+      {status && !applied && (
+        <div style={{ fontSize: '0.78rem', color: 'var(--red)', marginTop: '0.4rem' }}>{status}</div>
+      )}
+    </div>
+  );
+}
+
 // ─── RECEIPT EMAIL FORM ──────────────────────────────────────────────────────
 function ReceiptEmailForm({ orderId }) {
   const [email, setEmail] = useState('');
@@ -505,6 +560,7 @@ function ClientView() {
   const [notified, setNotified] = useState(false);
   const [comment, setComment] = useState('');
   const [selectedExtras, setSelectedExtras] = useState({});
+  const [promoDiscount, setPromoDiscount] = useState(0);
   const settings = useSettings();
 
   // Vérifier si les commandes sont fermées
@@ -572,7 +628,8 @@ function ClientView() {
   })();
 
   const loyaltyDiscount = cartItems.reduce((s, i) => s + i.free * i.price, 0);
-  const totalPrice = basePrice + extrasTotal - loyaltyDiscount;
+  const promoAmount = promoDiscount > 0 ? Math.round((basePrice + extrasTotal - loyaltyDiscount) * promoDiscount) / 100 : 0;
+  const totalPrice = basePrice + extrasTotal - loyaltyDiscount - promoAmount;
 
   if (isClosed) return <ClosedBanner closingTime={settings.closing_time || '22:00'} />;
   if (!tableNum) return <TableSelector onSelect={setTableNum} welcomeMsg={settings.welcome} />;
@@ -722,10 +779,19 @@ function ClientView() {
                 <span>-{loyaltyDiscount.toFixed(2)} €</span>
               </div>
             )}
+            {promoAmount > 0 && (
+              <div className="cart-line" style={{ color: 'var(--green)', fontWeight: 600 }}>
+                <span>🏷 Code promo -{promoDiscount}%</span>
+                <span>-{promoAmount.toFixed(2)} €</span>
+              </div>
+            )}
             <div className="cart-total-line">
               <span>Total</span>
               <span style={{ color: 'var(--gold)' }}>{totalPrice.toFixed(2)} €</span>
             </div>
+            {/* CODE PROMO */}
+            <PromoCodeField onApply={(discount) => setPromoDiscount(discount)} />
+
             <div style={{ marginTop: '1rem' }}>
               <div style={{ fontSize: '0.82rem', fontWeight: 600, color: 'var(--warm-gray)', marginBottom: '0.4rem' }}>
                 💬 Commentaire / demande spéciale
@@ -749,7 +815,7 @@ function ClientView() {
                 tableNum={tableNum}
                 cartItems={cartItems}
                 comment={comment}
-                onSuccess={(id) => { setOrderId(id); setSuccess(true); setCart({}); setShowCart(false); setComment(''); }}
+                onSuccess={(id) => { setOrderId(id); setSuccess(true); setCart({}); setShowCart(false); setComment(''); setPromoDiscount(0); }}
               />
             </Elements>
           </div>
@@ -874,6 +940,135 @@ function KitchenView() {
           ))}
         </div>
       )}
+    </div>
+  );
+}
+
+// ─── PROMOS TAB ──────────────────────────────────────────────────────────────
+function PromosTab() {
+  const [promos, setPromos] = useState([]);
+  const [form, setForm] = useState({ code: '', discount: '10', maxUses: '1', active: true });
+  const [loading, setLoading] = useState(true);
+  const [msg, setMsg] = useState('');
+
+  const loadPromos = () => {
+    supabase.from('promos').select('*').order('created_at', { ascending: false })
+      .then(({ data }) => { if (data) setPromos(data); setLoading(false); });
+  };
+
+  useEffect(() => { loadPromos(); }, []);
+
+  const addPromo = async () => {
+    if (!form.code || !form.discount) return;
+    const code = form.code.toUpperCase().trim();
+    const { error } = await supabase.from('promos').insert({
+      code, discount: parseFloat(form.discount),
+      max_uses: parseInt(form.maxUses), uses: 0, active: form.active
+    });
+    if (error) { setMsg('❌ Ce code existe déjà !'); setTimeout(() => setMsg(''), 3000); return; }
+    setForm({ code: '', discount: '10', maxUses: '1', active: true });
+    setMsg('✅ Code promo créé !'); setTimeout(() => setMsg(''), 2000);
+    loadPromos();
+  };
+
+  const togglePromo = async (id, active) => {
+    await supabase.from('promos').update({ active: !active }).eq('id', id);
+    loadPromos();
+  };
+
+  const deletePromo = async (id) => {
+    if (!window.confirm('Supprimer ce code promo ?')) return;
+    await supabase.from('promos').delete().eq('id', id);
+    loadPromos();
+  };
+
+  return (
+    <div>
+      <div className="section-title">🏷 Codes promotionnels</div>
+
+      {/* Formulaire création */}
+      <div style={{ background: 'white', border: '1.5px solid var(--border)', borderRadius: 14, padding: '1.2rem', marginBottom: '1.5rem' }}>
+        <div style={{ fontWeight: 600, marginBottom: '0.75rem', fontSize: '0.9rem' }}>+ Créer un code promo</div>
+        <div className="form-row">
+          <div className="form-field">
+            <label>Code promo</label>
+            <input
+              value={form.code}
+              onChange={e => setForm(f => ({ ...f, code: e.target.value.toUpperCase() }))}
+              placeholder="Ex: MERCI10"
+              style={{ textTransform: 'uppercase', fontWeight: 700, letterSpacing: '0.05em' }}
+            />
+          </div>
+          <div className="form-field">
+            <label>Réduction (%)</label>
+            <input type="number" min="1" max="100" value={form.discount}
+              onChange={e => setForm(f => ({ ...f, discount: e.target.value }))}
+              placeholder="10"
+            />
+          </div>
+        </div>
+        <div className="form-row">
+          <div className="form-field">
+            <label>Nombre d&apos;utilisations max</label>
+            <input type="number" min="1" value={form.maxUses}
+              onChange={e => setForm(f => ({ ...f, maxUses: e.target.value }))}
+              placeholder="1"
+            />
+          </div>
+          <div className="form-field" style={{ justifyContent: 'flex-end' }}>
+            <label style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', cursor: 'pointer', marginTop: '1.2rem' }}>
+              <input type="checkbox" checked={form.active}
+                onChange={e => setForm(f => ({ ...f, active: e.target.checked }))}
+                style={{ accentColor: 'var(--gold)', width: 16, height: 16 }}
+              />
+              <span>Actif immédiatement</span>
+            </label>
+          </div>
+        </div>
+        {form.code && form.discount && (
+          <div style={{ background: '#FFF8EE', border: '1px solid var(--gold)', borderRadius: 8, padding: '0.5rem 0.75rem', fontSize: '0.82rem', marginBottom: '0.75rem', color: 'var(--dark)' }}>
+            🏷 Le code <strong>{form.code || '...'}</strong> donnera <strong>{form.discount}% de réduction</strong>, utilisable <strong>{form.maxUses} fois</strong>
+          </div>
+        )}
+        {msg && <div style={{ fontSize: '0.82rem', marginBottom: '0.5rem', color: msg.startsWith('✅') ? 'var(--green)' : 'var(--red)' }}>{msg}</div>}
+        <button className="add-btn" onClick={addPromo}>Créer le code promo</button>
+      </div>
+
+      {/* Liste des promos */}
+      <div style={{ fontWeight: 600, fontSize: '0.9rem', marginBottom: '0.75rem', color: 'var(--warm-gray)' }}>
+        Codes actifs et passés ({promos.length})
+      </div>
+      {loading ? <div className="pulse" style={{ color: 'var(--warm-gray)', fontSize: '0.85rem' }}>Chargement...</div> :
+        promos.length === 0 ? (
+          <div className="empty-state"><div className="empty-icon">🏷</div><div>Aucun code promo créé</div></div>
+        ) : promos.map(promo => (
+          <div key={promo.id} style={{
+            background: 'white', border: `1.5px solid ${promo.active ? 'var(--green)' : 'var(--border)'}`,
+            borderRadius: 12, padding: '0.9rem 1rem', marginBottom: '0.5rem',
+            display: 'flex', alignItems: 'center', gap: '0.75rem', flexWrap: 'wrap'
+          }}>
+            <div style={{ background: promo.active ? '#D4EDDA' : '#F8F8F8', borderRadius: 8, padding: '0.4rem 0.8rem' }}>
+              <span style={{ fontWeight: 800, fontSize: '1rem', letterSpacing: '0.05em', color: promo.active ? 'var(--green)' : 'var(--warm-gray)', fontFamily: 'monospace' }}>
+                {promo.code}
+              </span>
+            </div>
+            <div style={{ flex: 1 }}>
+              <div style={{ fontWeight: 600, fontSize: '0.88rem' }}>−{promo.discount}% de réduction</div>
+              <div style={{ fontSize: '0.75rem', color: 'var(--warm-gray)', marginTop: '0.1rem' }}>
+                {promo.uses}/{promo.max_uses} utilisation{promo.max_uses > 1 ? 's' : ''}
+                {promo.uses >= promo.max_uses && ' — Épuisé'}
+              </div>
+            </div>
+            <div style={{ display: 'flex', gap: '0.4rem' }}>
+              <button onClick={() => togglePromo(promo.id, promo.active)}
+                className={`avail-toggle ${promo.active ? 'on' : 'off'}`}>
+                {promo.active ? '✓ Actif' : '✗ Inactif'}
+              </button>
+              <button className="del-btn" onClick={() => deletePromo(promo.id)}>✕</button>
+            </div>
+          </div>
+        ))
+      }
     </div>
   );
 }
@@ -1350,6 +1545,7 @@ function AdminView() {
         <button style={tabStyle('archives')} onClick={() => setActiveTab('archives')}>🗄 Archives</button>
         <button style={tabStyle('config')} onClick={() => setActiveTab('config')}>🛠 Config</button>
         <button style={tabStyle('theme')} onClick={() => setActiveTab('theme')}>🎨 Thème</button>
+        <button style={tabStyle('promos')} onClick={() => setActiveTab('promos')}>🏷 Promos</button>
       </div>
 
       {/* TAB MENU */}
@@ -1635,6 +1831,9 @@ function AdminView() {
 
       {/* TAB THEME */}
       {activeTab === 'theme' && <ThemeTab />}
+
+      {/* TAB PROMOS */}
+      {activeTab === 'promos' && <PromosTab />}
       {/* TAB ARCHIVES */}
       {activeTab === 'archives' && <ArchivesTab />}
 
