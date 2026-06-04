@@ -1501,7 +1501,7 @@ export default function App() {
       <div className="app">
         <nav className="nav">
           <span className="nav-title">
-            <img src="/icon32.png" alt="" style={{ width: 28, height: 28, verticalAlign: 'middle', marginRight: '0.4rem', borderRadius: 4 }} />
+            <img src="/icon32.png" alt="" style={{ width: 60, height: 60, verticalAlign: 'middle', marginRight: '0.4rem', borderRadius: 4 }} />
             {RESTAURANT}
           </span>
           <button className={`nav-btn ${view === 'client' ? 'active' : ''}`} onClick={() => requestView('client')}>📱 Commander</button>
