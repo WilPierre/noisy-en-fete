@@ -422,6 +422,11 @@ async function saveSetting(key, value) {
   }
 }
 
+async function sendUrgentMessage(msg) {
+  await saveSetting('urgent_msg', msg);
+  await saveSetting('urgent_active', 'true');
+}
+
 // ─── CLOSED BANNER ───────────────────────────────────────────────────────────
 function ClosedBanner({ closingTime }) {
   return (
@@ -492,6 +497,208 @@ function PromoCodeField({ onApply }) {
       {status && !applied && (
         <div style={{ fontSize: '0.78rem', color: 'var(--red)', marginTop: '0.4rem' }}>{status}</div>
       )}
+    </div>
+  );
+}
+
+// ─── GRAND ECRAN TV ──────────────────────────────────────────────────────────
+function GrandEcran() {
+  const [orders, setOrders] = useState([]);
+  const [time, setTime] = useState(new Date());
+
+  const fetchOrders = async () => {
+    const { data } = await supabase.from('orders').select('*').eq('paid', true).in('status', ['prêt']).order('created_at', { ascending: true });
+    if (data) setOrders(data);
+  };
+
+  useEffect(() => {
+    fetchOrders();
+    const channel = supabase.channel('ecran-live')
+      .on('postgres_changes', { event: '*', schema: 'public', table: 'orders' }, fetchOrders)
+      .subscribe();
+    const timer = setInterval(() => setTime(new Date()), 1000);
+    return () => { supabase.removeChannel(channel); clearInterval(timer); };
+  }, []);
+
+  return (
+    <div style={{ minHeight: '100vh', background: 'var(--dark)', color: 'white', padding: '2rem', fontFamily: "'DM Sans', sans-serif" }}>
+      {/* Header */}
+      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '2rem', borderBottom: '2px solid rgba(200,149,58,0.3)', paddingBottom: '1rem' }}>
+        <div>
+          <div style={{ fontFamily: "'Playfair Display', serif", fontSize: '2rem', color: 'var(--gold)' }}>🎉 Noisy en Fête</div>
+          <div style={{ color: 'rgba(255,255,255,0.6)', fontSize: '0.9rem', marginTop: '0.2rem' }}>Commandes prêtes à récupérer</div>
+        </div>
+        <div style={{ textAlign: 'right' }}>
+          <div style={{ fontFamily: "'Playfair Display', serif", fontSize: '2.5rem', color: 'var(--gold)' }}>
+            {time.toLocaleTimeString('fr-FR', { hour: '2-digit', minute: '2-digit' })}
+          </div>
+          <div style={{ color: 'rgba(255,255,255,0.5)', fontSize: '0.8rem' }}>
+            {time.toLocaleDateString('fr-FR', { weekday: 'long', day: 'numeric', month: 'long' })}
+          </div>
+        </div>
+      </div>
+
+      {orders.length === 0 ? (
+        <div style={{ textAlign: 'center', padding: '5rem', color: 'rgba(255,255,255,0.3)' }}>
+          <div style={{ fontSize: '4rem', marginBottom: '1rem' }}>👨‍🍳</div>
+          <div style={{ fontFamily: "'Playfair Display', serif", fontSize: '1.8rem' }}>Les commandes arrivent...</div>
+          <div style={{ fontSize: '1rem', marginTop: '0.5rem' }}>Aucune commande prête pour le moment</div>
+        </div>
+      ) : (
+        <>
+          <div style={{ textAlign: 'center', marginBottom: '2rem' }}>
+            <div style={{ fontSize: '1.1rem', color: 'rgba(255,255,255,0.7)' }}>
+              🔔 {orders.length} commande{orders.length > 1 ? 's' : ''} prête{orders.length > 1 ? 's' : ''} — Venez récupérer au stand !
+            </div>
+          </div>
+          <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(200px, 1fr))', gap: '1.5rem' }}>
+            {orders.map(order => (
+              <div key={order.id} style={{
+                background: 'var(--gold)', borderRadius: 20, padding: '2rem 1rem',
+                textAlign: 'center', animation: 'pulse 2s infinite',
+                boxShadow: '0 0 30px rgba(200,149,58,0.4)'
+              }}>
+                <div style={{ fontSize: '1rem', color: 'rgba(0,0,0,0.6)', marginBottom: '0.3rem', fontWeight: 600 }}>Emplacement</div>
+                <div style={{ fontFamily: "'Playfair Display', serif", fontSize: '4rem', color: 'var(--dark)', fontWeight: 900, lineHeight: 1 }}>
+                  {order.table_num}
+                </div>
+                <div style={{ fontSize: '0.85rem', color: 'rgba(0,0,0,0.5)', marginTop: '0.5rem' }}>#{order.id}</div>
+              </div>
+            ))}
+          </div>
+        </>
+      )}
+
+      {/* Footer */}
+      <div style={{ position: 'fixed', bottom: '1rem', left: 0, right: 0, textAlign: 'center', color: 'rgba(255,255,255,0.2)', fontSize: '0.75rem' }}>
+        🔴 Diffusion en direct • noisy-en-fete.vercel.app
+      </div>
+    </div>
+  );
+}
+
+// ─── ORDER TRACKING ──────────────────────────────────────────────────────────
+function OrderTracking({ orderId, tableNum, onNewOrder }) {
+  const [order, setOrder] = useState(null);
+  const settings = useSettings();
+
+  useEffect(() => {
+    if (!orderId) return;
+    supabase.from('orders').select('*').eq('id', orderId).single().then(({ data }) => data && setOrder(data));
+    const channel = supabase.channel('tracking-' + orderId)
+      .on('postgres_changes', { event: 'UPDATE', schema: 'public', table: 'orders', filter: 'id=eq.' + orderId }, payload => {
+        setOrder(payload.new);
+      }).subscribe();
+    return () => supabase.removeChannel(channel);
+  }, [orderId]);
+
+  if (!order) return null;
+
+  const steps = [
+    { key: 'en attente paiement', label: 'Paiement', icon: '💳' },
+    { key: 'en attente', label: 'Reçue', icon: '📋' },
+    { key: 'en préparation', label: 'En préparation', icon: '👨‍🍳' },
+    { key: 'prêt', label: 'Prête !', icon: '✅' },
+    { key: 'servi', label: 'Servie', icon: '🎉' },
+  ];
+  const currentIdx = steps.findIndex(s => s.key === order.status);
+
+  return (
+    <div className="client-wrap">
+      <UrgentBanner />
+      <div style={{ textAlign: 'center', padding: '1.5rem 0 1rem' }}>
+        <div style={{ fontFamily: "'Playfair Display', serif", fontSize: '1.8rem' }}>🎉 Noisy en Fête</div>
+        <div style={{ color: 'var(--warm-gray)', fontSize: '0.85rem', marginTop: '0.3rem' }}>Emplacement {tableNum} — Commande #{orderId}</div>
+      </div>
+
+      {/* Statut principal */}
+      <div style={{
+        background: order.status === 'prêt' ? 'var(--green)' : order.status === 'servi' ? '#E8F5E9' : 'var(--dark)',
+        borderRadius: 16, padding: '1.5rem', textAlign: 'center', marginBottom: '1.5rem',
+        color: order.status === 'servi' ? 'var(--dark)' : 'white'
+      }}>
+        <div style={{ fontSize: '2.5rem', marginBottom: '0.5rem' }}>
+          {order.status === 'prêt' ? '🔔' : order.status === 'servi' ? '🎉' : order.status === 'en préparation' ? '👨‍🍳' : '⏳'}
+        </div>
+        <div style={{ fontFamily: "'Playfair Display', serif", fontSize: '1.4rem', marginBottom: '0.3rem' }}>
+          {order.status === 'prêt' ? 'Votre commande est prête !' :
+           order.status === 'servi' ? 'Bonne dégustation !' :
+           order.status === 'en préparation' ? 'En cours de préparation...' :
+           'Commande reçue, patience...'}
+        </div>
+        {order.status === 'prêt' && (
+          <div style={{ fontSize: '0.88rem', opacity: 0.9 }}>Venez récupérer votre commande au stand 🎪</div>
+        )}
+      </div>
+
+      {/* Barre de progression */}
+      <div style={{ background: 'white', border: '1.5px solid var(--border)', borderRadius: 14, padding: '1.2rem', marginBottom: '1.5rem' }}>
+        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', position: 'relative' }}>
+          <div style={{ position: 'absolute', top: 16, left: '10%', right: '10%', height: 3, background: 'var(--border)', borderRadius: 2, zIndex: 0 }}>
+            <div style={{ width: Math.max(0, (currentIdx / (steps.length - 1)) * 100) + '%', height: '100%', background: 'var(--gold)', borderRadius: 2, transition: 'width 0.8s ease' }} />
+          </div>
+          {steps.map((step, i) => (
+            <div key={step.key} style={{ flex: 1, textAlign: 'center', zIndex: 1 }}>
+              <div style={{
+                width: 32, height: 32, borderRadius: '50%', margin: '0 auto 0.4rem',
+                display: 'flex', alignItems: 'center', justifyContent: 'center',
+                background: i <= currentIdx ? 'var(--gold)' : 'white',
+                border: i <= currentIdx ? '2px solid var(--gold)' : '2px solid var(--border)',
+                fontSize: '0.9rem', transition: 'all 0.4s'
+              }}>{i <= currentIdx ? step.icon : '○'}</div>
+              <div style={{ fontSize: '0.62rem', color: i <= currentIdx ? 'var(--dark)' : 'var(--warm-gray)', fontWeight: i === currentIdx ? 700 : 400, lineHeight: 1.2 }}>{step.label}</div>
+            </div>
+          ))}
+        </div>
+      </div>
+
+      {/* Récap commande */}
+      <div style={{ background: 'white', border: '1.5px solid var(--border)', borderRadius: 14, padding: '1rem', marginBottom: '1rem' }}>
+        <div style={{ fontWeight: 600, fontSize: '0.88rem', marginBottom: '0.75rem' }}>📋 Votre commande</div>
+        {order.items.map((item, i) => (
+          <div key={i} style={{ display: 'flex', justifyContent: 'space-between', padding: '0.4rem 0', borderBottom: '1px solid var(--border)', fontSize: '0.85rem' }}>
+            <span>{item.emoji} {item.name} ×{item.qty}</span>
+            <span style={{ fontWeight: 600 }}>{(item.price * item.qty).toFixed(2)} €</span>
+          </div>
+        ))}
+        <div style={{ display: 'flex', justifyContent: 'space-between', fontWeight: 700, paddingTop: '0.6rem', color: 'var(--gold)' }}>
+          <span>Total payé</span>
+          <span>{Number(order.total).toFixed(2)} €</span>
+        </div>
+      </div>
+
+      <button className="new-order-btn" style={{ width: '100%', textAlign: 'center' }} onClick={onNewOrder}>
+        ➕ Passer une nouvelle commande
+      </button>
+    </div>
+  );
+}
+
+// ─── URGENT BANNER ───────────────────────────────────────────────────────────
+function UrgentBanner() {
+  const settings = useSettings();
+  const [dismissed, setDismissed] = useState(false);
+
+  if (!settings.urgent_active || settings.urgent_active !== 'true') return null;
+  if (dismissed) return null;
+
+  return (
+    <div style={{
+      position: 'fixed', top: 0, left: 0, right: 0, zIndex: 999,
+      background: 'var(--red)', color: 'white',
+      padding: '0.9rem 1.2rem',
+      display: 'flex', alignItems: 'center', gap: '0.75rem',
+      boxShadow: '0 4px 20px rgba(0,0,0,0.3)',
+      animation: 'slideDown 0.3s ease'
+    }}>
+      <style>{`@keyframes slideDown { from { transform: translateY(-100%); } }`}</style>
+      <span style={{ fontSize: '1.3rem' }}>⚠️</span>
+      <span style={{ flex: 1, fontWeight: 600, fontSize: '0.9rem' }}>{settings.urgent_msg}</span>
+      <button onClick={() => setDismissed(true)} style={{
+        background: 'rgba(255,255,255,0.2)', border: 'none', color: 'white',
+        borderRadius: 6, padding: '0.3rem 0.6rem', cursor: 'pointer',
+        fontFamily: "'DM Sans', sans-serif", fontWeight: 600, fontSize: '0.8rem'
+      }}>✕ OK</button>
     </div>
   );
 }
@@ -634,6 +841,15 @@ function ClientView() {
   if (isClosed) return <ClosedBanner closingTime={settings.closing_time || '22:00'} />;
   if (!tableNum) return <TableSelector onSelect={setTableNum} welcomeMsg={settings.welcome} />;
 
+  // Si suivi activé et commande passée → afficher le tracking
+  if (success && settings.tracking_active === 'true') return (
+    <OrderTracking
+      orderId={orderId}
+      tableNum={tableNum}
+      onNewOrder={() => { setSuccess(false); setCart({}); setOrderId(null); setNotifState('ask'); setNotified(false); }}
+    />
+  );
+
   if (success) return (
     <div className="client-wrap">
       <div className="success-box">
@@ -655,9 +871,17 @@ function ClientView() {
             onClick={() => { setSuccess(false); setCart({}); }}>
             ➕ Commander autre chose (Emplacement {tableNum})
           </button>
-          <button className="new-order-btn" style={{ background: 'white', color: 'var(--dark)', border: '1.5px solid var(--border)', width: '100%', maxWidth: 280 }}
+            <button className="new-order-btn" style={{ background: 'white', color: 'var(--dark)', border: '1.5px solid var(--border)', width: '100%', maxWidth: 280 }}
             onClick={() => { setSuccess(false); setCart({}); setTableNum(null); setOrderId(null); setNotifState('ask'); setNotified(false); }}>
             🔄 Nouvelle table
+          </button>
+          <button className="new-order-btn" style={{ background: 'var(--blue)', color: 'white', width: '100%', maxWidth: 280 }}
+            onClick={() => {
+              const text = `Je suis à ${RESTAURANT} ce soir ! 🎉 Commandez en scannant le QR code sur place. ${window.location.origin}`;
+              if (navigator.share) { navigator.share({ title: RESTAURANT, text, url: window.location.origin }); }
+              else { navigator.clipboard.writeText(text); alert('Lien copié !'); }
+            }}>
+            📲 Partager l&apos;événement
           </button>
         </div>
       </div>
@@ -1761,7 +1985,58 @@ function ThemeTab() {
       </div>
 
       <div style={{ display: 'flex', gap: '0.75rem', alignItems: 'center' }}>
-        <button onClick={save} style={{
+        {/* NOM DE L'EVENEMENT */}
+      <div style={{ background: 'white', border: '1.5px solid var(--border)', borderRadius: 14, padding: '1.2rem', marginBottom: '1rem' }}>
+        <div style={{ fontWeight: 600, marginBottom: '0.3rem' }}>🎪 Nom de l&apos;événement</div>
+        <div style={{ fontSize: '0.78rem', color: 'var(--warm-gray)', marginBottom: '0.75rem' }}>
+          Affiché sur toutes les pages et dans la caisse. Permet de distinguer les soirées dans les archives.
+        </div>
+        <div className="form-field">
+          <label>Nom de la soirée</label>
+          <input value={eventName} onChange={e => setEventName(e.target.value)} placeholder="Ex: Fête du village 14 juillet 2026" />
+        </div>
+      </div>
+
+      {/* GRAND ECRAN TV */}
+      <div style={{ background: 'white', border: '1.5px solid var(--border)', borderRadius: 14, padding: '1.2rem', marginBottom: '1rem' }}>
+        <div style={{ fontWeight: 600, marginBottom: '0.3rem' }}>📺 Grand écran TV</div>
+        <div style={{ fontSize: '0.78rem', color: 'var(--warm-gray)', marginBottom: '0.75rem' }}>
+          Affichez les numéros d&apos;emplacements prêts sur une TV ou un vidéoprojecteur.
+        </div>
+        <div style={{ background: 'var(--cream)', borderRadius: 8, padding: '0.6rem 0.9rem', fontSize: '0.82rem', marginBottom: '0.75rem', fontFamily: 'monospace', wordBreak: 'break-all' }}>
+          🔗 {window.location.origin}?ecran=1
+        </div>
+        <button onClick={() => window.open(window.location.origin + '?ecran=1', '_blank')} style={{ padding: '0.6rem 1.2rem', background: 'var(--dark)', color: 'white', border: 'none', borderRadius: 8, cursor: 'pointer', fontWeight: 600, fontFamily: "'DM Sans', sans-serif", fontSize: '0.85rem' }}>
+          📺 Ouvrir le grand écran
+        </button>
+      </div>
+
+      {/* SUIVI DE COMMANDE */}
+      <div style={{ background: 'white', border: '1.5px solid var(--border)', borderRadius: 14, padding: '1.2rem', marginBottom: '1rem' }}>
+        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+          <div>
+            <div style={{ fontWeight: 600 }}>📍 Suivi de commande en direct</div>
+            <div style={{ fontSize: '0.78rem', color: 'var(--warm-gray)', marginTop: '0.2rem' }}>
+              Après le paiement, le client voit une page avec la progression de sa commande en temps réel.
+            </div>
+          </div>
+          <button onClick={() => saveSetting('tracking_active', settings.tracking_active === 'true' ? 'false' : 'true')}
+            style={{ padding: '0.5rem 1rem', borderRadius: 8, border: 'none', cursor: 'pointer', fontWeight: 700, fontFamily: "'DM Sans', sans-serif", fontSize: '0.82rem', background: settings.tracking_active === 'true' ? 'var(--green)' : 'var(--warm-gray)', color: 'white', whiteSpace: 'nowrap' }}>
+            {settings.tracking_active === 'true' ? '✅ Activé' : '⏸ Désactivé'}
+          </button>
+        </div>
+      </div>
+
+      {/* MESSAGE D'URGENCE */}
+      <div style={{ background: 'white', border: '1.5px solid var(--border)', borderRadius: 14, padding: '1.2rem', marginBottom: '1rem' }}>
+        <div style={{ fontWeight: 600, marginBottom: '0.3rem' }}>⚠️ Message d&apos;urgence</div>
+        <div style={{ fontSize: '0.78rem', color: 'var(--warm-gray)', marginBottom: '0.75rem' }}>
+          S&apos;affiche en bandeau rouge sur tous les téléphones clients connectés. Idéal pour signaler une rupture de stock ou un changement.
+        </div>
+        <UrgentMessageAdmin />
+      </div>
+
+      <button onClick={save} style={{
           padding: '0.75rem 2rem', background: saved ? 'var(--green)' : 'var(--dark)',
           color: 'white', border: 'none', borderRadius: 10, cursor: 'pointer',
           fontWeight: 700, fontFamily: "'DM Sans', sans-serif", fontSize: '0.95rem',
@@ -1781,10 +2056,49 @@ function ThemeTab() {
   );
 }
 
+// ─── URGENT MESSAGE ADMIN ────────────────────────────────────────────────────
+function UrgentMessageAdmin() {
+  const settings = useSettings();
+  const [msg, setMsg] = useState('');
+  const isActive = settings.urgent_active === 'true';
+
+  useEffect(() => { setMsg(settings.urgent_msg || ''); }, [settings.urgent_msg]);
+
+  return (
+    <div>
+      <textarea value={msg} onChange={e => setMsg(e.target.value)}
+        placeholder="Ex: ⚠️ Rupture de stock bière, remplacée par cidre ce soir !"
+        rows={2}
+        style={{ width: '100%', padding: '0.6rem 0.75rem', borderRadius: 8, border: '1.5px solid var(--border)', fontFamily: "'DM Sans', sans-serif", fontSize: '0.85rem', outline: 'none', background: 'var(--cream)', resize: 'none', marginBottom: '0.75rem' }}
+      />
+      <div style={{ display: 'flex', gap: '0.5rem', flexWrap: 'wrap' }}>
+        <button onClick={() => sendUrgentMessage(msg)} disabled={!msg.trim()} style={{
+          flex: 1, padding: '0.6rem 1rem', background: 'var(--red)', color: 'white',
+          border: 'none', borderRadius: 8, cursor: 'pointer', fontWeight: 700,
+          fontFamily: "'DM Sans', sans-serif", opacity: !msg.trim() ? 0.5 : 1
+        }}>📢 Envoyer à tous</button>
+        {isActive && (
+          <button onClick={() => { saveSetting('urgent_active', 'false'); saveSetting('urgent_msg', ''); setMsg(''); }} style={{
+            padding: '0.6rem 1rem', background: 'var(--dark)', color: 'white',
+            border: 'none', borderRadius: 8, cursor: 'pointer', fontWeight: 600,
+            fontFamily: "'DM Sans', sans-serif"
+          }}>✕ Effacer</button>
+        )}
+      </div>
+      {isActive && (
+        <div style={{ marginTop: '0.6rem', fontSize: '0.75rem', color: 'var(--red)', fontWeight: 600 }}>
+          🔴 Message actif — visible par tous les clients
+        </div>
+      )}
+    </div>
+  );
+}
+
 // ─── CONFIG TAB ──────────────────────────────────────────────────────────────
 function ConfigTab() {
   const settings = useSettings();
   const [welcome, setWelcome] = useState('');
+  const [eventName, setEventName] = useState('');
   const [closingTime, setClosingTime] = useState('22:00');
   const [loyaltyItem, setLoyaltyItem] = useState('');
   const [loyaltyEvery, setLoyaltyEvery] = useState('4');
@@ -1794,6 +2108,7 @@ function ConfigTab() {
 
   useEffect(() => {
     setWelcome(settings.welcome || '');
+    setEventName(settings.event_name || '');
     setClosingTime(settings.closing_time || '22:00');
     setLoyaltyItem(settings.loyalty_item || '');
     setLoyaltyEvery(settings.loyalty_every || '4');
@@ -1805,6 +2120,7 @@ function ConfigTab() {
 
   const save = async () => {
     await saveSetting('welcome', welcome);
+    await saveSetting('event_name', eventName);
     await saveSetting('closing_time', closingTime);
     await saveSetting('loyalty_item', loyaltyItem);
     await saveSetting('loyalty_every', loyaltyEvery);
@@ -1917,6 +2233,57 @@ function ConfigTab() {
             🎁 1 {loyaltyItem} offert toutes les {loyaltyEvery} achetées
           </div>
         )}
+      </div>
+
+      {/* NOM DE L'EVENEMENT */}
+      <div style={{ background: 'white', border: '1.5px solid var(--border)', borderRadius: 14, padding: '1.2rem', marginBottom: '1rem' }}>
+        <div style={{ fontWeight: 600, marginBottom: '0.3rem' }}>🎪 Nom de l&apos;événement</div>
+        <div style={{ fontSize: '0.78rem', color: 'var(--warm-gray)', marginBottom: '0.75rem' }}>
+          Affiché sur toutes les pages et dans la caisse. Permet de distinguer les soirées dans les archives.
+        </div>
+        <div className="form-field">
+          <label>Nom de la soirée</label>
+          <input value={eventName} onChange={e => setEventName(e.target.value)} placeholder="Ex: Fête du village 14 juillet 2026" />
+        </div>
+      </div>
+
+      {/* GRAND ECRAN TV */}
+      <div style={{ background: 'white', border: '1.5px solid var(--border)', borderRadius: 14, padding: '1.2rem', marginBottom: '1rem' }}>
+        <div style={{ fontWeight: 600, marginBottom: '0.3rem' }}>📺 Grand écran TV</div>
+        <div style={{ fontSize: '0.78rem', color: 'var(--warm-gray)', marginBottom: '0.75rem' }}>
+          Affichez les numéros d&apos;emplacements prêts sur une TV ou un vidéoprojecteur.
+        </div>
+        <div style={{ background: 'var(--cream)', borderRadius: 8, padding: '0.6rem 0.9rem', fontSize: '0.82rem', marginBottom: '0.75rem', fontFamily: 'monospace', wordBreak: 'break-all' }}>
+          🔗 {window.location.origin}?ecran=1
+        </div>
+        <button onClick={() => window.open(window.location.origin + '?ecran=1', '_blank')} style={{ padding: '0.6rem 1.2rem', background: 'var(--dark)', color: 'white', border: 'none', borderRadius: 8, cursor: 'pointer', fontWeight: 600, fontFamily: "'DM Sans', sans-serif", fontSize: '0.85rem' }}>
+          📺 Ouvrir le grand écran
+        </button>
+      </div>
+
+      {/* SUIVI DE COMMANDE */}
+      <div style={{ background: 'white', border: '1.5px solid var(--border)', borderRadius: 14, padding: '1.2rem', marginBottom: '1rem' }}>
+        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+          <div>
+            <div style={{ fontWeight: 600 }}>📍 Suivi de commande en direct</div>
+            <div style={{ fontSize: '0.78rem', color: 'var(--warm-gray)', marginTop: '0.2rem' }}>
+              Après le paiement, le client voit une page avec la progression de sa commande en temps réel.
+            </div>
+          </div>
+          <button onClick={() => saveSetting('tracking_active', settings.tracking_active === 'true' ? 'false' : 'true')}
+            style={{ padding: '0.5rem 1rem', borderRadius: 8, border: 'none', cursor: 'pointer', fontWeight: 700, fontFamily: "'DM Sans', sans-serif", fontSize: '0.82rem', background: settings.tracking_active === 'true' ? 'var(--green)' : 'var(--warm-gray)', color: 'white', whiteSpace: 'nowrap' }}>
+            {settings.tracking_active === 'true' ? '✅ Activé' : '⏸ Désactivé'}
+          </button>
+        </div>
+      </div>
+
+      {/* MESSAGE D'URGENCE */}
+      <div style={{ background: 'white', border: '1.5px solid var(--border)', borderRadius: 14, padding: '1.2rem', marginBottom: '1rem' }}>
+        <div style={{ fontWeight: 600, marginBottom: '0.3rem' }}>⚠️ Message d&apos;urgence</div>
+        <div style={{ fontSize: '0.78rem', color: 'var(--warm-gray)', marginBottom: '0.75rem' }}>
+          S&apos;affiche en bandeau rouge sur tous les téléphones clients connectés. Idéal pour signaler une rupture de stock ou un changement.
+        </div>
+        <UrgentMessageAdmin />
       </div>
 
       <button onClick={save} style={{
@@ -2474,6 +2841,9 @@ export default function App() {
   const [pinTarget, setPinTarget] = useState(null);
   useTheme();
 
+  // Grand écran TV accessible via ?ecran=1
+  if (new URLSearchParams(window.location.search).get('ecran') === '1') return <GrandEcran />;
+
   const requestView = (target) => {
     if (target === 'client') { setView('client'); return; }
     setPinTarget(target);
@@ -2492,7 +2862,7 @@ export default function App() {
           <button className={`nav-btn ${view === 'kitchen' ? 'active' : ''}`} onClick={() => requestView('kitchen')}>🍳</button>
           <button className={`nav-btn ${view === 'admin' ? 'active' : ''}`} onClick={() => requestView('admin')}>⚙️</button>
         </nav>
-        {view === 'client' && <ClientView />}
+        {view === 'client' && <><UrgentBanner /><ClientView /></>}
         {view === 'kitchen' && <KitchenView />}
         {view === 'admin' && <AdminView />}
         <footer style={{
