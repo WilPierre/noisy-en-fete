@@ -1351,11 +1351,13 @@ function FideliteTab() {
   const [membres, setMembres] = useState([]);
   const [form, setForm] = useState({ fidelite_active: "false", fidelite_seuil1_points: "50", fidelite_seuil1_type: "promo", fidelite_seuil1_valeur: "10", fidelite_seuil2_points: "100", fidelite_seuil2_type: "produit", fidelite_seuil2_valeur: "" });
   const [saved, setSaved] = useState(false);
+  const [menuItems, setMenuItems] = useState([]);
   const settings = useSettings();
 
   useEffect(() => {
     setForm(f => ({ ...f, ...settings }));
     supabase.from("fidelite").select("*").order("points", { ascending: false }).then(({ data }) => data && setMembres(data));
+    supabase.from("menu").select("id,name,emoji,price").order("category").then(({ data }) => data && setMenuItems(data));
   }, [settings.fidelite_active]);
 
   const saveSettings = async () => {
@@ -1419,7 +1421,16 @@ function FideliteTab() {
         </div>
         <div className="form-field">
           <label>{form.fidelite_seuil1_type === "promo" ? "Réduction (%)" : "Produit offert"}</label>
-          <input value={form.fidelite_seuil1_valeur} onChange={e => setForm(f => ({ ...f, fidelite_seuil1_valeur: e.target.value }))} placeholder={form.fidelite_seuil1_type === "promo" ? "Ex: 10" : "Ex: Bière pression 30cl"} />
+          {form.fidelite_seuil1_type === "promo" ? (
+            <input type="number" value={form.fidelite_seuil1_valeur} onChange={e => setForm(f => ({ ...f, fidelite_seuil1_valeur: e.target.value }))} placeholder="Ex: 10" />
+          ) : (
+            <select value={form.fidelite_seuil1_valeur} onChange={e => setForm(f => ({ ...f, fidelite_seuil1_valeur: e.target.value }))}>
+              <option value="">-- Choisir un produit --</option>
+              {menuItems.map(item => (
+                <option key={item.id} value={item.name}>{item.emoji} {item.name} ({Number(item.price).toFixed(2)} €)</option>
+              ))}
+            </select>
+          )}
         </div>
       </div>
 
@@ -1440,7 +1451,16 @@ function FideliteTab() {
         </div>
         <div className="form-field">
           <label>{form.fidelite_seuil2_type === "promo" ? "Réduction (%)" : "Produit offert"}</label>
-          <input value={form.fidelite_seuil2_valeur} onChange={e => setForm(f => ({ ...f, fidelite_seuil2_valeur: e.target.value }))} placeholder={form.fidelite_seuil2_type === "promo" ? "Ex: 20" : "Ex: Gaufre liégeoise"} />
+          {form.fidelite_seuil2_type === "promo" ? (
+            <input type="number" value={form.fidelite_seuil2_valeur} onChange={e => setForm(f => ({ ...f, fidelite_seuil2_valeur: e.target.value }))} placeholder="Ex: 20" />
+          ) : (
+            <select value={form.fidelite_seuil2_valeur} onChange={e => setForm(f => ({ ...f, fidelite_seuil2_valeur: e.target.value }))}>
+              <option value="">-- Choisir un produit --</option>
+              {menuItems.map(item => (
+                <option key={item.id} value={item.name}>{item.emoji} {item.name} ({Number(item.price).toFixed(2)} €)</option>
+              ))}
+            </select>
+          )}
         </div>
       </div>
 
