@@ -453,7 +453,7 @@ function PromoCodeField({ onApply }) {
       .select('*').eq('code', code.toUpperCase().trim()).eq('active', true).single();
 
     if (!data) { setStatus('❌ Code invalide ou inactif'); return; }
-    if (data.uses >= data.max_uses) { setStatus('❌ Ce code a atteint sa limite d'utilisation'); return; }
+    if (data.uses >= data.max_uses) { setStatus('❌ Ce code a atteint sa limite d\'utilisation'); return; }
 
     // Incrémenter le compteur d'utilisations
     await supabase.from('promos').update({ uses: data.uses + 1 }).eq('id', data.id);
