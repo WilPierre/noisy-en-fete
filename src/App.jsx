@@ -2196,19 +2196,7 @@ function ThemeTab() {
       </div>
 
       <div style={{ display: 'flex', gap: '0.75rem', alignItems: 'center' }}>
-        {/* NOM DE L'EVENEMENT */}
-      <div style={{ background: 'white', border: '1.5px solid var(--border)', borderRadius: 14, padding: '1.2rem', marginBottom: '1rem' }}>
-        <div style={{ fontWeight: 600, marginBottom: '0.3rem' }}>🎪 Nom de l&apos;événement</div>
-        <div style={{ fontSize: '0.78rem', color: 'var(--warm-gray)', marginBottom: '0.75rem' }}>
-          Affiché sur toutes les pages et dans la caisse. Permet de distinguer les soirées dans les archives.
-        </div>
-        <div className="form-field">
-          <label>Nom de la soirée</label>
-          <input value={eventName} onChange={e => setEventName(e.target.value)} placeholder="Ex: Fête du village 14 juillet 2026" />
-        </div>
-      </div>
-
-      {/* GRAND ECRAN TV */}
+        {/* GRAND ECRAN TV */}
       <div style={{ background: 'white', border: '1.5px solid var(--border)', borderRadius: 14, padding: '1.2rem', marginBottom: '1rem' }}>
         <div style={{ fontWeight: 600, marginBottom: '0.3rem' }}>📺 Grand écran TV</div>
         <div style={{ fontSize: '0.78rem', color: 'var(--warm-gray)', marginBottom: '0.75rem' }}>
@@ -2444,18 +2432,6 @@ function ConfigTab() {
             🎁 1 {loyaltyItem} offert toutes les {loyaltyEvery} achetées
           </div>
         )}
-      </div>
-
-      {/* NOM DE L'EVENEMENT */}
-      <div style={{ background: 'white', border: '1.5px solid var(--border)', borderRadius: 14, padding: '1.2rem', marginBottom: '1rem' }}>
-        <div style={{ fontWeight: 600, marginBottom: '0.3rem' }}>🎪 Nom de l&apos;événement</div>
-        <div style={{ fontSize: '0.78rem', color: 'var(--warm-gray)', marginBottom: '0.75rem' }}>
-          Affiché sur toutes les pages et dans la caisse. Permet de distinguer les soirées dans les archives.
-        </div>
-        <div className="form-field">
-          <label>Nom de la soirée</label>
-          <input value={eventName} onChange={e => setEventName(e.target.value)} placeholder="Ex: Fête du village 14 juillet 2026" />
-        </div>
       </div>
 
       {/* GRAND ECRAN TV */}
