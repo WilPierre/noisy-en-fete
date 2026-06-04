@@ -648,10 +648,12 @@ function ClientView() {
           }
         </p>
         <ReceiptEmailForm orderId={orderId} />
+        <FideliteClientForm totalPrice={totalPrice} orderId={orderId} />
+
         <div style={{ display: 'flex', flexDirection: 'column', gap: '0.75rem', alignItems: 'center', marginTop: '1.5rem' }}>
           <button className="new-order-btn" style={{ background: 'var(--gold)', width: '100%', maxWidth: 280 }}
             onClick={() => { setSuccess(false); setCart({}); }}>
-            ➕ Commander autre chose (Table {tableNum})
+            ➕ Commander autre chose (Emplacement {tableNum})
           </button>
           <button className="new-order-btn" style={{ background: 'white', color: 'var(--dark)', border: '1.5px solid var(--border)', width: '100%', maxWidth: 280 }}
             onClick={() => { setSuccess(false); setCart({}); setTableNum(null); setOrderId(null); setNotifState('ask'); setNotified(false); }}>
@@ -1195,6 +1197,287 @@ function CaisseTab() {
           </button>
         </div>
       </div>
+    </div>
+  );
+}
+
+// ─── FIDELITE CLIENT FORM ────────────────────────────────────────────────────
+function FideliteClientForm({ totalPrice, orderId }) {
+  const [contact, setContact] = useState("");
+  const [contactType, setContactType] = useState("email");
+  const [membre, setMembre] = useState(null);
+  const [saved, setSaved] = useState(false);
+  const [newCode, setNewCode] = useState("");
+  const [loading, setLoading] = useState(false);
+  const settings = useSettings();
+
+  if (settings.fidelite_active !== "true") return null;
+
+  const pointsGagnes = Math.floor(totalPrice);
+  const seuil1 = parseInt(settings.fidelite_seuil1_points || "50");
+  const seuil2 = parseInt(settings.fidelite_seuil2_points || "100");
+
+  const checkContact = async () => {
+    if (!contact.trim()) return;
+    setLoading(true);
+    const { data } = await supabase.from("fidelite").select("*").eq("contact", contact.trim()).single();
+    if (data) setMembre(data);
+    setLoading(false);
+  };
+
+  const savePoints = async () => {
+    setLoading(true);
+    const pts = pointsGagnes;
+    if (membre) {
+      const newPoints = membre.points + pts;
+      const newTotal = membre.points_total + pts;
+      let generatedCode = "";
+
+      // Vérifier seuil 2
+      if (membre.points < seuil2 && newPoints >= seuil2) {
+        if (settings.fidelite_seuil2_type === "promo") {
+          generatedCode = "FIDELE" + Math.random().toString(36).slice(2,6).toUpperCase();
+          await supabase.from("promos").insert({ code: generatedCode, discount: parseFloat(settings.fidelite_seuil2_valeur || "15"), max_uses: 1, uses: 0, active: true });
+        } else {
+          generatedCode = settings.fidelite_seuil2_valeur + " OFFERT";
+        }
+        await supabase.from("fidelite").update({ points: newPoints - seuil2, points_total: newTotal, last_order_at: new Date() }).eq("id", membre.id);
+      }
+      // Vérifier seuil 1
+      else if (membre.points < seuil1 && newPoints >= seuil1) {
+        if (settings.fidelite_seuil1_type === "promo") {
+          generatedCode = "FIDELITE" + Math.random().toString(36).slice(2,6).toUpperCase();
+          await supabase.from("promos").insert({ code: generatedCode, discount: parseFloat(settings.fidelite_seuil1_valeur || "10"), max_uses: 1, uses: 0, active: true });
+        } else {
+          generatedCode = settings.fidelite_seuil1_valeur + " OFFERT";
+        }
+        await supabase.from("fidelite").update({ points: newPoints - seuil1, points_total: newTotal, last_order_at: new Date() }).eq("id", membre.id);
+      }
+      else {
+        await supabase.from("fidelite").update({ points: newPoints, points_total: newTotal, last_order_at: new Date() }).eq("id", membre.id);
+      }
+
+      setMembre(m => ({ ...m, points: newPoints, points_total: newTotal }));
+      if (generatedCode) setNewCode(generatedCode);
+    } else {
+      // Nouveau membre
+      const { data } = await supabase.from("fidelite").insert({ contact: contact.trim(), contact_type: contactType, points: pts, points_total: pts }).select().single();
+      if (data) setMembre(data);
+    }
+    setSaved(true);
+    setLoading(false);
+  };
+
+  const totalAfterSave = membre ? membre.points + pointsGagnes : pointsGagnes;
+  const progressSeuil = Math.min(100, (totalAfterSave / seuil1) * 100);
+
+  if (saved && newCode) return (
+    <div style={{ background: "#D4EDDA", border: "2px solid var(--green)", borderRadius: 14, padding: "1.2rem", marginTop: "1rem", textAlign: "center" }}>
+      <div style={{ fontSize: "1.5rem", marginBottom: "0.5rem" }}>🎉</div>
+      <div style={{ fontFamily: "'Playfair Display', serif", fontSize: "1.1rem", color: "var(--green)", marginBottom: "0.4rem" }}>Récompense débloquée !</div>
+      {newCode.includes("OFFERT") ? (
+        <div style={{ fontSize: "0.88rem" }}>Vous avez gagné : <strong>{newCode}</strong></div>
+      ) : (
+        <div style={{ fontSize: "0.88rem" }}>Votre code promo : <strong style={{ fontSize: "1.1rem", letterSpacing: "0.05em", fontFamily: "monospace" }}>{newCode}</strong></div>
+      )}
+      <div style={{ fontSize: "0.75rem", color: "var(--warm-gray)", marginTop: "0.5rem" }}>+{pointsGagnes} points ajoutés à votre compte</div>
+    </div>
+  );
+
+  if (saved) return (
+    <div style={{ background: "#F0FFF4", border: "1.5px solid #C3E6CB", borderRadius: 12, padding: "1rem", marginTop: "1rem" }}>
+      <div style={{ fontWeight: 600, color: "var(--green)", marginBottom: "0.4rem" }}>💎 Points ajoutés !</div>
+      <div style={{ fontSize: "0.82rem", color: "var(--dark)" }}>
+        +{pointsGagnes} points • Solde : <strong>{totalAfterSave} pts</strong>
+      </div>
+      <div style={{ marginTop: "0.6rem", background: "#E8E0D4", borderRadius: 100, height: 8, overflow: "hidden" }}>
+        <div style={{ width: progressSeuil + "%", background: "var(--gold)", height: "100%", borderRadius: 100, transition: "width 1s" }} />
+      </div>
+      <div style={{ fontSize: "0.72rem", color: "var(--warm-gray)", marginTop: "0.3rem" }}>
+        {totalAfterSave}/{seuil1} points pour votre prochaine récompense
+      </div>
+    </div>
+  );
+
+  return (
+    <div style={{ background: "white", border: "1.5px solid var(--border)", borderRadius: 14, padding: "1rem", marginTop: "1rem" }}>
+      <div style={{ fontWeight: 600, fontSize: "0.88rem", marginBottom: "0.25rem" }}>💎 Programme fidélité</div>
+      <div style={{ fontSize: "0.75rem", color: "var(--warm-gray)", marginBottom: "0.75rem" }}>
+        Gagnez {pointsGagnes} point{pointsGagnes > 1 ? "s" : ""} avec cette commande !
+      </div>
+      {!membre ? (
+        <>
+          <div style={{ display: "flex", gap: "0.4rem", marginBottom: "0.5rem" }}>
+            <button onClick={() => setContactType("email")} style={{ flex: 1, padding: "0.4rem", borderRadius: 8, border: contactType === "email" ? "2px solid var(--gold)" : "1.5px solid var(--border)", background: contactType === "email" ? "#FFF8EE" : "white", cursor: "pointer", fontSize: "0.78rem", fontWeight: 600, fontFamily: "'DM Sans', sans-serif" }}>📧 Email</button>
+            <button onClick={() => setContactType("tel")} style={{ flex: 1, padding: "0.4rem", borderRadius: 8, border: contactType === "tel" ? "2px solid var(--gold)" : "1.5px solid var(--border)", background: contactType === "tel" ? "#FFF8EE" : "white", cursor: "pointer", fontSize: "0.78rem", fontWeight: 600, fontFamily: "'DM Sans', sans-serif" }}>📱 Téléphone</button>
+          </div>
+          <div style={{ display: "flex", gap: "0.5rem" }}>
+            <input
+              type={contactType === "email" ? "email" : "tel"}
+              value={contact} onChange={e => setContact(e.target.value)}
+              onKeyDown={e => e.key === "Enter" && checkContact()}
+              placeholder={contactType === "email" ? "votre@email.com" : "06 12 34 56 78"}
+              style={{ flex: 1, padding: "0.55rem 0.75rem", borderRadius: 8, border: "1.5px solid var(--border)", fontFamily: "'DM Sans', sans-serif", fontSize: "0.88rem", outline: "none", background: "var(--cream)" }}
+            />
+            <button onClick={checkContact} disabled={loading} style={{ padding: "0.55rem 0.9rem", borderRadius: 8, border: "none", background: "var(--dark)", color: "white", cursor: "pointer", fontWeight: 600, fontFamily: "'DM Sans', sans-serif", fontSize: "0.82rem" }}>
+              {loading ? "⏳" : "OK"}
+            </button>
+          </div>
+        </>
+      ) : (
+        <div style={{ marginBottom: "0.75rem" }}>
+          <div style={{ fontSize: "0.82rem", marginBottom: "0.4rem" }}>
+            Bonjour ! Solde actuel : <strong>{membre.points} points</strong>
+          </div>
+          <div style={{ background: "#E8E0D4", borderRadius: 100, height: 8, overflow: "hidden" }}>
+            <div style={{ width: Math.min(100, (membre.points / seuil1) * 100) + "%", background: "var(--gold)", height: "100%", borderRadius: 100 }} />
+          </div>
+          <div style={{ fontSize: "0.72rem", color: "var(--warm-gray)", marginTop: "0.3rem" }}>
+            {membre.points}/{seuil1} pts • +{pointsGagnes} pts avec cette commande
+          </div>
+        </div>
+      )}
+      {(membre || contact.length > 3) && (
+        <button onClick={savePoints} disabled={loading || !contact} style={{ width: "100%", marginTop: "0.5rem", padding: "0.6rem", background: "var(--gold)", color: "var(--dark)", border: "none", borderRadius: 8, cursor: "pointer", fontWeight: 700, fontFamily: "'DM Sans', sans-serif", fontSize: "0.85rem" }}>
+          {loading ? "⏳ Enregistrement..." : membre ? `✅ Ajouter ${pointsGagnes} points` : `🎉 Rejoindre & gagner ${pointsGagnes} points`}
+        </button>
+      )}
+    </div>
+  );
+}
+
+// ─── FIDELITE ADMIN TAB ───────────────────────────────────────────────────────
+function FideliteTab() {
+  const [membres, setMembres] = useState([]);
+  const [form, setForm] = useState({ fidelite_active: "false", fidelite_seuil1_points: "50", fidelite_seuil1_type: "promo", fidelite_seuil1_valeur: "10", fidelite_seuil2_points: "100", fidelite_seuil2_type: "produit", fidelite_seuil2_valeur: "" });
+  const [saved, setSaved] = useState(false);
+  const settings = useSettings();
+
+  useEffect(() => {
+    setForm(f => ({ ...f, ...settings }));
+    supabase.from("fidelite").select("*").order("points", { ascending: false }).then(({ data }) => data && setMembres(data));
+  }, [settings.fidelite_active]);
+
+  const saveSettings = async () => {
+    for (const [key, value] of Object.entries(form)) {
+      if (key.startsWith("fidelite_")) await saveSetting(key, String(value));
+    }
+    setSaved(true);
+    setTimeout(() => setSaved(false), 2000);
+  };
+
+  const resetMembre = async (id) => {
+    if (!window.confirm("Remettre les points de ce membre à zéro ?")) return;
+    await supabase.from("fidelite").update({ points: 0 }).eq("id", id);
+    setMembres(m => m.map(mb => mb.id === id ? { ...mb, points: 0 } : mb));
+  };
+
+  const deleteMembre = async (id) => {
+    if (!window.confirm("Supprimer ce membre ?")) return;
+    await supabase.from("fidelite").delete().eq("id", id);
+    setMembres(m => m.filter(mb => mb.id !== id));
+  };
+
+  const isActive = form.fidelite_active === "true";
+
+  return (
+    <div>
+      <div className="section-title">💎 Programme de fidélité</div>
+
+      {/* Activation */}
+      <div style={{ background: isActive ? "#F0FFF4" : "#FFF5F5", border: `1.5px solid ${isActive ? "#C3E6CB" : "#F5C6CB"}`, borderRadius: 14, padding: "1.2rem", marginBottom: "1rem" }}>
+        <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center" }}>
+          <div>
+            <div style={{ fontWeight: 700, color: isActive ? "var(--green)" : "var(--red)" }}>
+              {isActive ? "✅ Programme actif" : "⏸ Programme inactif"}
+            </div>
+            <div style={{ fontSize: "0.78rem", color: "var(--warm-gray)", marginTop: "0.2rem" }}>
+              {isActive ? "Les clients peuvent accumuler des points" : "Activez pour démarrer la fidélité"}
+            </div>
+          </div>
+          <button onClick={() => setForm(f => ({ ...f, fidelite_active: isActive ? "false" : "true" }))} style={{ padding: "0.6rem 1.2rem", borderRadius: 8, border: "none", cursor: "pointer", fontWeight: 700, fontFamily: "'DM Sans', sans-serif", background: isActive ? "var(--red)" : "var(--green)", color: "white" }}>
+            {isActive ? "Désactiver" : "Activer"}
+          </button>
+        </div>
+      </div>
+
+      {/* Configuration seuils */}
+      <div style={{ background: "white", border: "1.5px solid var(--border)", borderRadius: 14, padding: "1.2rem", marginBottom: "1rem" }}>
+        <div style={{ fontWeight: 600, marginBottom: "0.75rem" }}>🎁 Seuil 1 (premier palier)</div>
+        <div className="form-row">
+          <div className="form-field">
+            <label>Points nécessaires</label>
+            <input type="number" value={form.fidelite_seuil1_points} onChange={e => setForm(f => ({ ...f, fidelite_seuil1_points: e.target.value }))} />
+          </div>
+          <div className="form-field">
+            <label>Type de récompense</label>
+            <select value={form.fidelite_seuil1_type} onChange={e => setForm(f => ({ ...f, fidelite_seuil1_type: e.target.value }))}>
+              <option value="promo">Code promo (%)</option>
+              <option value="produit">Produit offert</option>
+            </select>
+          </div>
+        </div>
+        <div className="form-field">
+          <label>{form.fidelite_seuil1_type === "promo" ? "Réduction (%)" : "Produit offert"}</label>
+          <input value={form.fidelite_seuil1_valeur} onChange={e => setForm(f => ({ ...f, fidelite_seuil1_valeur: e.target.value }))} placeholder={form.fidelite_seuil1_type === "promo" ? "Ex: 10" : "Ex: Bière pression 30cl"} />
+        </div>
+      </div>
+
+      <div style={{ background: "white", border: "1.5px solid var(--border)", borderRadius: 14, padding: "1.2rem", marginBottom: "1rem" }}>
+        <div style={{ fontWeight: 600, marginBottom: "0.75rem" }}>🏆 Seuil 2 (deuxième palier)</div>
+        <div className="form-row">
+          <div className="form-field">
+            <label>Points nécessaires</label>
+            <input type="number" value={form.fidelite_seuil2_points} onChange={e => setForm(f => ({ ...f, fidelite_seuil2_points: e.target.value }))} />
+          </div>
+          <div className="form-field">
+            <label>Type de récompense</label>
+            <select value={form.fidelite_seuil2_type} onChange={e => setForm(f => ({ ...f, fidelite_seuil2_type: e.target.value }))}>
+              <option value="promo">Code promo (%)</option>
+              <option value="produit">Produit offert</option>
+            </select>
+          </div>
+        </div>
+        <div className="form-field">
+          <label>{form.fidelite_seuil2_type === "promo" ? "Réduction (%)" : "Produit offert"}</label>
+          <input value={form.fidelite_seuil2_valeur} onChange={e => setForm(f => ({ ...f, fidelite_seuil2_valeur: e.target.value }))} placeholder={form.fidelite_seuil2_type === "promo" ? "Ex: 20" : "Ex: Gaufre liégeoise"} />
+        </div>
+      </div>
+
+      <div style={{ background: "#FFF8EE", border: "1px solid var(--gold)", borderRadius: 10, padding: "0.75rem 1rem", fontSize: "0.82rem", marginBottom: "1rem" }}>
+        💡 <strong>Exemple :</strong> Seuil 1 = 50 pts → code -10% / Seuil 2 = 100 pts → Bière offerte<br />
+        Un client qui dépense 60€ en une soirée atteint directement le seuil 1.
+      </div>
+
+      <button onClick={saveSettings} style={{ padding: "0.75rem 2rem", background: saved ? "var(--green)" : "var(--dark)", color: "white", border: "none", borderRadius: 10, cursor: "pointer", fontWeight: 700, fontFamily: "'DM Sans', sans-serif", marginBottom: "1.5rem", transition: "background 0.3s" }}>
+        {saved ? "✅ Enregistré !" : "💾 Enregistrer la configuration"}
+      </button>
+
+      {/* Liste membres */}
+      <div style={{ fontWeight: 600, fontSize: "0.9rem", color: "var(--warm-gray)", marginBottom: "0.75rem" }}>
+        👥 Membres ({membres.length}) — classés par points
+      </div>
+      {membres.length === 0 ? (
+        <div className="empty-state"><div className="empty-icon">💎</div><div>Aucun membre pour le moment</div></div>
+      ) : membres.map(m => (
+        <div key={m.id} style={{ background: "white", border: "1.5px solid var(--border)", borderRadius: 12, padding: "0.9rem 1rem", marginBottom: "0.5rem", display: "flex", alignItems: "center", gap: "0.75rem" }}>
+          <div style={{ fontSize: "1.2rem" }}>{m.contact_type === "email" ? "📧" : "📱"}</div>
+          <div style={{ flex: 1 }}>
+            <div style={{ fontWeight: 500, fontSize: "0.88rem" }}>{m.contact}</div>
+            <div style={{ fontSize: "0.72rem", color: "var(--warm-gray)", marginTop: "0.1rem" }}>
+              Total cumulé : {m.points_total} pts • Depuis {new Date(m.created_at).toLocaleDateString("fr-FR")}
+            </div>
+          </div>
+          <div style={{ textAlign: "right", minWidth: 60 }}>
+            <div style={{ fontFamily: "'Playfair Display', serif", fontSize: "1.1rem", color: "var(--gold)" }}>{m.points}</div>
+            <div style={{ fontSize: "0.68rem", color: "var(--warm-gray)" }}>points</div>
+          </div>
+          <div style={{ display: "flex", gap: "0.3rem" }}>
+            <button onClick={() => resetMembre(m.id)} style={{ padding: "0.3rem 0.6rem", background: "transparent", border: "1.5px solid var(--border)", borderRadius: 6, cursor: "pointer", fontSize: "0.75rem", color: "var(--warm-gray)" }} title="Remettre à zéro">↩</button>
+            <button className="del-btn" onClick={() => deleteMembre(m.id)}>✕</button>
+          </div>
+        </div>
+      ))}
     </div>
   );
 }
@@ -1803,6 +2086,7 @@ function AdminView() {
         <button style={tabStyle('promos')} onClick={() => setActiveTab('promos')}>🏷 Promos</button>
         <button style={tabStyle('dashboard')} onClick={() => setActiveTab('dashboard')}>📊 Dashboard</button>
         <button style={tabStyle('caisse')} onClick={() => setActiveTab('caisse')}>🧾 Caisse</button>
+        <button style={tabStyle('fidelite')} onClick={() => setActiveTab('fidelite')}>💎 Fidélité</button>
       </div>
 
       {/* TAB MENU */}
@@ -2097,6 +2381,9 @@ function AdminView() {
 
       {/* TAB CAISSE */}
       {activeTab === 'caisse' && <CaisseTab />}
+
+      {/* TAB FIDELITE */}
+      {activeTab === 'fidelite' && <FideliteTab />}
       {/* TAB ARCHIVES */}
       {activeTab === 'archives' && <ArchivesTab />}
 
