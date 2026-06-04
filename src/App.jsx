@@ -504,6 +504,14 @@ function PromoCodeField({ onApply }) {
 function GrandEcran() {
   const [orders, setOrders] = useState([]);
   const [time, setTime] = useState(new Date());
+  const settings = useSettings();
+
+  const bgColor = settings.ecran_bg || '#1A1208';
+  const numColor = settings.ecran_num_color || '#C8953A';
+  const textColor = settings.ecran_text_color || '#FFFFFF';
+  const bgOpacity = parseFloat(settings.ecran_bg_opacity || '0.15');
+  const bgImage = settings.ecran_bg_image || '';
+  const eventName = settings.event_name || 'Noisy en Fête';
 
   const fetchOrders = async () => {
     const { data } = await supabase.from('orders').select('*').eq('paid', true).in('status', ['prêt']).order('created_at', { ascending: true });
@@ -520,57 +528,70 @@ function GrandEcran() {
   }, []);
 
   return (
-    <div style={{ minHeight: '100vh', background: 'var(--dark)', color: 'white', padding: '2rem', fontFamily: "'DM Sans', sans-serif" }}>
-      {/* Header */}
-      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '2rem', borderBottom: '2px solid rgba(200,149,58,0.3)', paddingBottom: '1rem' }}>
-        <div>
-          <div style={{ fontFamily: "'Playfair Display', serif", fontSize: '2rem', color: 'var(--gold)' }}>🎉 Noisy en Fête</div>
-          <div style={{ color: 'rgba(255,255,255,0.6)', fontSize: '0.9rem', marginTop: '0.2rem' }}>Commandes prêtes à récupérer</div>
-        </div>
-        <div style={{ textAlign: 'right' }}>
-          <div style={{ fontFamily: "'Playfair Display', serif", fontSize: '2.5rem', color: 'var(--gold)' }}>
-            {time.toLocaleTimeString('fr-FR', { hour: '2-digit', minute: '2-digit' })}
-          </div>
-          <div style={{ color: 'rgba(255,255,255,0.5)', fontSize: '0.8rem' }}>
-            {time.toLocaleDateString('fr-FR', { weekday: 'long', day: 'numeric', month: 'long' })}
-          </div>
-        </div>
-      </div>
+    <div style={{ minHeight: '100vh', background: bgColor, color: textColor, padding: '2rem', fontFamily: "'DM Sans', sans-serif", position: 'relative', overflow: 'hidden' }}>
 
-      {orders.length === 0 ? (
-        <div style={{ textAlign: 'center', padding: '5rem', color: 'rgba(255,255,255,0.3)' }}>
-          <div style={{ fontSize: '4rem', marginBottom: '1rem' }}>👨‍🍳</div>
-          <div style={{ fontFamily: "'Playfair Display', serif", fontSize: '1.8rem' }}>Les commandes arrivent...</div>
-          <div style={{ fontSize: '1rem', marginTop: '0.5rem' }}>Aucune commande prête pour le moment</div>
-        </div>
-      ) : (
-        <>
-          <div style={{ textAlign: 'center', marginBottom: '2rem' }}>
-            <div style={{ fontSize: '1.1rem', color: 'rgba(255,255,255,0.7)' }}>
-              🔔 {orders.length} commande{orders.length > 1 ? 's' : ''} prête{orders.length > 1 ? 's' : ''} — Venez récupérer au stand !
-            </div>
-          </div>
-          <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(200px, 1fr))', gap: '1.5rem' }}>
-            {orders.map(order => (
-              <div key={order.id} style={{
-                background: 'var(--gold)', borderRadius: 20, padding: '2rem 1rem',
-                textAlign: 'center', animation: 'pulse 2s infinite',
-                boxShadow: '0 0 30px rgba(200,149,58,0.4)'
-              }}>
-                <div style={{ fontSize: '1rem', color: 'rgba(0,0,0,0.6)', marginBottom: '0.3rem', fontWeight: 600 }}>Emplacement</div>
-                <div style={{ fontFamily: "'Playfair Display', serif", fontSize: '4rem', color: 'var(--dark)', fontWeight: 900, lineHeight: 1 }}>
-                  {order.table_num}
-                </div>
-                <div style={{ fontSize: '0.85rem', color: 'rgba(0,0,0,0.5)', marginTop: '0.5rem' }}>#{order.id}</div>
-              </div>
-            ))}
-          </div>
-        </>
+      {/* Image de fond */}
+      {bgImage && (
+        <div style={{
+          position: 'fixed', inset: 0, zIndex: 0,
+          backgroundImage: `url(${bgImage})`,
+          backgroundSize: 'cover', backgroundPosition: 'center',
+          opacity: bgOpacity
+        }} />
       )}
 
-      {/* Footer */}
-      <div style={{ position: 'fixed', bottom: '1rem', left: 0, right: 0, textAlign: 'center', color: 'rgba(255,255,255,0.2)', fontSize: '0.75rem' }}>
-        🔴 Diffusion en direct • noisy-en-fete.vercel.app
+      {/* Contenu */}
+      <div style={{ position: 'relative', zIndex: 1 }}>
+        {/* Header */}
+        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '2rem', borderBottom: `2px solid ${numColor}40`, paddingBottom: '1rem' }}>
+          <div>
+            <div style={{ fontFamily: "'Playfair Display', serif", fontSize: '2.2rem', color: numColor }}>🎉 {eventName}</div>
+            <div style={{ color: `${textColor}99`, fontSize: '0.9rem', marginTop: '0.2rem' }}>Commandes prêtes à récupérer au stand</div>
+          </div>
+          <div style={{ textAlign: 'right' }}>
+            <div style={{ fontFamily: "'Playfair Display', serif", fontSize: '2.8rem', color: numColor }}>
+              {time.toLocaleTimeString('fr-FR', { hour: '2-digit', minute: '2-digit' })}
+            </div>
+            <div style={{ color: `${textColor}66`, fontSize: '0.8rem' }}>
+              {time.toLocaleDateString('fr-FR', { weekday: 'long', day: 'numeric', month: 'long' })}
+            </div>
+          </div>
+        </div>
+
+        {orders.length === 0 ? (
+          <div style={{ textAlign: 'center', padding: '5rem', color: `${textColor}44` }}>
+            <div style={{ fontSize: '5rem', marginBottom: '1rem' }}>👨‍🍳</div>
+            <div style={{ fontFamily: "'Playfair Display', serif", fontSize: '2rem', color: `${textColor}66` }}>Les commandes arrivent...</div>
+            <div style={{ fontSize: '1.1rem', marginTop: '0.5rem' }}>Aucune commande prête pour le moment</div>
+          </div>
+        ) : (
+          <>
+            <div style={{ textAlign: 'center', marginBottom: '2.5rem' }}>
+              <div style={{ fontSize: '1.2rem', color: `${textColor}cc` }}>
+                🔔 {orders.length} commande{orders.length > 1 ? 's' : ''} prête{orders.length > 1 ? 's' : ''} — Venez récupérer au stand !
+              </div>
+            </div>
+            <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(220px, 1fr))', gap: '2rem' }}>
+              {orders.map(order => (
+                <div key={order.id} style={{
+                  background: numColor, borderRadius: 24, padding: '2.5rem 1.5rem',
+                  textAlign: 'center', animation: 'pulse 2s infinite',
+                  boxShadow: `0 0 40px ${numColor}66`
+                }}>
+                  <div style={{ fontSize: '1rem', color: bgColor, marginBottom: '0.3rem', fontWeight: 600, opacity: 0.7 }}>Emplacement</div>
+                  <div style={{ fontFamily: "'Playfair Display', serif", fontSize: '5rem', color: bgColor, fontWeight: 900, lineHeight: 1 }}>
+                    {order.table_num}
+                  </div>
+                  <div style={{ fontSize: '0.9rem', color: bgColor, marginTop: '0.5rem', opacity: 0.5 }}>#{order.id}</div>
+                </div>
+              ))}
+            </div>
+          </>
+        )}
+
+        <div style={{ position: 'fixed', bottom: '1rem', left: 0, right: 0, textAlign: 'center', color: `${textColor}22`, fontSize: '0.75rem' }}>
+          🔴 Diffusion en direct • noisy-en-fete.vercel.app
+        </div>
       </div>
     </div>
   );
@@ -1419,6 +1440,203 @@ function CaisseTab() {
             {resetting ? '⏳ En cours...' : '🗑 Remettre à zéro'}
           </button>
         </div>
+      </div>
+    </div>
+  );
+}
+
+// ─── ECRAN TAB ───────────────────────────────────────────────────────────────
+function EcranTab() {
+  const settings = useSettings();
+  const [bgColor, setBgColor] = useState('#1A1208');
+  const [numColor, setNumColor] = useState('#C8953A');
+  const [textColor, setTextColor] = useState('#FFFFFF');
+  const [bgOpacity, setBgOpacity] = useState('0.15');
+  const [bgImage, setBgImage] = useState('');
+  const [saved, setSaved] = useState(false);
+  const [uploading, setUploading] = useState(false);
+  const [previewOrders] = useState([{ table_num: 3, id: 42 }, { table_num: 7, id: 43 }]);
+
+  useEffect(() => {
+    setBgColor(settings.ecran_bg || '#1A1208');
+    setNumColor(settings.ecran_num_color || '#C8953A');
+    setTextColor(settings.ecran_text_color || '#FFFFFF');
+    setBgOpacity(settings.ecran_bg_opacity || '0.15');
+    setBgImage(settings.ecran_bg_image || '');
+  }, [settings.ecran_bg, settings.ecran_num_color, settings.ecran_text_color, settings.ecran_bg_opacity, settings.ecran_bg_image]);
+
+  const handleImageUpload = async (e) => {
+    const file = e.target.files[0];
+    if (!file) return;
+    setUploading(true);
+    const reader = new FileReader();
+    reader.onload = async (ev) => {
+      const base64 = ev.target.result;
+      await saveSetting('ecran_bg_image', base64);
+      setBgImage(base64);
+      setUploading(false);
+    };
+    reader.readAsDataURL(file);
+  };
+
+  const removeImage = async () => {
+    await saveSetting('ecran_bg_image', '');
+    setBgImage('');
+  };
+
+  const save = async () => {
+    await saveSetting('ecran_bg', bgColor);
+    await saveSetting('ecran_num_color', numColor);
+    await saveSetting('ecran_text_color', textColor);
+    await saveSetting('ecran_bg_opacity', bgOpacity);
+    setSaved(true);
+    setTimeout(() => setSaved(false), 2000);
+  };
+
+  // Aperçu mini du grand écran
+  const PreviewMini = () => (
+    <div style={{
+      position: 'relative', borderRadius: 12, overflow: 'hidden',
+      background: bgColor, height: 200, marginBottom: '1rem',
+      border: '2px solid var(--border)'
+    }}>
+      {bgImage && (
+        <div style={{
+          position: 'absolute', inset: 0,
+          backgroundImage: `url(${bgImage})`,
+          backgroundSize: 'cover', backgroundPosition: 'center',
+          opacity: parseFloat(bgOpacity)
+        }} />
+      )}
+      <div style={{ position: 'relative', zIndex: 1, padding: '0.75rem', height: '100%', display: 'flex', flexDirection: 'column' }}>
+        <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: '0.5rem', borderBottom: `1px solid ${numColor}40`, paddingBottom: '0.4rem' }}>
+          <div style={{ color: numColor, fontFamily: "'Playfair Display', serif", fontSize: '0.9rem', fontWeight: 700 }}>🎉 Noisy en Fête</div>
+          <div style={{ color: numColor, fontFamily: "'Playfair Display', serif", fontSize: '0.9rem' }}>21:34</div>
+        </div>
+        <div style={{ flex: 1, display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '1rem' }}>
+          {previewOrders.map(o => (
+            <div key={o.id} style={{ background: numColor, borderRadius: 10, padding: '0.5rem 0.75rem', textAlign: 'center', minWidth: 60 }}>
+              <div style={{ fontSize: '0.55rem', color: bgColor, fontWeight: 600, opacity: 0.7 }}>Emplac.</div>
+              <div style={{ fontFamily: "'Playfair Display', serif", fontSize: '1.8rem', color: bgColor, fontWeight: 900, lineHeight: 1 }}>{o.table_num}</div>
+            </div>
+          ))}
+        </div>
+        <div style={{ textAlign: 'center', color: textColor, fontSize: '0.6rem', opacity: 0.5, marginTop: '0.3rem' }}>
+          Venez récupérer votre commande au stand 🎪
+        </div>
+      </div>
+    </div>
+  );
+
+  return (
+    <div>
+      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '1rem' }}>
+        <div className="view-title" style={{ fontSize: '1.4rem' }}>📺 Grand Écran</div>
+        <button onClick={() => window.open(window.location.origin + '?ecran=1', '_blank')}
+          style={{ padding: '0.5rem 1rem', background: 'var(--dark)', color: 'white', border: 'none', borderRadius: 8, cursor: 'pointer', fontWeight: 600, fontFamily: "'DM Sans', sans-serif", fontSize: '0.82rem' }}>
+          🚀 Ouvrir l&apos;écran
+        </button>
+      </div>
+
+      {/* Aperçu */}
+      <div style={{ fontWeight: 600, fontSize: '0.85rem', color: 'var(--warm-gray)', marginBottom: '0.5rem' }}>👁 Aperçu en direct</div>
+      <PreviewMini />
+
+      {/* Image de fond */}
+      <div style={{ background: 'white', border: '1.5px solid var(--border)', borderRadius: 14, padding: '1.2rem', marginBottom: '1rem' }}>
+        <div style={{ fontWeight: 600, marginBottom: '0.3rem' }}>🖼 Image de fond</div>
+        <div style={{ fontSize: '0.75rem', color: 'var(--warm-gray)', marginBottom: '0.75rem' }}>
+          Taille recommandée : <strong>1920×1080 px minimum</strong> (format 16:9, JPG ou PNG).<br />
+          L&apos;image sera affichée en transparence pour ne pas gêner la lisibilité des numéros.
+        </div>
+        {bgImage ? (
+          <div style={{ display: 'flex', alignItems: 'center', gap: '0.75rem', marginBottom: '0.5rem' }}>
+            <img src={bgImage} alt="bg" style={{ width: 80, height: 45, objectFit: 'cover', borderRadius: 6, border: '1.5px solid var(--border)' }} />
+            <div style={{ flex: 1, fontSize: '0.82rem', color: 'var(--green)', fontWeight: 600 }}>✅ Image chargée</div>
+            <button onClick={removeImage} className="del-btn">✕ Supprimer</button>
+          </div>
+        ) : (
+          <label style={{
+            display: 'inline-flex', alignItems: 'center', gap: '0.5rem',
+            padding: '0.6rem 1.2rem', background: 'var(--cream)', border: '2px dashed var(--border)',
+            borderRadius: 8, cursor: 'pointer', fontSize: '0.85rem', fontWeight: 500
+          }}>
+            {uploading ? '⏳ Chargement...' : '📁 Choisir une image'}
+            <input type="file" accept="image/*" onChange={handleImageUpload} style={{ display: 'none' }} disabled={uploading} />
+          </label>
+        )}
+
+        {bgImage && (
+          <div style={{ marginTop: '0.75rem' }}>
+            <div style={{ fontSize: '0.78rem', color: 'var(--warm-gray)', marginBottom: '0.3rem' }}>
+              Transparence de l&apos;image : <strong>{Math.round(parseFloat(bgOpacity) * 100)}%</strong>
+            </div>
+            <input type="range" min="0.05" max="0.6" step="0.05" value={bgOpacity}
+              onChange={e => setBgOpacity(e.target.value)}
+              style={{ width: '100%', accentColor: 'var(--gold)' }}
+            />
+            <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: '0.68rem', color: 'var(--warm-gray)' }}>
+              <span>Très transparente</span><span>Plus visible</span>
+            </div>
+          </div>
+        )}
+      </div>
+
+      {/* Couleurs */}
+      <div style={{ background: 'white', border: '1.5px solid var(--border)', borderRadius: 14, padding: '1.2rem', marginBottom: '1rem' }}>
+        <div style={{ fontWeight: 600, marginBottom: '0.75rem' }}>🎨 Couleurs</div>
+        <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr 1fr', gap: '1rem' }}>
+          {[
+            { label: '🌑 Fond', value: bgColor, setter: setBgColor },
+            { label: '⭐ Numéros', value: numColor, setter: setNumColor },
+            { label: '✍️ Texte', value: textColor, setter: setTextColor },
+          ].map(({ label, value, setter }) => (
+            <div key={label} style={{ textAlign: 'center' }}>
+              <input type="color" value={value} onChange={e => setter(e.target.value)}
+                style={{ width: '100%', height: 48, borderRadius: 10, border: '1.5px solid var(--border)', cursor: 'pointer', padding: 3 }}
+              />
+              <div style={{ fontSize: '0.72rem', color: 'var(--warm-gray)', marginTop: '0.3rem', fontWeight: 500 }}>{label}</div>
+              <div style={{ fontSize: '0.65rem', color: 'var(--warm-gray)', fontFamily: 'monospace' }}>{value}</div>
+            </div>
+          ))}
+        </div>
+      </div>
+
+      {/* Thèmes rapides */}
+      <div style={{ background: 'white', border: '1.5px solid var(--border)', borderRadius: 14, padding: '1.2rem', marginBottom: '1rem' }}>
+        <div style={{ fontWeight: 600, marginBottom: '0.75rem' }}>⚡ Thèmes rapides</div>
+        <div style={{ display: 'flex', gap: '0.5rem', flexWrap: 'wrap' }}>
+          {[
+            { name: 'Nuit doré', bg: '#1A1208', num: '#C8953A', txt: '#FFFFFF' },
+            { name: 'Fête', bg: '#1A0A2E', num: '#FF6B9D', txt: '#FFFFFF' },
+            { name: 'Nature', bg: '#1B3A1B', num: '#7CB342', txt: '#FFFFFF' },
+            { name: 'Océan', bg: '#0D2137', num: '#29B6F6', txt: '#FFFFFF' },
+            { name: 'Rouge feu', bg: '#1A0000', num: '#FF5722', txt: '#FFFFFF' },
+          ].map(t => (
+            <button key={t.name} onClick={() => { setBgColor(t.bg); setNumColor(t.num); setTextColor(t.txt); }}
+              style={{
+                padding: '0.4rem 0.9rem', borderRadius: 100, cursor: 'pointer', fontSize: '0.78rem', fontWeight: 600,
+                border: '2px solid', borderColor: bgColor === t.bg ? 'var(--gold)' : 'var(--border)',
+                fontFamily: "'DM Sans', sans-serif",
+                background: `linear-gradient(135deg, ${t.bg} 50%, ${t.num} 100%)`,
+                color: t.txt
+              }}>{t.name}</button>
+          ))}
+        </div>
+      </div>
+
+      <div style={{ display: 'flex', gap: '0.75rem' }}>
+        <button onClick={save} style={{
+          flex: 1, padding: '0.75rem', background: saved ? 'var(--green)' : 'var(--dark)',
+          color: 'white', border: 'none', borderRadius: 10, cursor: 'pointer',
+          fontWeight: 700, fontFamily: "'DM Sans', sans-serif", transition: 'background 0.3s'
+        }}>
+          {saved ? '✅ Enregistré !' : '💾 Enregistrer'}
+        </button>
+        <button onClick={() => window.open(window.location.origin + '?ecran=1', '_blank')}
+          style={{ flex: 1, padding: '0.75rem', background: 'var(--gold)', color: 'var(--dark)', border: 'none', borderRadius: 10, cursor: 'pointer', fontWeight: 700, fontFamily: "'DM Sans', sans-serif" }}>
+          📺 Ouvrir l&apos;écran TV
+        </button>
       </div>
     </div>
   );
@@ -2473,6 +2691,7 @@ function AdminView() {
         <button style={tabStyle('dashboard')} onClick={() => setActiveTab('dashboard')}>📊 Dashboard</button>
         <button style={tabStyle('caisse')} onClick={() => setActiveTab('caisse')}>🧾 Caisse</button>
         <button style={tabStyle('fidelite')} onClick={() => setActiveTab('fidelite')}>💎 Fidélité</button>
+        <button style={tabStyle('ecran')} onClick={() => setActiveTab('ecran')}>📺 Écran</button>
       </div>
 
       {/* TAB MENU */}
@@ -2770,6 +2989,9 @@ function AdminView() {
 
       {/* TAB FIDELITE */}
       {activeTab === 'fidelite' && <FideliteTab />}
+
+      {/* TAB ECRAN */}
+      {activeTab === 'ecran' && <EcranTab />}
       {/* TAB ARCHIVES */}
       {activeTab === 'archives' && <ArchivesTab />}
 
