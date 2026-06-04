@@ -2077,20 +2077,14 @@ function ThemeTab() {
   const [selectedTheme, setSelectedTheme] = useState('Classique');
   const [customColors, setCustomColors] = useState({});
   const [saved, setSaved] = useState(false);
-  const [preview, setPreview] = useState({});
+  const settings = useSettings();
 
   useEffect(() => {
-    supabase.from('settings').select('*').then(({ data }) => {
-      if (data) {
-        const s = {};
-        data.forEach(r => s[r.key] = r.value);
-        if (s.theme_name) setSelectedTheme(s.theme_name);
-        if (s.theme_custom) {
-          try { setCustomColors(JSON.parse(s.theme_custom)); } catch(e) {}
-        }
-      }
-    });
-  }, []);
+    if (settings.theme_name) setSelectedTheme(settings.theme_name);
+    if (settings.theme_custom) {
+      try { setCustomColors(JSON.parse(settings.theme_custom)); } catch(e) {}
+    }
+  }, [settings.theme_name, settings.theme_custom]);
 
   const applyTheme = (name) => {
     setSelectedTheme(name);
