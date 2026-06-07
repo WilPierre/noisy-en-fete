@@ -67,121 +67,132 @@ const css = `
   /* ── NAV ── */
   .nav {
     background: var(--nav-bg);
-    padding: 0.6rem 1.5rem;
-    display: flex; gap: 0.5rem; align-items: center; flex-wrap: wrap;
+    padding: 0.65rem 1.2rem;
+    display: flex; gap: 0.4rem; align-items: center;
     position: sticky; top: 0; z-index: 50;
-    box-shadow: 0 2px 20px rgba(0,0,0,0.4);
-    backdrop-filter: blur(10px);
+    box-shadow: 0 1px 0 rgba(200,149,58,0.15), 0 4px 24px rgba(0,0,0,0.5);
+    border-bottom: 1px solid rgba(200,149,58,0.12);
   }
   .nav-title {
     font-family: 'Playfair Display', serif;
     color: var(--gold);
-    font-size: 1.05rem;
+    font-size: 1rem;
     margin-right: auto;
     letter-spacing: 0.03em;
-    display: flex; align-items: center; gap: 0.4rem;
+    display: flex; align-items: center; gap: 0.5rem;
+    white-space: nowrap;
   }
   .nav-btn {
-    padding: 0.38rem 0.9rem;
-    border-radius: 100px;
-    border: 1.5px solid transparent;
+    padding: 0.35rem 0.75rem;
+    border-radius: 8px;
+    border: 1px solid transparent;
     cursor: pointer;
     font-family: 'DM Sans', sans-serif;
-    font-size: 0.8rem;
+    font-size: 0.95rem;
     font-weight: 600;
     transition: var(--transition);
-    letter-spacing: 0.02em;
+    line-height: 1;
   }
   .nav-btn.active {
-    background: var(--gold);
-    color: var(--nav-bg);
-    border-color: var(--gold);
-    box-shadow: 0 0 16px rgba(200,149,58,0.4);
+    background: rgba(200,149,58,0.2);
+    color: var(--gold);
+    border-color: rgba(200,149,58,0.3);
   }
   .nav-btn:not(.active) {
-    background: rgba(255,255,255,0.05);
-    color: rgba(255,255,255,0.5);
-    border-color: rgba(255,255,255,0.1);
+    background: transparent;
+    color: rgba(255,255,255,0.35);
+    border-color: transparent;
   }
   .nav-btn:not(.active):hover {
-    border-color: var(--gold);
-    color: var(--gold);
-    background: rgba(200,149,58,0.1);
+    color: rgba(255,255,255,0.7);
+    background: rgba(255,255,255,0.06);
   }
 
   /* ── CLIENT WRAP ── */
-  .client-wrap { max-width: 500px; margin: 0 auto; padding: 1.5rem 1rem 7rem; }
+  .client-wrap { max-width: 520px; margin: 0 auto; padding: 0 1rem 7rem; }
 
   /* ── HERO ── */
   .hero {
     text-align: center;
-    padding: 2rem 1rem 1.5rem;
+    padding: 2.5rem 1.5rem 2rem;
     background: var(--hero-gradient);
-    margin: -1.5rem -1rem 1.5rem;
-    border-radius: 0 0 var(--radius-xl) var(--radius-xl);
+    margin: -1.5rem -1rem 1.8rem;
+    border-radius: 0 0 32px 32px;
     position: relative;
     overflow: hidden;
   }
   .hero::before {
     content: '';
     position: absolute; inset: 0;
-    background: radial-gradient(circle at 30% 50%, rgba(200,149,58,0.15) 0%, transparent 60%),
-                radial-gradient(circle at 70% 50%, rgba(45,80,22,0.2) 0%, transparent 60%);
+    background:
+      radial-gradient(ellipse at 20% 80%, rgba(200,149,58,0.2) 0%, transparent 50%),
+      radial-gradient(ellipse at 80% 20%, rgba(45,80,22,0.3) 0%, transparent 50%),
+      radial-gradient(ellipse at 50% 50%, rgba(200,149,58,0.05) 0%, transparent 70%);
+  }
+  .hero::after {
+    content: '';
+    position: absolute; bottom: 0; left: 0; right: 0;
+    height: 1px;
+    background: linear-gradient(90deg, transparent, rgba(200,149,58,0.5), transparent);
   }
   .hero-title {
     font-family: 'Playfair Display', serif;
-    font-size: 2rem;
+    font-size: 2.2rem;
     color: #ffffff;
     position: relative;
-    text-shadow: 0 2px 20px rgba(0,0,0,0.5);
+    text-shadow: 0 2px 30px rgba(0,0,0,0.6);
     letter-spacing: 0.02em;
+    line-height: 1.1;
   }
   .hero-sub {
     color: var(--gold);
-    font-size: 0.82rem;
-    margin-top: 0.3rem;
+    font-size: 0.75rem;
+    margin-top: 0.5rem;
     position: relative;
-    font-weight: 500;
-    letter-spacing: 0.05em;
+    font-weight: 600;
+    letter-spacing: 0.12em;
     text-transform: uppercase;
+    opacity: 0.9;
   }
   .table-badge {
     display: inline-flex; align-items: center; gap: 0.4rem;
     background: var(--gold);
     color: #000;
-    padding: 0.35rem 1rem;
+    padding: 0.4rem 1.2rem;
     border-radius: 100px;
-    font-size: 0.8rem;
+    font-size: 0.82rem;
     font-weight: 700;
-    margin: 0.75rem 0 1.5rem;
-    box-shadow: 0 4px 16px rgba(200,149,58,0.4);
-    letter-spacing: 0.03em;
+    margin: 1rem 0 1.5rem;
+    box-shadow: 0 4px 20px rgba(200,149,58,0.45);
+    letter-spacing: 0.04em;
   }
 
   /* ── TABLE SELECTOR ── */
   .table-select-wrap { max-width: 420px; margin: 0 auto; padding: 2rem 1rem; text-align: center; }
-  .table-grid { display: grid; grid-template-columns: repeat(4, 1fr); gap: 0.6rem; margin-top: 1.5rem; }
+  .table-grid { display: grid; grid-template-columns: repeat(4, 1fr); gap: 0.55rem; margin-top: 1.5rem; }
   .table-btn {
-    padding: 1rem 0.5rem;
+    aspect-ratio: 1;
     border-radius: var(--radius-md);
     border: 1.5px solid var(--border);
     background: var(--card-bg);
     cursor: pointer;
     font-family: 'Playfair Display', serif;
-    font-size: 1.1rem;
+    font-size: 1.15rem;
     font-weight: 700;
     transition: var(--transition);
     color: var(--dark);
     box-shadow: var(--shadow-sm);
+    display: flex; align-items: center; justify-content: center;
   }
   .table-btn:hover {
     border-color: var(--gold);
     background: var(--gold);
     color: #000;
-    transform: translateY(-3px);
-    box-shadow: 0 8px 24px rgba(200,149,58,0.35);
+    transform: translateY(-3px) scale(1.05);
+    box-shadow: 0 8px 24px rgba(200,149,58,0.4);
+    z-index: 1; position: relative;
   }
-  .table-btn:active { transform: scale(0.96); }
+  .table-btn:active { transform: scale(0.95); }
 
   /* ── CATEGORIES ── */
   .category-tabs { display: flex; gap: 0.4rem; overflow-x: auto; padding-bottom: 0.5rem; margin-bottom: 1.2rem; }
@@ -234,7 +245,13 @@ const css = `
   }
   .menu-item:hover { border-color: var(--gold); box-shadow: var(--shadow-md); transform: translateX(3px); }
   .menu-item:hover::before { transform: scaleY(1); }
-  .item-emoji { font-size: 1.8rem; width: 42px; text-align: center; flex-shrink: 0; }
+  .item-emoji {
+    font-size: 1.9rem; width: 44px; height: 44px;
+    display: flex; align-items: center; justify-content: center;
+    flex-shrink: 0;
+    background: var(--cream);
+    border-radius: 12px;
+  }
   .item-info { flex: 1; min-width: 0; }
   .item-name { font-weight: 600; font-size: 0.92rem; color: var(--dark); }
   .item-price { color: var(--gold); font-weight: 700; font-size: 0.85rem; margin-top: 0.1rem; font-family: 'Playfair Display', serif; }
@@ -583,25 +600,27 @@ const css = `
 
   /* ── THEME SWITCHER ── */
   .theme-switcher {
-    display: flex; gap: 0.4rem; align-items: center;
-    background: rgba(255,255,255,0.07);
-    border-radius: 100px;
+    display: flex; align-items: center;
+    background: rgba(255,255,255,0.06);
+    border: 1px solid rgba(255,255,255,0.08);
+    border-radius: 8px;
     padding: 0.2rem;
-    margin-left: 0.5rem;
+    gap: 0.1rem;
+    margin-left: 0.2rem;
   }
   .theme-switch-btn {
-    padding: 0.3rem 0.7rem;
-    border-radius: 100px;
+    width: 28px; height: 26px;
+    border-radius: 6px;
     border: none;
     cursor: pointer;
-    font-size: 0.72rem;
-    font-weight: 700;
+    font-size: 0.85rem;
+    display: flex; align-items: center; justify-content: center;
     transition: var(--transition);
-    font-family: 'DM Sans', sans-serif;
+    background: transparent;
+    color: rgba(255,255,255,0.35);
   }
-  .theme-switch-btn.active { background: var(--gold); color: #000; }
-  .theme-switch-btn:not(.active) { background: transparent; color: rgba(255,255,255,0.4); }
-  .theme-switch-btn:not(.active):hover { color: rgba(255,255,255,0.8); }
+  .theme-switch-btn.active { background: rgba(200,149,58,0.25); color: var(--gold); }
+  .theme-switch-btn:not(.active):hover { color: rgba(255,255,255,0.7); background: rgba(255,255,255,0.06); }
 
   @media print {
     .nav, .admin-wrap > *:not(.qr-section) { display: none !important; }
@@ -725,16 +744,17 @@ function PaymentForm({ totalPrice, tableNum, cartItems, comment, onSuccess }) {
 function TableSelector({ onSelect, welcomeMsg }) {
   return (
     <div className="table-select-wrap">
-      <img src="/logo.png" alt="Noisy en Fête" style={{ width: '160px', maxWidth: '60vw', margin: '0 auto 1rem', display: 'block' }} />
+      <img src="/logo.png" alt="Noisy en Fête" style={{ width: '140px', maxWidth: '55vw', margin: '0 auto 1.2rem', display: 'block', filter: 'drop-shadow(0 8px 24px rgba(200,149,58,0.3))' }} />
       {welcomeMsg && (
         <div style={{
-          background: 'var(--gold)', color: 'var(--dark)', borderRadius: 12,
-          padding: '0.75rem 1rem', marginBottom: '1rem', fontSize: '0.88rem',
-          fontWeight: 500, lineHeight: 1.5
+          background: 'linear-gradient(135deg, var(--gold), var(--gold-light))',
+          color: '#000', borderRadius: 12,
+          padding: '0.75rem 1rem', marginBottom: '1.2rem', fontSize: '0.88rem',
+          fontWeight: 600, lineHeight: 1.5, boxShadow: '0 4px 16px rgba(200,149,58,0.3)'
         }}>🎉 {welcomeMsg}</div>
       )}
-      <div style={{ fontFamily: "'Playfair Display', serif", fontSize: "1.8rem" }}>Votre table</div>
-      <p style={{ color: "var(--warm-gray)", fontSize: "1rem", marginTop: "0.5rem", fontWeight: 500 }}>Quel est votre numéro de table / emplacement ?</p>
+      <div style={{ fontFamily: "'Playfair Display', serif", fontSize: "1.9rem", color: 'var(--dark)', fontWeight: 700 }}>Votre emplacement</div>
+      <p style={{ color: "var(--warm-gray)", fontSize: "0.9rem", marginTop: "0.4rem", fontWeight: 400 }}>Choisissez votre numéro ci-dessous</p>
       <div className="table-grid">
         {Array.from({ length: 28 }, (_, i) => i + 1).map(n => (
           <button key={n} className="table-btn" onClick={() => onSelect(n)}>{n}</button>
@@ -1372,12 +1392,12 @@ function ClientView() {
   return (
     <div className="client-wrap">
       <div className="hero">
-        <img src="/logo.png" alt="Noisy en Fête" style={{ width: 80, height: 80, borderRadius: '50%', objectFit: 'cover', marginBottom: '0.75rem', boxShadow: '0 4px 20px rgba(200,149,58,0.4)', border: '2px solid rgba(200,149,58,0.4)' }} />
+        <img src="/logo.png" alt="Noisy en Fête" style={{ width: 100, height: 100, borderRadius: '50%', objectFit: 'cover', marginBottom: '0.8rem', boxShadow: '0 0 0 3px rgba(200,149,58,0.5), 0 8px 32px rgba(0,0,0,0.4)', border: '3px solid rgba(200,149,58,0.6)' }} />
         <div className="hero-title">{RESTAURANT}</div>
         <div className="hero-sub">✦ Commandez depuis votre emplacement ✦</div>
       </div>
       <div style={{ textAlign: 'center' }}>
-        <span className="table-badge">🪑 Table {tableNum}</span>
+        <span className="table-badge">Emplacement {tableNum}</span>
       </div>
 
       {notifState === 'ask' && (
