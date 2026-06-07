@@ -3069,17 +3069,27 @@ function AdminView() {
 
   const startEdit = (item) => {
     setEditingId(item.id);
-    setEditForm({ name: item.name, price: item.price, emoji: item.emoji, category: item.category });
+    setEditForm({
+      name: item.name,
+      price: String(item.price),
+      emoji: item.emoji,
+      category: item.category,
+      extras: item.extras || []
+    });
   };
 
   const saveEdit = async (id) => {
     if (!editForm.name || !editForm.price) return;
-    await supabase.from('menu').update({
-      name: editForm.name, price: parseFloat(editForm.price),
-      emoji: editForm.emoji, category: editForm.category,
-      extras: editForm.extras || []
-    }).eq('id', id);
-    setMenu(m => m.map(i => i.id === id ? { ...i, ...editForm, price: parseFloat(editForm.price) } : i));
+    const updates = {
+      name: editForm.name,
+      price: parseFloat(editForm.price),
+      emoji: editForm.emoji,
+      category: editForm.category,
+      extras: (editForm.extras || []).map(e => ({ name: e.name, price: parseFloat(e.price) || 0 }))
+    };
+    const { error } = await supabase.from('menu').update(updates).eq('id', id);
+    if (error) { console.error('Erreur saveEdit:', error); alert('Erreur lors de la sauvegarde : ' + error.message); return; }
+    setMenu(m => m.map(i => i.id === id ? { ...i, ...updates } : i));
     setEditingId(null);
   };
 
