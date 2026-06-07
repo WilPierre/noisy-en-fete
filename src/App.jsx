@@ -393,7 +393,7 @@ const css = `
     bottom: 1.25rem;
     left: 50%;
     transform: translateX(-50%);
-    background: var(--text);
+    background: var(--accent2);
     border-radius: var(--r2);
     padding: 0.85rem 1.25rem;
     width: calc(100% - 2.5rem);
@@ -403,17 +403,17 @@ const css = `
     justify-content: space-between;
     cursor: pointer;
     transition: transform 0.2s var(--ease), box-shadow 0.2s var(--ease);
-    box-shadow: 0 8px 32px rgba(0,0,0,0.2);
+    box-shadow: 0 8px 32px rgba(200,149,58,0.4);
     z-index: 50;
   }
 
   .cart-bar:hover {
     transform: translateX(-50%) translateY(-2px);
-    box-shadow: 0 16px 40px rgba(0,0,0,0.25);
+    box-shadow: 0 16px 40px rgba(200,149,58,0.5);
   }
 
   .cart-count {
-    background: var(--accent2);
+    background: rgba(0,0,0,0.2);
     color: #fff;
     border-radius: 50%;
     width: 28px;
@@ -1771,8 +1771,8 @@ function ClientView() {
 
   return (
     <div className="client-wrap">
-      <div style={{ padding: '1.25rem 1.25rem 0', display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
-        <img src="/logo.png" alt="Noisy en Fête" style={{ height: 36, width: 'auto' }} />
+      <div style={{ padding: '1.25rem 1.25rem 0.5rem', textAlign: 'center' }}>
+        <img src="/logo.png" alt="Noisy en Fête" style={{ height: 140, maxWidth: '55vw', width: 'auto', display: 'block', margin: '0 auto 0.75rem' }} />
         <span className="table-badge" style={{ margin: 0 }}>Emplacement {tableNum}</span>
       </div>
 
@@ -1852,7 +1852,7 @@ function ClientView() {
         <div className="cart-bar" onClick={() => setShowCart(true)}>
           <div style={{ display: 'flex', alignItems: 'center', gap: '0.75rem' }}>
             <div className="cart-count">{totalItems}</div>
-            <span style={{ fontWeight: 500 }}>Voir ma commande</span>
+            <span style={{ fontWeight: 700, color: '#fff', fontSize: '0.9rem' }}>Voir ma commande</span>
           </div>
           <span className="cart-total">{totalPrice.toFixed(2)} €</span>
         </div>
