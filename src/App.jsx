@@ -8,624 +8,1004 @@ const stripePromise = loadStripe('pk_live_51TYLfRCdBcuJvSgRIp89A5ClD2gaO1vyBsuKR
 
 // ─── CSS ──────────────────────────────────────────────────────────────────────
 const VISUAL_THEMES = {
-  dark: {
-    name: 'Festif Sombre',
-    '--cream': '#0D0D0D',
-    '--dark': '#F5F0E8',
-    '--gold': '#C8953A',
-    '--gold-light': '#E8B96A',
-    '--green': '#4CAF50',
-    '--red': '#EF5350',
-    '--warm-gray': '#9E9E9E',
-    '--border': '#2A2A2A',
-    '--blue': '#42A5F5',
-    '--card-bg': '#1A1A1A',
-    '--nav-bg': '#000000',
-    '--hero-gradient': 'linear-gradient(135deg, #000000 0%, #0D2A0D 50%, #1A1A00 100%)',
-  },
   light: {
-    name: 'Élégant Clair',
-    '--cream': '#FAF7F2',
-    '--dark': '#1A1208',
-    '--gold': '#C8953A',
-    '--gold-light': '#E8B96A',
-    '--green': '#2D5016',
-    '--red': '#8B2020',
-    '--warm-gray': '#8A7F72',
-    '--border': '#E8E0D4',
-    '--blue': '#1A4E7A',
-    '--card-bg': '#FFFFFF',
-    '--nav-bg': '#1A1208',
-    '--hero-gradient': 'linear-gradient(135deg, #1A1208 0%, #2D5016 100%)',
+    name: 'Clair',
+    '--bg': '#FFFFFF',
+    '--surface': '#F9F9F9',
+    '--surface2': '#F2F2F2',
+    '--text': '#111111',
+    '--text2': '#888888',
+    '--accent': '#1B5E20',
+    '--accent2': '#C8953A',
+    '--border': '#EBEBEB',
+    '--success': '#16A34A',
+    '--error': '#DC2626',
+    '--info': '#2563EB',
+  },
+  dark: {
+    name: 'Sombre',
+    '--bg': '#111111',
+    '--surface': '#1A1A1A',
+    '--surface2': '#222222',
+    '--text': '#F5F5F5',
+    '--text2': '#888888',
+    '--accent': '#C8953A',
+    '--accent2': '#E8B96A',
+    '--border': '#2A2A2A',
+    '--success': '#22C55E',
+    '--error': '#EF4444',
+    '--info': '#60A5FA',
   }
 };
 
 const css = `
-  @import url('https://fonts.googleapis.com/css2?family=Playfair+Display:wght@700;900&family=DM+Sans:wght@300;400;500;600;700&display=swap');
+  @import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800;900&display=swap');
 
   :root {
-    --cream: #FAF7F2; --dark: #1A1208; --gold: #C8953A; --gold-light: #E8B96A;
-    --green: #2D5016; --red: #8B2020; --warm-gray: #8A7F72; --border: #E8E0D4;
-    --blue: #1A4E7A; --card-bg: #FFFFFF; --nav-bg: #1A1208;
-    --hero-gradient: linear-gradient(135deg, #1A1208 0%, #2D5016 100%);
-    --shadow-sm: 0 2px 8px rgba(0,0,0,0.08);
-    --shadow-md: 0 4px 20px rgba(0,0,0,0.12);
-    --shadow-lg: 0 8px 40px rgba(0,0,0,0.18);
-    --radius-sm: 8px; --radius-md: 14px; --radius-lg: 20px; --radius-xl: 28px;
-    --transition: all 0.25s cubic-bezier(0.4, 0, 0.2, 1);
+    --bg: #FFFFFF;
+    --surface: #F9F9F9;
+    --surface2: #F2F2F2;
+    --text: #111111;
+    --text2: #888888;
+    --accent: #1B5E20;
+    --accent2: #C8953A;
+    --border: #EBEBEB;
+    --success: #16A34A;
+    --error: #DC2626;
+    --info: #2563EB;
+    --r: 12px;
+    --r2: 16px;
+    --r3: 24px;
+    --ease: cubic-bezier(0.4, 0, 0.2, 1);
   }
 
-  * { box-sizing: border-box; margin: 0; padding: 0; }
-  body { font-family: 'DM Sans', sans-serif; background: var(--cream); color: var(--dark); -webkit-font-smoothing: antialiased; }
-  .app { min-height: 100vh; display: flex; flex-direction: column; }
+  *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+  body {
+    font-family: 'Inter', -apple-system, BlinkMacSystemFont, sans-serif;
+    background: var(--bg);
+    color: var(--text);
+    -webkit-font-smoothing: antialiased;
+    -moz-osx-font-smoothing: grayscale;
+    line-height: 1.5;
+  }
+
+  .app { min-height: 100vh; }
 
   /* ── SCROLLBAR ── */
-  ::-webkit-scrollbar { width: 6px; height: 6px; }
+  ::-webkit-scrollbar { width: 4px; height: 4px; }
   ::-webkit-scrollbar-track { background: transparent; }
-  ::-webkit-scrollbar-thumb { background: var(--gold); border-radius: 3px; }
+  ::-webkit-scrollbar-thumb { background: var(--border); border-radius: 2px; }
 
-  /* ── NAV ── */
+  /* ═══════════════════════════════════════
+     NAV
+  ═══════════════════════════════════════ */
   .nav {
-    background: var(--nav-bg);
-    padding: 0.65rem 1.2rem;
-    display: flex; gap: 0.4rem; align-items: center;
-    position: sticky; top: 0; z-index: 50;
-    box-shadow: 0 1px 0 rgba(200,149,58,0.15), 0 4px 24px rgba(0,0,0,0.5);
-    border-bottom: 1px solid rgba(200,149,58,0.12);
+    background: var(--text);
+    height: 56px;
+    padding: 0 1.25rem;
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+    position: sticky;
+    top: 0;
+    z-index: 100;
   }
+
   .nav-title {
-    font-family: 'Playfair Display', serif;
-    color: var(--gold);
-    font-size: 1rem;
-    margin-right: auto;
-    letter-spacing: 0.03em;
-    display: flex; align-items: center; gap: 0.5rem;
-    white-space: nowrap;
-  }
-  .nav-btn {
-    padding: 0.35rem 0.75rem;
-    border-radius: 8px;
-    border: 1px solid transparent;
-    cursor: pointer;
-    font-family: 'DM Sans', sans-serif;
     font-size: 0.95rem;
+    font-weight: 700;
+    color: #fff;
+    margin-right: auto;
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+    letter-spacing: -0.01em;
+  }
+
+  .nav-btn {
+    height: 34px;
+    padding: 0 0.85rem;
+    border-radius: var(--r);
+    border: none;
+    cursor: pointer;
+    font-family: 'Inter', sans-serif;
+    font-size: 0.82rem;
     font-weight: 600;
-    transition: var(--transition);
-    line-height: 1;
+    transition: all 0.15s var(--ease);
+    display: flex;
+    align-items: center;
+    gap: 0.35rem;
   }
+
   .nav-btn.active {
-    background: rgba(200,149,58,0.2);
-    color: var(--gold);
-    border-color: rgba(200,149,58,0.3);
+    background: var(--accent2);
+    color: #fff;
   }
+
   .nav-btn:not(.active) {
-    background: transparent;
-    color: rgba(255,255,255,0.35);
-    border-color: transparent;
+    background: rgba(255,255,255,0.08);
+    color: rgba(255,255,255,0.5);
   }
+
   .nav-btn:not(.active):hover {
-    color: rgba(255,255,255,0.7);
-    background: rgba(255,255,255,0.06);
+    background: rgba(255,255,255,0.14);
+    color: rgba(255,255,255,0.85);
   }
 
-  /* ── CLIENT WRAP ── */
-  .client-wrap { max-width: 520px; margin: 0 auto; padding: 0 1rem 7rem; }
+  /* Theme switcher */
+  .theme-switcher {
+    display: flex;
+    background: rgba(255,255,255,0.08);
+    border-radius: var(--r);
+    padding: 3px;
+    gap: 2px;
+  }
 
-  /* ── HERO ── */
+  .theme-switch-btn {
+    width: 30px;
+    height: 28px;
+    border-radius: 9px;
+    border: none;
+    cursor: pointer;
+    font-size: 0.9rem;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    transition: all 0.15s var(--ease);
+    background: transparent;
+  }
+
+  .theme-switch-btn.active {
+    background: rgba(255,255,255,0.15);
+  }
+
+  /* ═══════════════════════════════════════
+     CLIENT
+  ═══════════════════════════════════════ */
+  .client-wrap {
+    max-width: 480px;
+    margin: 0 auto;
+    padding: 0 0 6rem;
+  }
+
+  /* HERO */
   .hero {
-    text-align: center;
+    background: var(--text);
     padding: 2.5rem 1.5rem 2rem;
-    background: var(--hero-gradient);
-    margin: -1.5rem -1rem 1.8rem;
-    border-radius: 0 0 32px 32px;
-    position: relative;
-    overflow: hidden;
+    text-align: center;
+    margin-bottom: 0;
   }
-  .hero::before {
-    content: '';
-    position: absolute; inset: 0;
-    background:
-      radial-gradient(ellipse at 20% 80%, rgba(200,149,58,0.2) 0%, transparent 50%),
-      radial-gradient(ellipse at 80% 20%, rgba(45,80,22,0.3) 0%, transparent 50%),
-      radial-gradient(ellipse at 50% 50%, rgba(200,149,58,0.05) 0%, transparent 70%);
-  }
-  .hero::after {
-    content: '';
-    position: absolute; bottom: 0; left: 0; right: 0;
-    height: 1px;
-    background: linear-gradient(90deg, transparent, rgba(200,149,58,0.5), transparent);
-  }
+
   .hero-title {
-    font-family: 'Playfair Display', serif;
-    font-size: 2.2rem;
-    color: #ffffff;
-    position: relative;
-    text-shadow: 0 2px 30px rgba(0,0,0,0.6);
-    letter-spacing: 0.02em;
+    font-size: 1.75rem;
+    font-weight: 800;
+    color: #fff;
+    letter-spacing: -0.03em;
     line-height: 1.1;
   }
+
   .hero-sub {
-    color: var(--gold);
-    font-size: 0.75rem;
-    margin-top: 0.5rem;
-    position: relative;
-    font-weight: 600;
-    letter-spacing: 0.12em;
+    font-size: 0.78rem;
+    color: rgba(255,255,255,0.45);
+    margin-top: 0.4rem;
+    font-weight: 500;
+    letter-spacing: 0.08em;
     text-transform: uppercase;
-    opacity: 0.9;
-  }
-  .table-badge {
-    display: inline-flex; align-items: center; gap: 0.4rem;
-    background: var(--gold);
-    color: #000;
-    padding: 0.4rem 1.2rem;
-    border-radius: 100px;
-    font-size: 0.82rem;
-    font-weight: 700;
-    margin: 1rem 0 1.5rem;
-    box-shadow: 0 4px 20px rgba(200,149,58,0.45);
-    letter-spacing: 0.04em;
   }
 
-  /* ── TABLE SELECTOR ── */
-  .table-select-wrap { max-width: 420px; margin: 0 auto; padding: 2rem 1rem; text-align: center; }
-  .table-grid { display: grid; grid-template-columns: repeat(4, 1fr); gap: 0.55rem; margin-top: 1.5rem; }
+  /* TABLE BADGE */
+  .table-badge {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.4rem;
+    background: var(--accent2);
+    color: #fff;
+    padding: 0.35rem 1rem;
+    border-radius: 100px;
+    font-size: 0.78rem;
+    font-weight: 700;
+    margin: 1.25rem 1.5rem 1.5rem;
+    letter-spacing: 0.02em;
+  }
+
+  /* TABLE SELECTOR */
+  .table-select-wrap {
+    max-width: 440px;
+    margin: 0 auto;
+    padding: 2.5rem 1.25rem;
+    text-align: center;
+  }
+
+  .table-grid {
+    display: grid;
+    grid-template-columns: repeat(4, 1fr);
+    gap: 0.5rem;
+    margin-top: 1.5rem;
+  }
+
   .table-btn {
     aspect-ratio: 1;
-    border-radius: var(--radius-md);
+    border-radius: var(--r);
     border: 1.5px solid var(--border);
-    background: var(--card-bg);
+    background: var(--bg);
     cursor: pointer;
-    font-family: 'Playfair Display', serif;
-    font-size: 1.15rem;
+    font-family: 'Inter', sans-serif;
+    font-size: 1.05rem;
     font-weight: 700;
-    transition: var(--transition);
-    color: var(--dark);
-    box-shadow: var(--shadow-sm);
-    display: flex; align-items: center; justify-content: center;
+    color: var(--text);
+    transition: all 0.15s var(--ease);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    letter-spacing: -0.02em;
   }
-  .table-btn:hover {
-    border-color: var(--gold);
-    background: var(--gold);
-    color: #000;
-    transform: translateY(-3px) scale(1.05);
-    box-shadow: 0 8px 24px rgba(200,149,58,0.4);
-    z-index: 1; position: relative;
-  }
-  .table-btn:active { transform: scale(0.95); }
 
-  /* ── CATEGORIES ── */
-  .category-tabs { display: flex; gap: 0.4rem; overflow-x: auto; padding-bottom: 0.5rem; margin-bottom: 1.2rem; }
+  .table-btn:hover {
+    background: var(--text);
+    color: #fff;
+    border-color: var(--text);
+    transform: scale(1.04);
+    box-shadow: 0 4px 16px rgba(0,0,0,0.12);
+  }
+
+  .table-btn:active { transform: scale(0.97); }
+
+  /* CATEGORIES */
+  .category-tabs {
+    display: flex;
+    gap: 0.35rem;
+    overflow-x: auto;
+    padding: 0 1.25rem 0;
+    margin-bottom: 1rem;
+    -webkit-overflow-scrolling: touch;
+  }
   .category-tabs::-webkit-scrollbar { display: none; }
+
   .cat-tab {
-    padding: 0.4rem 1rem;
+    padding: 0.4rem 0.9rem;
     border-radius: 100px;
     border: 1.5px solid var(--border);
-    background: var(--card-bg);
+    background: var(--bg);
     font-size: 0.8rem;
+    font-weight: 600;
     cursor: pointer;
     white-space: nowrap;
-    transition: var(--transition);
-    font-family: 'DM Sans', sans-serif;
-    font-weight: 500;
-    color: var(--dark);
-    box-shadow: var(--shadow-sm);
-  }
-  .cat-tab.active {
-    background: var(--dark);
-    color: var(--cream);
-    border-color: var(--dark);
-    box-shadow: var(--shadow-md);
+    transition: all 0.15s var(--ease);
+    font-family: 'Inter', sans-serif;
+    color: var(--text2);
+    flex-shrink: 0;
   }
 
-  /* ── MENU ITEMS ── */
-  .menu-grid { display: flex; flex-direction: column; gap: 0.65rem; }
+  .cat-tab.active {
+    background: var(--text);
+    color: #fff;
+    border-color: var(--text);
+  }
+
+  .cat-tab:not(.active):hover {
+    border-color: var(--text);
+    color: var(--text);
+  }
+
+  /* MENU ITEMS */
+  .menu-grid {
+    display: flex;
+    flex-direction: column;
+    padding: 0 1.25rem;
+    gap: 0;
+  }
+
   .menu-item {
-    background: var(--card-bg);
-    border: 1.5px solid var(--border);
-    border-radius: var(--radius-md);
-    padding: 0.9rem 1rem;
     display: flex;
     align-items: center;
     gap: 0.9rem;
-    transition: var(--transition);
-    box-shadow: var(--shadow-sm);
-    position: relative;
-    overflow: hidden;
+    padding: 1rem 0;
+    border-bottom: 1px solid var(--border);
+    transition: background 0.15s var(--ease);
+    flex-direction: row;
+    background: transparent;
+    border-radius: 0;
+    border-left: none;
+    border-right: none;
+    border-top: none;
+    box-shadow: none;
   }
-  .menu-item::before {
-    content: '';
-    position: absolute;
-    left: 0; top: 0; bottom: 0;
-    width: 3px;
-    background: var(--gold);
-    border-radius: 0 2px 2px 0;
-    transform: scaleY(0);
-    transition: transform 0.2s;
-  }
-  .menu-item:hover { border-color: var(--gold); box-shadow: var(--shadow-md); transform: translateX(3px); }
-  .menu-item:hover::before { transform: scaleY(1); }
-  .item-emoji {
-    font-size: 1.9rem; width: 44px; height: 44px;
-    display: flex; align-items: center; justify-content: center;
-    flex-shrink: 0;
-    background: var(--cream);
-    border-radius: 12px;
-  }
-  .item-info { flex: 1; min-width: 0; }
-  .item-name { font-weight: 600; font-size: 0.92rem; color: var(--dark); }
-  .item-price { color: var(--gold); font-weight: 700; font-size: 0.85rem; margin-top: 0.1rem; font-family: 'Playfair Display', serif; }
-  .qty-ctrl { display: flex; align-items: center; gap: 0.4rem; flex-shrink: 0; }
-  .qty-btn {
-    width: 30px; height: 30px;
-    border-radius: 50%;
-    border: 1.5px solid var(--border);
-    background: var(--card-bg);
-    cursor: pointer;
-    font-size: 1rem;
-    display: flex; align-items: center; justify-content: center;
-    transition: var(--transition);
-    color: var(--dark);
-    font-weight: 700;
-  }
-  .qty-btn:hover { border-color: var(--gold); background: var(--gold); color: #000; transform: scale(1.1); }
-  .qty-num { width: 22px; text-align: center; font-weight: 700; font-size: 0.95rem; color: var(--dark); }
 
-  /* ── CART BAR ── */
-  .cart-bar {
-    position: fixed; bottom: 1.2rem; left: 50%; transform: translateX(-50%);
-    background: var(--gold);
-    color: #000;
-    border-radius: var(--radius-lg);
-    padding: 0.9rem 1.5rem;
-    width: calc(100% - 2rem); max-width: 450px;
-    display: flex; align-items: center; justify-content: space-between;
-    box-shadow: 0 8px 40px rgba(200,149,58,0.5), 0 0 0 2px rgba(200,149,58,0.3);
-    cursor: pointer;
-    transition: var(--transition);
+  .menu-item:last-child { border-bottom: none; }
+  .menu-item::before { display: none; }
+  .menu-item:hover { background: transparent; transform: none; }
+
+  .item-emoji {
+    font-size: 1.6rem;
+    width: 44px;
+    height: 44px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    background: var(--surface);
+    border-radius: var(--r);
+    flex-shrink: 0;
     border: none;
   }
-  .cart-bar:hover { transform: translateX(-50%) translateY(-3px); box-shadow: 0 16px 50px rgba(200,149,58,0.6); }
-  .cart-count {
-    background: #000;
-    color: var(--gold);
-    border-radius: 50%;
-    width: 28px; height: 28px;
-    display: flex; align-items: center; justify-content: center;
-    font-weight: 800; font-size: 0.85rem;
-    box-shadow: 0 2px 8px rgba(0,0,0,0.3);
-  }
-  .cart-total { font-family: 'Playfair Display', serif; font-size: 1.15rem; color: #000; font-weight: 700; }
 
-  /* ── MODAL ── */
+  .item-info { flex: 1; min-width: 0; }
+
+  .item-name {
+    font-size: 0.9rem;
+    font-weight: 600;
+    color: var(--text);
+    letter-spacing: -0.01em;
+    line-height: 1.3;
+  }
+
+  .item-price {
+    font-size: 0.82rem;
+    color: var(--text2);
+    margin-top: 0.15rem;
+    font-weight: 500;
+  }
+
+  .qty-ctrl {
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+    flex-shrink: 0;
+  }
+
+  .qty-btn {
+    width: 30px;
+    height: 30px;
+    border-radius: 50%;
+    border: 1.5px solid var(--border);
+    background: var(--bg);
+    cursor: pointer;
+    font-size: 1rem;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    transition: all 0.15s var(--ease);
+    color: var(--text);
+    font-weight: 600;
+    line-height: 1;
+  }
+
+  .qty-btn:hover {
+    background: var(--text);
+    border-color: var(--text);
+    color: #fff;
+  }
+
+  .qty-num {
+    width: 24px;
+    text-align: center;
+    font-weight: 700;
+    font-size: 0.95rem;
+    color: var(--text);
+    letter-spacing: -0.02em;
+  }
+
+  /* ═══════════════════════════════════════
+     CART BAR
+  ═══════════════════════════════════════ */
+  .cart-bar {
+    position: fixed;
+    bottom: 1.25rem;
+    left: 50%;
+    transform: translateX(-50%);
+    background: var(--text);
+    border-radius: var(--r2);
+    padding: 0.85rem 1.25rem;
+    width: calc(100% - 2.5rem);
+    max-width: 440px;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    cursor: pointer;
+    transition: transform 0.2s var(--ease), box-shadow 0.2s var(--ease);
+    box-shadow: 0 8px 32px rgba(0,0,0,0.2);
+    z-index: 50;
+  }
+
+  .cart-bar:hover {
+    transform: translateX(-50%) translateY(-2px);
+    box-shadow: 0 16px 40px rgba(0,0,0,0.25);
+  }
+
+  .cart-count {
+    background: var(--accent2);
+    color: #fff;
+    border-radius: 50%;
+    width: 28px;
+    height: 28px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-weight: 800;
+    font-size: 0.82rem;
+    flex-shrink: 0;
+  }
+
+  .cart-total {
+    font-size: 1rem;
+    font-weight: 800;
+    color: #fff;
+    letter-spacing: -0.02em;
+  }
+
+  /* ═══════════════════════════════════════
+     MODAL
+  ═══════════════════════════════════════ */
   .modal-overlay {
-    position: fixed; inset: 0;
-    background: rgba(0,0,0,0.6);
-    backdrop-filter: blur(4px);
-    display: flex; align-items: flex-end;
-    z-index: 100;
-    animation: fadeIn 0.2s;
+    position: fixed;
+    inset: 0;
+    background: rgba(0,0,0,0.5);
+    backdrop-filter: blur(8px);
+    display: flex;
+    align-items: flex-end;
+    z-index: 200;
+    animation: fadeIn 0.2s var(--ease);
   }
+
   @keyframes fadeIn { from { opacity: 0; } }
+
   .modal {
-    background: var(--card-bg);
-    border-radius: var(--radius-xl) var(--radius-xl) 0 0;
-    width: 100%; max-width: 500px;
+    background: var(--bg);
+    border-radius: var(--r3) var(--r3) 0 0;
+    width: 100%;
+    max-width: 480px;
     margin: 0 auto;
-    padding: 1.5rem 1.5rem 2rem;
-    max-height: 85vh;
+    padding: 1.25rem 1.5rem 2rem;
+    max-height: 88vh;
     overflow-y: auto;
-    animation: slideUp 0.35s cubic-bezier(0.32, 0.72, 0, 1);
-    border-top: 1px solid var(--border);
-    box-shadow: 0 -8px 40px rgba(0,0,0,0.2);
+    animation: slideUp 0.3s cubic-bezier(0.32, 0.72, 0, 1);
   }
+
   @keyframes slideUp { from { transform: translateY(100%); } }
-  .modal-handle { width: 40px; height: 4px; background: var(--border); border-radius: 2px; margin: 0 auto 1.2rem; }
-  .modal-title { font-family: 'Playfair Display', serif; font-size: 1.4rem; margin-bottom: 1rem; color: var(--dark); }
+
+  .modal-handle {
+    width: 36px;
+    height: 4px;
+    background: var(--border);
+    border-radius: 2px;
+    margin: 0 auto 1.25rem;
+  }
+
+  .modal-title {
+    font-size: 1.15rem;
+    font-weight: 800;
+    margin-bottom: 1rem;
+    color: var(--text);
+    letter-spacing: -0.02em;
+  }
+
   .cart-line {
-    display: flex; justify-content: space-between; align-items: center;
-    padding: 0.65rem 0;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: 0.7rem 0;
     border-bottom: 1px solid var(--border);
     font-size: 0.88rem;
-    color: var(--dark);
-  }
-  .cart-total-line {
-    display: flex; justify-content: space-between;
-    font-weight: 700; font-size: 1.1rem;
-    padding: 0.9rem 0;
-    border-top: 2px solid var(--dark);
-    margin-top: 0.5rem;
-    color: var(--dark);
+    color: var(--text);
+    gap: 1rem;
   }
 
-  /* ── PAYMENT ── */
-  .payment-section { margin-top: 1.2rem; }
-  .payment-title { font-size: 0.82rem; font-weight: 600; color: var(--warm-gray); margin-bottom: 0.6rem; }
-  .card-element-wrap {
-    background: var(--cream);
-    border: 1.5px solid var(--border);
-    border-radius: var(--radius-sm);
-    padding: 0.9rem 1rem;
-    transition: border-color 0.2s;
+  .cart-total-line {
+    display: flex;
+    justify-content: space-between;
+    font-weight: 800;
+    font-size: 1.05rem;
+    padding: 0.9rem 0;
+    border-top: 2px solid var(--text);
+    margin-top: 0.25rem;
+    color: var(--text);
+    letter-spacing: -0.01em;
   }
-  .card-element-wrap:focus-within { border-color: var(--gold); box-shadow: 0 0 0 3px rgba(200,149,58,0.15); }
-  .card-icons { display: flex; gap: 0.4rem; margin-bottom: 0.6rem; }
+
+  /* ═══════════════════════════════════════
+     PAYMENT
+  ═══════════════════════════════════════ */
+  .payment-section { margin-top: 1.25rem; }
+
+  .payment-title {
+    font-size: 0.78rem;
+    font-weight: 700;
+    color: var(--text2);
+    margin-bottom: 0.6rem;
+    text-transform: uppercase;
+    letter-spacing: 0.08em;
+  }
+
+  .card-element-wrap {
+    background: var(--surface);
+    border: 1.5px solid var(--border);
+    border-radius: var(--r);
+    padding: 0.9rem 1rem;
+    transition: border-color 0.15s var(--ease);
+  }
+
+  .card-element-wrap:focus-within {
+    border-color: var(--text);
+  }
+
+  .card-icons {
+    display: flex;
+    gap: 0.4rem;
+    margin-bottom: 0.6rem;
+  }
+
   .card-icon {
-    background: var(--card-bg);
+    background: var(--bg);
     border: 1px solid var(--border);
     border-radius: 4px;
     padding: 0.15rem 0.5rem;
-    font-size: 0.7rem;
+    font-size: 0.68rem;
     font-weight: 700;
-    color: var(--dark);
-  }
-  .pay-btn {
-    width: 100%; padding: 1rem;
-    background: var(--gold);
-    color: #000;
-    border: none;
-    border-radius: var(--radius-sm);
-    font-size: 1rem;
-    font-weight: 700;
-    cursor: pointer;
-    margin-top: 1rem;
-    font-family: 'DM Sans', sans-serif;
-    transition: var(--transition);
-    display: flex; align-items: center; justify-content: center; gap: 0.5rem;
+    color: var(--text2);
     letter-spacing: 0.03em;
-    box-shadow: 0 4px 20px rgba(200,149,58,0.35);
   }
-  .pay-btn:hover:not(:disabled) {
-    background: var(--gold-light);
-    transform: translateY(-2px);
-    box-shadow: 0 8px 30px rgba(200,149,58,0.5);
-  }
-  .pay-btn:disabled { opacity: 0.5; cursor: not-allowed; }
-  .pay-error {
-    color: var(--red);
-    font-size: 0.82rem;
-    margin-top: 0.6rem;
-    padding: 0.6rem 0.8rem;
-    background: rgba(139,32,32,0.08);
-    border-radius: var(--radius-sm);
-    border-left: 3px solid var(--red);
-  }
-  .secure-badge { display: flex; align-items: center; justify-content: center; gap: 0.4rem; font-size: 0.7rem; color: var(--warm-gray); margin-top: 0.6rem; }
 
-  /* ── SUCCESS ── */
-  .success-box { text-align: center; padding: 3rem 1rem; }
-  .success-icon { font-size: 4rem; margin-bottom: 1rem; animation: bounceIn 0.6s; }
-  @keyframes bounceIn {
-    0% { transform: scale(0); opacity: 0; }
-    60% { transform: scale(1.2); }
-    100% { transform: scale(1); opacity: 1; }
-  }
-  .success-title { font-family: 'Playfair Display', serif; font-size: 1.6rem; margin-bottom: 0.5rem; color: var(--green); }
-  .success-sub { color: var(--warm-gray); font-size: 0.9rem; line-height: 1.7; }
-  .new-order-btn {
-    display: inline-block; margin-top: 1rem;
-    padding: 0.8rem 2rem;
-    background: var(--gold);
-    color: #000;
+  .pay-btn {
+    width: 100%;
+    padding: 1rem;
+    background: var(--text);
+    color: #fff;
     border: none;
-    border-radius: var(--radius-sm);
+    border-radius: var(--r);
     font-size: 0.95rem;
     font-weight: 700;
     cursor: pointer;
-    font-family: 'DM Sans', sans-serif;
-    transition: var(--transition);
-    box-shadow: 0 4px 16px rgba(200,149,58,0.3);
+    margin-top: 1rem;
+    font-family: 'Inter', sans-serif;
+    transition: all 0.15s var(--ease);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 0.5rem;
+    letter-spacing: -0.01em;
   }
-  .new-order-btn:hover { transform: translateY(-2px); box-shadow: 0 8px 24px rgba(200,149,58,0.45); }
 
-  /* ── KITCHEN ── */
-  .kitchen-wrap { padding: 1.5rem; }
-  .view-title { font-family: 'Playfair Display', serif; font-size: 1.8rem; color: var(--dark); }
-  .view-sub { color: var(--warm-gray); font-size: 0.85rem; margin-top: 0.2rem; margin-bottom: 1.5rem; }
-  .orders-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(290px, 1fr)); gap: 1rem; }
-  .order-card {
-    background: var(--card-bg);
-    border-radius: var(--radius-md);
-    padding: 1.2rem;
-    border: 2px solid var(--border);
-    transition: var(--transition);
-    box-shadow: var(--shadow-sm);
+  .pay-btn:hover:not(:disabled) {
+    background: #333;
+    transform: translateY(-1px);
   }
-  .order-card:hover { box-shadow: var(--shadow-md); }
-  .order-card.attente { border-color: #F59E0B; background: linear-gradient(135deg, var(--card-bg) 95%, rgba(245,158,11,0.05) 100%); }
-  .order-card.preparation { border-color: var(--blue); background: linear-gradient(135deg, var(--card-bg) 95%, rgba(26,78,122,0.05) 100%); }
-  .order-card.pret { border-color: var(--green); background: linear-gradient(135deg, var(--card-bg) 95%, rgba(45,80,22,0.08) 100%); box-shadow: 0 0 20px rgba(45,80,22,0.15); }
-  .order-top { display: flex; justify-content: space-between; align-items: flex-start; margin-bottom: 0.8rem; }
-  .order-table { font-family: 'Playfair Display', serif; font-size: 1.3rem; color: var(--dark); }
-  .order-id { color: var(--warm-gray); font-size: 0.72rem; margin-top: 0.1rem; }
-  .status-badge {
-    padding: 0.25rem 0.75rem;
-    border-radius: 100px;
+
+  .pay-btn:disabled { opacity: 0.4; cursor: not-allowed; }
+
+  .pay-error {
+    font-size: 0.82rem;
+    margin-top: 0.6rem;
+    padding: 0.6rem 0.8rem;
+    background: #FEF2F2;
+    border-radius: var(--r);
+    color: var(--error);
+    border-left: 3px solid var(--error);
+  }
+
+  .secure-badge {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 0.4rem;
     font-size: 0.7rem;
+    color: var(--text2);
+    margin-top: 0.75rem;
+  }
+
+  /* ═══════════════════════════════════════
+     SUCCESS
+  ═══════════════════════════════════════ */
+  .success-box {
+    text-align: center;
+    padding: 3.5rem 1.5rem;
+  }
+
+  .success-icon {
+    font-size: 3.5rem;
+    margin-bottom: 1.25rem;
+    animation: bounceIn 0.5s var(--ease);
+  }
+
+  @keyframes bounceIn {
+    0% { transform: scale(0.5); opacity: 0; }
+    70% { transform: scale(1.1); }
+    100% { transform: scale(1); opacity: 1; }
+  }
+
+  .success-title {
+    font-size: 1.5rem;
+    font-weight: 800;
+    margin-bottom: 0.5rem;
+    color: var(--text);
+    letter-spacing: -0.03em;
+  }
+
+  .success-sub {
+    color: var(--text2);
+    font-size: 0.9rem;
+    line-height: 1.7;
+  }
+
+  .new-order-btn {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.4rem;
+    margin-top: 1.5rem;
+    padding: 0.75rem 1.5rem;
+    background: var(--text);
+    color: #fff;
+    border: none;
+    border-radius: var(--r);
+    font-size: 0.88rem;
+    font-weight: 700;
+    cursor: pointer;
+    font-family: 'Inter', sans-serif;
+    transition: all 0.15s var(--ease);
+    letter-spacing: -0.01em;
+  }
+
+  .new-order-btn:hover { background: #333; transform: translateY(-1px); }
+
+  /* ═══════════════════════════════════════
+     KITCHEN
+  ═══════════════════════════════════════ */
+  .kitchen-wrap { padding: 1.5rem; }
+
+  .view-title {
+    font-size: 1.6rem;
+    font-weight: 800;
+    color: var(--text);
+    letter-spacing: -0.03em;
+    line-height: 1;
+  }
+
+  .view-sub {
+    color: var(--text2);
+    font-size: 0.82rem;
+    margin-top: 0.4rem;
+    margin-bottom: 1.5rem;
+    font-weight: 500;
+  }
+
+  .orders-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
+    gap: 1rem;
+  }
+
+  .order-card {
+    background: var(--bg);
+    border-radius: var(--r2);
+    padding: 1.25rem;
+    border: 1.5px solid var(--border);
+    transition: box-shadow 0.15s var(--ease);
+  }
+
+  .order-card.attente { border-left: 4px solid #F59E0B; }
+  .order-card.preparation { border-left: 4px solid var(--info); }
+  .order-card.pret { border-left: 4px solid var(--success); box-shadow: 0 4px 20px rgba(22,163,74,0.1); }
+
+  .order-top {
+    display: flex;
+    justify-content: space-between;
+    align-items: flex-start;
+    margin-bottom: 0.75rem;
+  }
+
+  .order-table {
+    font-size: 1.1rem;
+    font-weight: 800;
+    color: var(--text);
+    letter-spacing: -0.02em;
+  }
+
+  .order-id {
+    color: var(--text2);
+    font-size: 0.72rem;
+    margin-top: 0.15rem;
+    font-weight: 500;
+  }
+
+  .status-badge {
+    padding: 0.2rem 0.65rem;
+    border-radius: 100px;
+    font-size: 0.68rem;
     font-weight: 700;
     text-transform: uppercase;
     letter-spacing: 0.06em;
   }
+
   .badge-attente { background: #FEF3C7; color: #92400E; }
   .badge-preparation { background: #DBEAFE; color: #1E40AF; }
-  .badge-pret { background: #D1FAE5; color: #065F46; }
-  .paid-badge { background: #D1FAE5; color: #065F46; font-size: 0.68rem; padding: 0.15rem 0.5rem; border-radius: 100px; font-weight: 700; }
+  .badge-pret { background: #DCFCE7; color: #166534; }
+  .paid-badge { background: #DCFCE7; color: #166534; font-size: 0.65rem; padding: 0.15rem 0.5rem; border-radius: 100px; font-weight: 700; }
+
   .order-items { margin-bottom: 1rem; }
+
   .order-item-line {
     font-size: 0.85rem;
     padding: 0.3rem 0;
     border-bottom: 1px solid var(--border);
-    display: flex; justify-content: space-between;
-    color: var(--dark);
+    display: flex;
+    justify-content: space-between;
+    color: var(--text);
   }
-  .order-time { font-size: 0.72rem; color: var(--warm-gray); margin-bottom: 0.8rem; display: flex; align-items: center; gap: 0.3rem; }
+
+  .order-item-line:last-child { border-bottom: none; }
+
+  .order-time {
+    font-size: 0.72rem;
+    color: var(--text2);
+    margin-bottom: 0.75rem;
+    font-weight: 500;
+  }
+
   .status-btns { display: flex; gap: 0.5rem; }
+
   .status-btn {
-    flex: 1; padding: 0.55rem;
-    border-radius: var(--radius-sm);
+    flex: 1;
+    padding: 0.6rem;
+    border-radius: var(--r);
     border: 1.5px solid var(--border);
     cursor: pointer;
     font-size: 0.78rem;
     font-weight: 700;
-    transition: var(--transition);
-    font-family: 'DM Sans', sans-serif;
-    background: var(--card-bg);
-    color: var(--dark);
+    transition: all 0.15s var(--ease);
+    font-family: 'Inter', sans-serif;
+    background: var(--bg);
+    color: var(--text);
+    letter-spacing: -0.01em;
   }
-  .status-btn:hover { border-color: var(--gold); background: var(--gold); color: #000; transform: translateY(-1px); }
-  .status-btn.done { background: var(--green); color: white; border-color: var(--green); box-shadow: 0 4px 12px rgba(45,80,22,0.3); }
 
-  /* ── EMPTY STATE ── */
-  .empty-state { text-align: center; padding: 4rem 2rem; color: var(--warm-gray); }
-  .empty-icon { font-size: 3rem; margin-bottom: 0.75rem; opacity: 0.6; }
+  .status-btn:hover {
+    background: var(--text);
+    border-color: var(--text);
+    color: #fff;
+  }
+
+  .status-btn.done {
+    background: var(--success);
+    color: #fff;
+    border-color: var(--success);
+  }
+
+  /* ═══════════════════════════════════════
+     EMPTY STATE
+  ═══════════════════════════════════════ */
+  .empty-state {
+    text-align: center;
+    padding: 5rem 2rem;
+    color: var(--text2);
+  }
+
+  .empty-icon {
+    font-size: 2.5rem;
+    margin-bottom: 0.75rem;
+    opacity: 0.4;
+  }
+
   .pulse { animation: pulse 2s ease-in-out infinite; }
-  @keyframes pulse { 0%,100% { opacity: 1; } 50% { opacity: 0.4; } }
+  @keyframes pulse { 0%,100% { opacity: 1; } 50% { opacity: 0.3; } }
 
-  /* ── ADMIN ── */
+  /* ═══════════════════════════════════════
+     ADMIN
+  ═══════════════════════════════════════ */
   .admin-wrap { padding: 1.5rem; max-width: 760px; }
-  .admin-grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 1rem; margin-bottom: 1.5rem; }
+
+  .admin-grid {
+    display: grid;
+    grid-template-columns: repeat(3, 1fr);
+    gap: 0.75rem;
+    margin-bottom: 1.5rem;
+  }
+
   .stat-card {
-    background: var(--card-bg);
-    border-radius: var(--radius-md);
-    padding: 1.3rem;
+    background: var(--bg);
+    border-radius: var(--r2);
+    padding: 1.25rem;
     border: 1.5px solid var(--border);
-    box-shadow: var(--shadow-sm);
-    transition: var(--transition);
+    transition: box-shadow 0.15s var(--ease);
   }
-  .stat-card:hover { transform: translateY(-2px); box-shadow: var(--shadow-md); }
-  .stat-num { font-family: 'Playfair Display', serif; font-size: 2.2rem; color: var(--gold); line-height: 1; font-weight: 700; }
-  .stat-label { font-size: 0.75rem; color: var(--warm-gray); margin-top: 0.3rem; font-weight: 500; text-transform: uppercase; letter-spacing: 0.05em; }
-  .section-title { font-family: 'Playfair Display', serif; font-size: 1.2rem; margin: 1.5rem 0 1rem; color: var(--dark); }
+
+  .stat-card:hover { box-shadow: 0 4px 16px rgba(0,0,0,0.06); }
+
+  .stat-num {
+    font-size: 2rem;
+    font-weight: 800;
+    color: var(--accent2);
+    letter-spacing: -0.04em;
+    line-height: 1;
+  }
+
+  .stat-label {
+    font-size: 0.72rem;
+    color: var(--text2);
+    margin-top: 0.3rem;
+    font-weight: 600;
+    text-transform: uppercase;
+    letter-spacing: 0.06em;
+  }
+
+  .section-title {
+    font-size: 1rem;
+    font-weight: 700;
+    margin: 1.5rem 0 0.75rem;
+    color: var(--text);
+    letter-spacing: -0.01em;
+  }
+
   .menu-admin-item {
-    background: var(--card-bg);
+    background: var(--bg);
     border: 1.5px solid var(--border);
-    border-radius: var(--radius-md);
+    border-radius: var(--r);
     padding: 0.85rem 1rem;
-    display: flex; align-items: center; gap: 0.8rem;
-    margin-bottom: 0.5rem;
-    transition: var(--transition);
-    box-shadow: var(--shadow-sm);
+    display: flex;
+    align-items: center;
+    gap: 0.75rem;
+    margin-bottom: 0.4rem;
+    transition: border-color 0.15s var(--ease);
   }
-  .menu-admin-item:hover { border-color: var(--gold); box-shadow: var(--shadow-md); }
+
+  .menu-admin-item:hover { border-color: var(--text2); }
+
   .menu-admin-info { flex: 1; }
-  .menu-admin-name { font-weight: 600; font-size: 0.9rem; color: var(--dark); }
-  .menu-admin-cat { font-size: 0.72rem; color: var(--warm-gray); margin-top: 0.1rem; text-transform: uppercase; letter-spacing: 0.04em; }
-  .menu-admin-price { font-weight: 700; color: var(--gold); font-size: 0.95rem; margin-right: 0.5rem; font-family: 'Playfair Display', serif; }
+
+  .menu-admin-name {
+    font-weight: 600;
+    font-size: 0.88rem;
+    color: var(--text);
+    letter-spacing: -0.01em;
+  }
+
+  .menu-admin-cat {
+    font-size: 0.7rem;
+    color: var(--text2);
+    font-weight: 600;
+    text-transform: uppercase;
+    letter-spacing: 0.05em;
+    margin-top: 0.1rem;
+  }
+
+  .menu-admin-price {
+    font-weight: 800;
+    color: var(--text);
+    font-size: 0.9rem;
+    margin-right: 0.5rem;
+    letter-spacing: -0.02em;
+  }
+
   .avail-toggle {
-    padding: 0.25rem 0.65rem;
+    padding: 0.22rem 0.65rem;
     border-radius: 100px;
     border: 1.5px solid var(--border);
-    font-size: 0.72rem;
+    font-size: 0.7rem;
     cursor: pointer;
-    font-family: 'DM Sans', sans-serif;
+    font-family: 'Inter', sans-serif;
     font-weight: 700;
-    transition: var(--transition);
-    background: var(--card-bg);
+    transition: all 0.15s var(--ease);
+    background: var(--bg);
+    letter-spacing: 0.02em;
   }
-  .avail-toggle.on { background: #D1FAE5; color: #065F46; border-color: #A7F3D0; }
-  .avail-toggle.off { background: #FEE2E2; color: #991B1B; border-color: #FECACA; }
+
+  .avail-toggle.on { background: #DCFCE7; color: #166534; border-color: #BBF7D0; }
+  .avail-toggle.off { background: #FEF2F2; color: #991B1B; border-color: #FECACA; }
+
   .del-btn {
     padding: 0.3rem 0.6rem;
     background: transparent;
     border: 1.5px solid var(--border);
-    border-radius: var(--radius-sm);
+    border-radius: var(--r);
     cursor: pointer;
-    font-size: 0.8rem;
-    color: var(--red);
-    transition: var(--transition);
+    font-size: 0.78rem;
+    color: var(--text2);
+    transition: all 0.15s var(--ease);
   }
-  .del-btn:hover { background: var(--red); color: white; border-color: var(--red); }
+
+  .del-btn:hover { background: var(--error); color: #fff; border-color: var(--error); }
+
   .add-item-form {
-    background: var(--card-bg);
-    border-radius: var(--radius-md);
-    padding: 1.3rem;
+    background: var(--surface);
+    border-radius: var(--r2);
+    padding: 1.25rem;
     border: 1.5px solid var(--border);
     margin-top: 1rem;
-    box-shadow: var(--shadow-sm);
   }
-  .form-row { display: grid; grid-template-columns: 1fr 1fr; gap: 0.75rem; margin-bottom: 0.75rem; }
+
+  .form-row {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 0.75rem;
+    margin-bottom: 0.75rem;
+  }
+
   .form-field { display: flex; flex-direction: column; gap: 0.3rem; }
-  .form-field label { font-size: 0.75rem; color: var(--warm-gray); font-weight: 600; text-transform: uppercase; letter-spacing: 0.04em; }
-  .form-field input, .form-field select, .form-field textarea {
+
+  .form-field label {
+    font-size: 0.7rem;
+    color: var(--text2);
+    font-weight: 700;
+    text-transform: uppercase;
+    letter-spacing: 0.06em;
+  }
+
+  .form-field input,
+  .form-field select,
+  .form-field textarea {
     padding: 0.6rem 0.8rem;
     border: 1.5px solid var(--border);
-    border-radius: var(--radius-sm);
-    font-family: 'DM Sans', sans-serif;
-    font-size: 0.9rem;
-    background: var(--cream);
-    transition: var(--transition);
+    border-radius: var(--r);
+    font-family: 'Inter', sans-serif;
+    font-size: 0.88rem;
+    background: var(--bg);
+    transition: border-color 0.15s var(--ease);
     outline: none;
-    color: var(--dark);
+    color: var(--text);
+    font-weight: 500;
   }
-  .form-field input:focus, .form-field select:focus, .form-field textarea:focus {
-    border-color: var(--gold);
-    box-shadow: 0 0 0 3px rgba(200,149,58,0.12);
+
+  .form-field input:focus,
+  .form-field select:focus,
+  .form-field textarea:focus {
+    border-color: var(--text);
   }
+
   .add-btn {
-    padding: 0.65rem 1.3rem;
-    background: var(--dark);
-    color: var(--cream);
+    padding: 0.65rem 1.25rem;
+    background: var(--text);
+    color: #fff;
     border: none;
-    border-radius: var(--radius-sm);
+    border-radius: var(--r);
     cursor: pointer;
     font-weight: 700;
-    font-family: 'DM Sans', sans-serif;
-    transition: var(--transition);
-    letter-spacing: 0.03em;
+    font-family: 'Inter', sans-serif;
+    font-size: 0.85rem;
+    transition: all 0.15s var(--ease);
+    letter-spacing: -0.01em;
   }
-  .add-btn:hover { background: var(--gold); color: #000; transform: translateY(-1px); }
+
+  .add-btn:hover { background: #333; transform: translateY(-1px); }
+
   .qr-section {
-    background: var(--card-bg);
-    border-radius: var(--radius-md);
+    background: var(--bg);
+    border-radius: var(--r2);
     padding: 1.5rem;
     border: 1.5px solid var(--border);
     margin-top: 1rem;
     text-align: center;
-    box-shadow: var(--shadow-sm);
   }
-  .qr-url { font-size: 0.75rem; color: var(--warm-gray); margin-top: 0.5rem; word-break: break-all; }
+
+  .qr-url {
+    font-size: 0.72rem;
+    color: var(--text2);
+    margin-top: 0.5rem;
+    word-break: break-all;
+    font-family: monospace;
+  }
+
   .print-btn {
     padding: 0.65rem 1.5rem;
-    background: var(--dark);
-    color: var(--cream);
+    background: var(--text);
+    color: #fff;
     border: none;
-    border-radius: var(--radius-sm);
+    border-radius: var(--r);
     cursor: pointer;
     font-weight: 700;
-    font-family: 'DM Sans', sans-serif;
+    font-family: 'Inter', sans-serif;
     margin-top: 1rem;
-    transition: var(--transition);
-  }
-  .print-btn:hover { background: var(--gold); color: #000; }
-
-  /* ── THEME SWITCHER ── */
-  .theme-switcher {
-    display: flex; align-items: center;
-    background: rgba(255,255,255,0.06);
-    border: 1px solid rgba(255,255,255,0.08);
-    border-radius: 8px;
-    padding: 0.2rem;
-    gap: 0.1rem;
-    margin-left: 0.2rem;
-  }
-  .theme-switch-btn {
-    width: 28px; height: 26px;
-    border-radius: 6px;
-    border: none;
-    cursor: pointer;
+    transition: all 0.15s var(--ease);
     font-size: 0.85rem;
-    display: flex; align-items: center; justify-content: center;
-    transition: var(--transition);
-    background: transparent;
-    color: rgba(255,255,255,0.35);
   }
-  .theme-switch-btn.active { background: rgba(200,149,58,0.25); color: var(--gold); }
-  .theme-switch-btn:not(.active):hover { color: rgba(255,255,255,0.7); background: rgba(255,255,255,0.06); }
 
+  .print-btn:hover { background: #333; }
+
+  /* ═══════════════════════════════════════
+     RESPONSIVE
+  ═══════════════════════════════════════ */
   @media print {
     .nav, .admin-wrap > *:not(.qr-section) { display: none !important; }
     .qr-section { border: none; }
   }
+
   @media (max-width: 480px) {
     .admin-grid { grid-template-columns: 1fr 1fr; }
     .form-row { grid-template-columns: 1fr; }
@@ -681,8 +1061,8 @@ function PaymentForm({ totalPrice, tableNum, cartItems, comment, onSuccess }) {
   return (
     <div className="payment-section">
       {/* POURBOIRE */}
-      <div style={{ marginBottom: '1rem', background: 'var(--cream)', borderRadius: 12, padding: '0.9rem' }}>
-        <div style={{ fontSize: '0.85rem', fontWeight: 600, marginBottom: '0.6rem', color: 'var(--dark)' }}>
+      <div style={{ marginBottom: '1rem', background: 'var(--surface)', borderRadius: 12, padding: '0.9rem' }}>
+        <div style={{ fontSize: '0.85rem', fontWeight: 600, marginBottom: '0.6rem', color: 'var(--text)' }}>
           🙏 Laisser un pourboire ?
         </div>
         <div style={{ display: 'flex', gap: '0.4rem', marginBottom: '0.5rem', flexWrap: 'wrap' }}>
@@ -753,8 +1133,8 @@ function TableSelector({ onSelect, welcomeMsg }) {
           fontWeight: 600, lineHeight: 1.5, boxShadow: '0 4px 16px rgba(200,149,58,0.3)'
         }}>🎉 {welcomeMsg}</div>
       )}
-      <div style={{ fontFamily: "'Playfair Display', serif", fontSize: "1.9rem", color: 'var(--dark)', fontWeight: 700 }}>Votre emplacement</div>
-      <p style={{ color: "var(--warm-gray)", fontSize: "0.9rem", marginTop: "0.4rem", fontWeight: 400 }}>Choisissez votre numéro ci-dessous</p>
+      <div style={{ fontFamily: "'Playfair Display', serif", fontSize: "1.9rem", color: 'var(--text)', fontWeight: 700 }}>Votre emplacement</div>
+      <p style={{ color: "var(--text2)", fontSize: "0.9rem", marginTop: "0.4rem", fontWeight: 400 }}>Choisissez votre numéro ci-dessous</p>
       <div className="table-grid">
         {Array.from({ length: 28 }, (_, i) => i + 1).map(n => (
           <button key={n} className="table-btn" onClick={() => onSelect(n)}>{n}</button>
@@ -788,7 +1168,7 @@ function NotificationBanner({ onAccept, onDecline }) {
       <div style={{ fontWeight: 600, fontSize: '0.95rem', marginBottom: '0.5rem' }}>
         📳 Être notifié quand votre commande est prête ?
       </div>
-      <div style={{ fontSize: '0.78rem', color: 'var(--warm-gray)', lineHeight: 1.6, marginBottom: '1rem' }}>
+      <div style={{ fontSize: '0.78rem', color: 'var(--text2)', lineHeight: 1.6, marginBottom: '1rem' }}>
         <span style={{ display: 'block' }}>✅ <strong>Android :</strong> acceptez simplement la notification ci-dessous</span>
         <span style={{ display: 'block', marginTop: '0.3rem' }}>🍎 <strong>iPhone :</strong> ajoutez d&apos;abord ce site à votre écran d&apos;accueil
           <span style={{ display: 'block', paddingLeft: '1.2rem', color: '#aaa' }}>
@@ -799,7 +1179,7 @@ function NotificationBanner({ onAccept, onDecline }) {
       <div style={{ display: 'flex', gap: '0.5rem' }}>
         <button onClick={onAccept} style={{
           flex: 1, padding: '0.6rem', borderRadius: 8, border: 'none',
-          background: 'var(--gold)', color: 'var(--dark)', fontWeight: 700,
+          background: 'var(--gold)', color: 'var(--text)', fontWeight: 700,
           cursor: 'pointer', fontFamily: "'DM Sans', sans-serif", fontSize: '0.85rem'
         }}>Oui, m&apos;avertir</button>
         <button onClick={onDecline} style={{
@@ -911,7 +1291,7 @@ async function sendUrgentMessage(msg) {
 function ClosedBanner({ closingTime }) {
   return (
     <div style={{
-      background: 'var(--dark)', color: 'white', textAlign: 'center',
+      background: 'var(--text)', color: 'white', textAlign: 'center',
       padding: '3rem 1.5rem', minHeight: '60vh', display: 'flex',
       flexDirection: 'column', alignItems: 'center', justifyContent: 'center'
     }}>
@@ -919,7 +1299,7 @@ function ClosedBanner({ closingTime }) {
       <div style={{ fontFamily: "'Playfair Display', serif", fontSize: '1.8rem', color: 'var(--gold)', marginBottom: '0.75rem' }}>
         Les commandes sont fermées
       </div>
-      <p style={{ color: 'var(--warm-gray)', fontSize: '0.9rem', maxWidth: 300 }}>
+      <p style={{ color: 'var(--text2)', fontSize: '0.9rem', maxWidth: 300 }}>
         La prise de commande s&apos;est terminée à {closingTime}.<br />Merci pour votre visite !
       </p>
     </div>
@@ -955,7 +1335,7 @@ function PromoCodeField({ onApply }) {
 
   return (
     <div style={{ marginTop: '0.75rem' }}>
-      <div style={{ fontSize: '0.82rem', fontWeight: 600, color: 'var(--warm-gray)', marginBottom: '0.4rem' }}>🏷 Code promo</div>
+      <div style={{ fontSize: '0.82rem', fontWeight: 600, color: 'var(--text2)', marginBottom: '0.4rem' }}>🏷 Code promo</div>
       <div style={{ display: 'flex', gap: '0.5rem' }}>
         <input
           value={code} onChange={e => setCode(e.target.value.toUpperCase())}
@@ -964,13 +1344,13 @@ function PromoCodeField({ onApply }) {
           style={{
             flex: 1, padding: '0.55rem 0.75rem', borderRadius: 8,
             border: '1.5px solid var(--border)', fontFamily: "'DM Sans', sans-serif",
-            fontSize: '0.9rem', outline: 'none', background: 'var(--cream)',
+            fontSize: '0.9rem', outline: 'none', background: 'var(--surface)',
             textTransform: 'uppercase', fontWeight: 600, letterSpacing: '0.05em'
           }}
         />
         <button onClick={checkCode} style={{
           padding: '0.55rem 1rem', borderRadius: 8, border: 'none',
-          background: 'var(--dark)', color: 'white', fontWeight: 600,
+          background: 'var(--text)', color: 'white', fontWeight: 600,
           cursor: 'pointer', fontFamily: "'DM Sans', sans-serif", fontSize: '0.82rem'
         }}>Appliquer</button>
       </div>
@@ -1109,14 +1489,14 @@ function OrderTracking({ orderId, tableNum, onNewOrder }) {
       <UrgentBanner />
       <div style={{ textAlign: 'center', padding: '1.5rem 0 1rem' }}>
         <div style={{ fontFamily: "'Playfair Display', serif", fontSize: '1.8rem' }}>🎉 Noisy en Fête</div>
-        <div style={{ color: 'var(--warm-gray)', fontSize: '0.85rem', marginTop: '0.3rem' }}>Emplacement {tableNum} — Commande #{orderId}</div>
+        <div style={{ color: 'var(--text2)', fontSize: '0.85rem', marginTop: '0.3rem' }}>Emplacement {tableNum} — Commande #{orderId}</div>
       </div>
 
       {/* Statut principal */}
       <div style={{
-        background: order.status === 'prêt' ? 'var(--green)' : order.status === 'servi' ? '#E8F5E9' : 'var(--dark)',
+        background: order.status === 'prêt' ? 'var(--green)' : order.status === 'servi' ? '#E8F5E9' : 'var(--text)',
         borderRadius: 16, padding: '1.5rem', textAlign: 'center', marginBottom: '1.5rem',
-        color: order.status === 'servi' ? 'var(--dark)' : 'white'
+        color: order.status === 'servi' ? 'var(--text)' : 'white'
       }}>
         <div style={{ fontSize: '2.5rem', marginBottom: '0.5rem' }}>
           {order.status === 'prêt' ? '🔔' : order.status === 'servi' ? '🎉' : order.status === 'en préparation' ? '👨‍🍳' : '⏳'}
@@ -1147,7 +1527,7 @@ function OrderTracking({ orderId, tableNum, onNewOrder }) {
                 border: i <= currentIdx ? '2px solid var(--gold)' : '2px solid var(--border)',
                 fontSize: '0.9rem', transition: 'all 0.4s'
               }}>{i <= currentIdx ? step.icon : '○'}</div>
-              <div style={{ fontSize: '0.62rem', color: i <= currentIdx ? 'var(--dark)' : 'var(--warm-gray)', fontWeight: i === currentIdx ? 700 : 400, lineHeight: 1.2 }}>{step.label}</div>
+              <div style={{ fontSize: '0.62rem', color: i <= currentIdx ? 'var(--text)' : 'var(--text2)', fontWeight: i === currentIdx ? 700 : 400, lineHeight: 1.2 }}>{step.label}</div>
             </div>
           ))}
         </div>
@@ -1227,7 +1607,7 @@ function ReceiptEmailForm({ orderId }) {
   return (
     <div style={{ background: 'white', border: '1.5px solid var(--border)', borderRadius: 14, padding: '1rem', margin: '1.2rem 0', textAlign: 'left' }}>
       <div style={{ fontWeight: 600, fontSize: '0.88rem', marginBottom: '0.3rem' }}>🧾 Recevoir votre ticket de caisse ?</div>
-      <div style={{ fontSize: '0.78rem', color: 'var(--warm-gray)', marginBottom: '0.75rem' }}>
+      <div style={{ fontSize: '0.78rem', color: 'var(--text2)', marginBottom: '0.75rem' }}>
         Si vous souhaitez votre ticket, ajoutez votre adresse email ci-dessous.
       </div>
       <div style={{ display: 'flex', gap: '0.5rem' }}>
@@ -1237,13 +1617,13 @@ function ReceiptEmailForm({ orderId }) {
           style={{
             flex: 1, padding: '0.55rem 0.75rem', borderRadius: 8,
             border: '1.5px solid var(--border)', fontFamily: "'DM Sans', sans-serif",
-            fontSize: '0.88rem', outline: 'none', background: 'var(--cream)'
+            fontSize: '0.88rem', outline: 'none', background: 'var(--surface)'
           }}
         />
         <button onClick={handleSend} disabled={sending || !email}
           style={{
             padding: '0.55rem 1rem', borderRadius: 8, border: 'none',
-            background: 'var(--dark)', color: 'white', fontWeight: 600,
+            background: 'var(--text)', color: 'white', fontWeight: 600,
             cursor: 'pointer', fontFamily: "'DM Sans', sans-serif", fontSize: '0.82rem',
             opacity: !email ? 0.5 : 1
           }}>
@@ -1372,7 +1752,7 @@ function ClientView() {
             onClick={() => { setSuccess(false); setCart({}); }}>
             ➕ Commander autre chose (Emplacement {tableNum})
           </button>
-            <button className="new-order-btn" style={{ background: 'white', color: 'var(--dark)', border: '1.5px solid var(--border)', width: '100%', maxWidth: 280 }}
+            <button className="new-order-btn" style={{ background: 'white', color: 'var(--text)', border: '1.5px solid var(--border)', width: '100%', maxWidth: 280 }}
             onClick={() => { setSuccess(false); setCart({}); setTableNum(null); setOrderId(null); setNotifState('ask'); setNotified(false); }}>
             🔄 Nouvelle table
           </button>
@@ -1445,7 +1825,7 @@ function ClientView() {
                 </div>
                 {cart[item.id] > 0 && item.extras && item.extras.length > 0 && (
                   <div style={{ marginTop: '0.6rem', paddingTop: '0.6rem', borderTop: '1px solid var(--border)' }}>
-                    <div style={{ fontSize: '0.75rem', color: 'var(--warm-gray)', marginBottom: '0.3rem' }}>Suppléments :</div>
+                    <div style={{ fontSize: '0.75rem', color: 'var(--text2)', marginBottom: '0.3rem' }}>Suppléments :</div>
                     {item.extras.map((ex, i) => (
                       <label key={i} style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', marginBottom: '0.2rem', cursor: 'pointer' }}>
                         <input type="checkbox"
@@ -1493,7 +1873,7 @@ function ClientView() {
                   <span style={{ fontWeight: 600 }}>{(item.price * item.qty).toFixed(2)} €</span>
                 </div>
                 {item.extras && item.extras.map((ex, j) => (
-                  <div key={j} className="cart-line" style={{ paddingLeft: '1rem', fontSize: '0.8rem', color: 'var(--warm-gray)' }}>
+                  <div key={j} className="cart-line" style={{ paddingLeft: '1rem', fontSize: '0.8rem', color: 'var(--text2)' }}>
                     <span>↳ {ex.name} × {item.qty}</span>
                     <span>+{(Number(ex.price) * item.qty).toFixed(2)} €</span>
                   </div>
@@ -1520,7 +1900,7 @@ function ClientView() {
             <PromoCodeField onApply={(discount) => setPromoDiscount(discount)} />
 
             <div style={{ marginTop: '1rem' }}>
-              <div style={{ fontSize: '0.82rem', fontWeight: 600, color: 'var(--warm-gray)', marginBottom: '0.4rem' }}>
+              <div style={{ fontSize: '0.82rem', fontWeight: 600, color: 'var(--text2)', marginBottom: '0.4rem' }}>
                 💬 Commentaire / demande spéciale
               </div>
               <textarea
@@ -1531,7 +1911,7 @@ function ClientView() {
                 style={{
                   width: '100%', padding: '0.6rem 0.75rem', borderRadius: 8,
                   border: '1.5px solid var(--border)', fontFamily: "'DM Sans', sans-serif",
-                  fontSize: '0.85rem', outline: 'none', background: 'var(--cream)',
+                  fontSize: '0.85rem', outline: 'none', background: 'var(--surface)',
                   resize: 'none', lineHeight: 1.5
                 }}
               />
@@ -1616,7 +1996,7 @@ function KitchenView() {
           padding: '0.4rem 0.9rem', borderRadius: 100, border: '1.5px solid var(--border)',
           background: soundEnabled ? '#D4EDDA' : 'white', cursor: 'pointer',
           fontFamily: "'DM Sans', sans-serif", fontSize: '0.8rem', fontWeight: 600,
-          color: soundEnabled ? '#155724' : 'var(--warm-gray)'
+          color: soundEnabled ? '#155724' : 'var(--text2)'
         }}>
           {soundEnabled ? '🔔 Son activé' : '🔕 Son désactivé'}
         </button>
@@ -1641,7 +2021,7 @@ function KitchenView() {
               </div>
               <div className="order-time">⏱ {elapsed(order.created_at)}</div>
               {order.comment && (
-                <div style={{ background: '#FFF8EE', border: '1px solid var(--gold)', borderRadius: 8, padding: '0.4rem 0.7rem', marginBottom: '0.4rem', fontSize: '0.82rem', color: 'var(--dark)' }}>
+                <div style={{ background: '#FFF8EE', border: '1px solid var(--gold)', borderRadius: 8, padding: '0.4rem 0.7rem', marginBottom: '0.4rem', fontSize: '0.82rem', color: 'var(--text)' }}>
                   💬 {order.comment}
                 </div>
               )}
@@ -1723,7 +2103,7 @@ function DashboardTab() {
 
   const statStyle = { background: 'white', borderRadius: 14, padding: '1.1rem', border: '1.5px solid var(--border)', textAlign: 'center' };
   const numStyle = { fontFamily: "'Playfair Display', serif", fontSize: '1.8rem', color: 'var(--gold)', lineHeight: 1 };
-  const lblStyle = { fontSize: '0.72rem', color: 'var(--warm-gray)', marginTop: '0.3rem' };
+  const lblStyle = { fontSize: '0.72rem', color: 'var(--text2)', marginTop: '0.3rem' };
 
   return (
     <div>
@@ -1742,11 +2122,11 @@ function DashboardTab() {
         <div style={statStyle}><div style={numStyle}>{servis}</div><div style={lblStyle}>Servis</div></div>
       </div>
       <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '0.75rem', marginBottom: '1.2rem' }}>
-        <div style={{ ...statStyle, background: 'var(--dark)' }}>
+        <div style={{ ...statStyle, background: 'var(--text)' }}>
           <div style={{ ...numStyle, color: 'var(--gold)' }}>{totalCA.toFixed(2)} €</div>
           <div style={{ ...lblStyle, color: '#aaa' }}>CA commandes</div>
         </div>
-        <div style={{ ...statStyle, background: 'var(--dark)' }}>
+        <div style={{ ...statStyle, background: 'var(--text)' }}>
           <div style={{ ...numStyle, color: '#C8953A' }}>{totalEncaisse.toFixed(2)} €</div>
           <div style={{ ...lblStyle, color: '#aaa' }}>Total encaissé</div>
         </div>
@@ -1765,7 +2145,7 @@ function DashboardTab() {
                   height: `${Math.max(8, (byHour[h].revenue / maxRevenue) * 60)}px`,
                   transition: 'height 0.5s'
                 }} />
-                <div style={{ fontSize: '0.62rem', color: 'var(--warm-gray)' }}>{h}h</div>
+                <div style={{ fontSize: '0.62rem', color: 'var(--text2)' }}>{h}h</div>
               </div>
             ))}
           </div>
@@ -1778,10 +2158,10 @@ function DashboardTab() {
           <div style={{ fontWeight: 600, fontSize: '0.88rem', marginBottom: '0.75rem' }}>🏆 Top ventes</div>
           {topItems.map(([name, d], i) => (
             <div key={name} style={{ display: 'flex', alignItems: 'center', gap: '0.75rem', padding: '0.4rem 0', borderBottom: i < topItems.length - 1 ? '1px solid var(--border)' : 'none' }}>
-              <span style={{ fontWeight: 800, color: i === 0 ? 'var(--gold)' : 'var(--warm-gray)', fontSize: '0.9rem', minWidth: 20 }}>#{i + 1}</span>
+              <span style={{ fontWeight: 800, color: i === 0 ? 'var(--gold)' : 'var(--text2)', fontSize: '0.9rem', minWidth: 20 }}>#{i + 1}</span>
               <span style={{ fontSize: '1.1rem' }}>{d.emoji}</span>
               <span style={{ flex: 1, fontSize: '0.85rem', fontWeight: 500 }}>{name}</span>
-              <span style={{ fontSize: '0.78rem', color: 'var(--warm-gray)' }}>×{d.qty}</span>
+              <span style={{ fontSize: '0.78rem', color: 'var(--text2)' }}>×{d.qty}</span>
               <span style={{ fontWeight: 700, color: 'var(--gold)', fontSize: '0.85rem' }}>{d.revenue.toFixed(2)} €</span>
             </div>
           ))}
@@ -1792,12 +2172,12 @@ function DashboardTab() {
       <div style={{ background: 'white', border: '1.5px solid var(--border)', borderRadius: 14, padding: '1.1rem' }}>
         <div style={{ fontWeight: 600, fontSize: '0.88rem', marginBottom: '0.75rem' }}>🕐 Dernières commandes</div>
         {recent.length === 0
-          ? <div style={{ color: 'var(--warm-gray)', fontSize: '0.82rem' }}>Aucune commande pour le moment</div>
+          ? <div style={{ color: 'var(--text2)', fontSize: '0.82rem' }}>Aucune commande pour le moment</div>
           : recent.map(o => (
             <div key={o.id} style={{ display: 'flex', alignItems: 'center', gap: '0.75rem', padding: '0.4rem 0', borderBottom: '1px solid var(--border)', fontSize: '0.82rem' }}>
-              <span style={{ fontWeight: 700, color: 'var(--dark)', minWidth: 28 }}>#{o.id}</span>
-              <span style={{ color: 'var(--warm-gray)' }}>Emplacement {o.table_num}</span>
-              <span style={{ flex: 1, color: 'var(--warm-gray)', fontSize: '0.75rem' }}>
+              <span style={{ fontWeight: 700, color: 'var(--text)', minWidth: 28 }}>#{o.id}</span>
+              <span style={{ color: 'var(--text2)' }}>Emplacement {o.table_num}</span>
+              <span style={{ flex: 1, color: 'var(--text2)', fontSize: '0.75rem' }}>
                 {new Date(o.created_at).toLocaleTimeString('fr-FR', { hour: '2-digit', minute: '2-digit' })}
               </span>
               <span style={{ fontWeight: 700, color: 'var(--gold)' }}>{Number(o.total).toFixed(2)} €</span>
@@ -1863,16 +2243,16 @@ function CaisseTab() {
     <div>
       <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '1rem' }}>
         <div className="view-title" style={{ fontSize: '1.4rem' }}>🧾 Caisse fin de soirée</div>
-        <button onClick={handlePrint} style={{ padding: '0.5rem 1rem', background: 'var(--dark)', color: 'white', border: 'none', borderRadius: 8, cursor: 'pointer', fontWeight: 600, fontFamily: "'DM Sans', sans-serif", fontSize: '0.82rem' }}>
+        <button onClick={handlePrint} style={{ padding: '0.5rem 1rem', background: 'var(--text)', color: 'white', border: 'none', borderRadius: 8, cursor: 'pointer', fontWeight: 600, fontFamily: "'DM Sans', sans-serif", fontSize: '0.82rem' }}>
           🖨 Imprimer
         </button>
       </div>
 
       {/* Rapport */}
       <div id="caisse-print" style={{ background: 'white', border: '1.5px solid var(--border)', borderRadius: 14, padding: '1.5rem', marginBottom: '1rem' }}>
-        <div style={{ textAlign: 'center', marginBottom: '1.2rem', borderBottom: '2px solid var(--dark)', paddingBottom: '1rem' }}>
+        <div style={{ textAlign: 'center', marginBottom: '1.2rem', borderBottom: '2px solid var(--text)', paddingBottom: '1rem' }}>
           <div style={{ fontFamily: "'Playfair Display', serif", fontSize: '1.4rem' }}>🎉 Noisy en Fête</div>
-          <div style={{ fontSize: '0.8rem', color: 'var(--warm-gray)', marginTop: '0.2rem' }}>
+          <div style={{ fontSize: '0.8rem', color: 'var(--text2)', marginTop: '0.2rem' }}>
             {new Date().toLocaleDateString('fr-FR', { weekday: 'long', day: 'numeric', month: 'long', year: 'numeric' })}
           </div>
         </div>
@@ -1886,7 +2266,7 @@ function CaisseTab() {
 
         {/* Détail ventes */}
         <div style={{ marginBottom: '1rem' }}>
-          <div style={{ fontWeight: 700, fontSize: '0.82rem', color: 'var(--warm-gray)', marginBottom: '0.5rem', textTransform: 'uppercase', letterSpacing: '0.05em' }}>Détail des ventes</div>
+          <div style={{ fontWeight: 700, fontSize: '0.82rem', color: 'var(--text2)', marginBottom: '0.5rem', textTransform: 'uppercase', letterSpacing: '0.05em' }}>Détail des ventes</div>
           {salesList.map((item, i) => (
             <div key={i} style={rowStyle}>
               <span>{item.emoji} {item.name} ×{item.qty}</span>
@@ -1896,11 +2276,11 @@ function CaisseTab() {
         </div>
 
         {/* Totaux */}
-        <div style={{ borderTop: '2px solid var(--dark)', paddingTop: '0.75rem' }}>
+        <div style={{ borderTop: '2px solid var(--text)', paddingTop: '0.75rem' }}>
           <div style={rowStyle}><span>Ventes</span><span>{totalCA.toFixed(2)} €</span></div>
           {totalRemises > 0 && <div style={{ ...rowStyle, color: 'var(--green)' }}><span>Remises fidélité</span><span>-{totalRemises.toFixed(2)} €</span></div>}
           {totalTips > 0 && <div style={{ ...rowStyle, color: 'var(--gold)' }}><span>🙏 Pourboires</span><span>+{totalTips.toFixed(2)} €</span></div>}
-          <div style={{ ...totalRowStyle, borderTop: '2px solid var(--dark)', marginTop: '0.5rem' }}>
+          <div style={{ ...totalRowStyle, borderTop: '2px solid var(--text)', marginTop: '0.5rem' }}>
             <span>TOTAL ENCAISSÉ</span>
             <span style={{ color: 'var(--gold)', fontSize: '1.3rem' }}>{totalEncaisse.toFixed(2)} €</span>
           </div>
@@ -1910,11 +2290,11 @@ function CaisseTab() {
       {/* Remise à zéro */}
       <div style={{ background: '#FFF5F5', border: '1.5px solid #F5C6CB', borderRadius: 14, padding: '1.2rem' }}>
         <div style={{ fontWeight: 600, color: 'var(--red)', marginBottom: '0.4rem' }}>🔄 Remise à zéro de la caisse</div>
-        <p style={{ fontSize: '0.82rem', color: 'var(--warm-gray)', marginBottom: '1rem' }}>
+        <p style={{ fontSize: '0.82rem', color: 'var(--text2)', marginBottom: '1rem' }}>
           Imprimez d&apos;abord votre rapport, puis effacez toutes les commandes pour la prochaine soirée.
         </p>
         <div style={{ display: 'flex', gap: '0.75rem', flexWrap: 'wrap' }}>
-          <button onClick={handlePrint} style={{ padding: '0.65rem 1.2rem', background: 'var(--dark)', color: 'white', border: 'none', borderRadius: 8, cursor: 'pointer', fontWeight: 600, fontFamily: "'DM Sans', sans-serif" }}>
+          <button onClick={handlePrint} style={{ padding: '0.65rem 1.2rem', background: 'var(--text)', color: 'white', border: 'none', borderRadius: 8, cursor: 'pointer', fontWeight: 600, fontFamily: "'DM Sans', sans-serif" }}>
             🖨 Imprimer avant de continuer
           </button>
           <button onClick={handleReset} disabled={resetting} style={{ padding: '0.65rem 1.2rem', background: 'var(--red)', color: 'white', border: 'none', borderRadius: 8, cursor: 'pointer', fontWeight: 700, fontFamily: "'DM Sans', sans-serif", opacity: resetting ? 0.6 : 1 }}>
@@ -2014,19 +2394,19 @@ function EcranTab() {
       <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '1rem' }}>
         <div className="view-title" style={{ fontSize: '1.4rem' }}>📺 Grand Écran</div>
         <button onClick={() => window.open(window.location.origin + '?ecran=1', '_blank')}
-          style={{ padding: '0.5rem 1rem', background: 'var(--dark)', color: 'white', border: 'none', borderRadius: 8, cursor: 'pointer', fontWeight: 600, fontFamily: "'DM Sans', sans-serif", fontSize: '0.82rem' }}>
+          style={{ padding: '0.5rem 1rem', background: 'var(--text)', color: 'white', border: 'none', borderRadius: 8, cursor: 'pointer', fontWeight: 600, fontFamily: "'DM Sans', sans-serif", fontSize: '0.82rem' }}>
           🚀 Ouvrir l&apos;écran
         </button>
       </div>
 
       {/* Aperçu */}
-      <div style={{ fontWeight: 600, fontSize: '0.85rem', color: 'var(--warm-gray)', marginBottom: '0.5rem' }}>👁 Aperçu en direct</div>
+      <div style={{ fontWeight: 600, fontSize: '0.85rem', color: 'var(--text2)', marginBottom: '0.5rem' }}>👁 Aperçu en direct</div>
       <PreviewMini />
 
       {/* Image de fond */}
       <div style={{ background: 'white', border: '1.5px solid var(--border)', borderRadius: 14, padding: '1.2rem', marginBottom: '1rem' }}>
         <div style={{ fontWeight: 600, marginBottom: '0.3rem' }}>🖼 Image de fond</div>
-        <div style={{ fontSize: '0.75rem', color: 'var(--warm-gray)', marginBottom: '0.75rem' }}>
+        <div style={{ fontSize: '0.75rem', color: 'var(--text2)', marginBottom: '0.75rem' }}>
           Taille recommandée : <strong>1920×1080 px minimum</strong> (format 16:9, JPG ou PNG).<br />
           L&apos;image sera affichée en transparence pour ne pas gêner la lisibilité des numéros.
         </div>
@@ -2039,7 +2419,7 @@ function EcranTab() {
         ) : (
           <label style={{
             display: 'inline-flex', alignItems: 'center', gap: '0.5rem',
-            padding: '0.6rem 1.2rem', background: 'var(--cream)', border: '2px dashed var(--border)',
+            padding: '0.6rem 1.2rem', background: 'var(--surface)', border: '2px dashed var(--border)',
             borderRadius: 8, cursor: 'pointer', fontSize: '0.85rem', fontWeight: 500
           }}>
             {uploading ? '⏳ Chargement...' : '📁 Choisir une image'}
@@ -2049,14 +2429,14 @@ function EcranTab() {
 
         {bgImage && (
           <div style={{ marginTop: '0.75rem' }}>
-            <div style={{ fontSize: '0.78rem', color: 'var(--warm-gray)', marginBottom: '0.3rem' }}>
+            <div style={{ fontSize: '0.78rem', color: 'var(--text2)', marginBottom: '0.3rem' }}>
               Transparence de l&apos;image : <strong>{Math.round(parseFloat(bgOpacity) * 100)}%</strong>
             </div>
             <input type="range" min="0.05" max="0.6" step="0.05" value={bgOpacity}
               onChange={e => setBgOpacity(e.target.value)}
               style={{ width: '100%', accentColor: 'var(--gold)' }}
             />
-            <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: '0.68rem', color: 'var(--warm-gray)' }}>
+            <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: '0.68rem', color: 'var(--text2)' }}>
               <span>Très transparente</span><span>Plus visible</span>
             </div>
           </div>
@@ -2076,8 +2456,8 @@ function EcranTab() {
               <input type="color" value={value} onChange={e => setter(e.target.value)}
                 style={{ width: '100%', height: 48, borderRadius: 10, border: '1.5px solid var(--border)', cursor: 'pointer', padding: 3 }}
               />
-              <div style={{ fontSize: '0.72rem', color: 'var(--warm-gray)', marginTop: '0.3rem', fontWeight: 500 }}>{label}</div>
-              <div style={{ fontSize: '0.65rem', color: 'var(--warm-gray)', fontFamily: 'monospace' }}>{value}</div>
+              <div style={{ fontSize: '0.72rem', color: 'var(--text2)', marginTop: '0.3rem', fontWeight: 500 }}>{label}</div>
+              <div style={{ fontSize: '0.65rem', color: 'var(--text2)', fontFamily: 'monospace' }}>{value}</div>
             </div>
           ))}
         </div>
@@ -2108,14 +2488,14 @@ function EcranTab() {
 
       <div style={{ display: 'flex', gap: '0.75rem' }}>
         <button onClick={save} style={{
-          flex: 1, padding: '0.75rem', background: saved ? 'var(--green)' : 'var(--dark)',
+          flex: 1, padding: '0.75rem', background: saved ? 'var(--green)' : 'var(--text)',
           color: 'white', border: 'none', borderRadius: 10, cursor: 'pointer',
           fontWeight: 700, fontFamily: "'DM Sans', sans-serif", transition: 'background 0.3s'
         }}>
           {saved ? '✅ Enregistré !' : '💾 Enregistrer'}
         </button>
         <button onClick={() => window.open(window.location.origin + '?ecran=1', '_blank')}
-          style={{ flex: 1, padding: '0.75rem', background: 'var(--gold)', color: 'var(--dark)', border: 'none', borderRadius: 10, cursor: 'pointer', fontWeight: 700, fontFamily: "'DM Sans', sans-serif" }}>
+          style={{ flex: 1, padding: '0.75rem', background: 'var(--gold)', color: 'var(--text)', border: 'none', borderRadius: 10, cursor: 'pointer', fontWeight: 700, fontFamily: "'DM Sans', sans-serif" }}>
           📺 Ouvrir l&apos;écran TV
         </button>
       </div>
@@ -2202,20 +2582,20 @@ function FideliteClientForm({ totalPrice, orderId }) {
       ) : (
         <div style={{ fontSize: "0.88rem" }}>Votre code promo : <strong style={{ fontSize: "1.1rem", letterSpacing: "0.05em", fontFamily: "monospace" }}>{newCode}</strong></div>
       )}
-      <div style={{ fontSize: "0.75rem", color: "var(--warm-gray)", marginTop: "0.5rem" }}>+{pointsGagnes} points ajoutés à votre compte</div>
+      <div style={{ fontSize: "0.75rem", color: "var(--text2)", marginTop: "0.5rem" }}>+{pointsGagnes} points ajoutés à votre compte</div>
     </div>
   );
 
   if (saved) return (
     <div style={{ background: "#F0FFF4", border: "1.5px solid #C3E6CB", borderRadius: 12, padding: "1rem", marginTop: "1rem" }}>
       <div style={{ fontWeight: 600, color: "var(--green)", marginBottom: "0.4rem" }}>💎 Points ajoutés !</div>
-      <div style={{ fontSize: "0.82rem", color: "var(--dark)" }}>
+      <div style={{ fontSize: "0.82rem", color: "var(--text)" }}>
         +{pointsGagnes} points • Solde : <strong>{totalAfterSave} pts</strong>
       </div>
       <div style={{ marginTop: "0.6rem", background: "#E8E0D4", borderRadius: 100, height: 8, overflow: "hidden" }}>
         <div style={{ width: progressSeuil + "%", background: "var(--gold)", height: "100%", borderRadius: 100, transition: "width 1s" }} />
       </div>
-      <div style={{ fontSize: "0.72rem", color: "var(--warm-gray)", marginTop: "0.3rem" }}>
+      <div style={{ fontSize: "0.72rem", color: "var(--text2)", marginTop: "0.3rem" }}>
         {totalAfterSave}/{seuil1} points pour votre prochaine récompense
       </div>
     </div>
@@ -2224,7 +2604,7 @@ function FideliteClientForm({ totalPrice, orderId }) {
   return (
     <div style={{ background: "white", border: "1.5px solid var(--border)", borderRadius: 14, padding: "1rem", marginTop: "1rem" }}>
       <div style={{ fontWeight: 600, fontSize: "0.88rem", marginBottom: "0.25rem" }}>💎 Programme fidélité</div>
-      <div style={{ fontSize: "0.75rem", color: "var(--warm-gray)", marginBottom: "0.75rem" }}>
+      <div style={{ fontSize: "0.75rem", color: "var(--text2)", marginBottom: "0.75rem" }}>
         Gagnez {pointsGagnes} point{pointsGagnes > 1 ? "s" : ""} avec cette commande !
       </div>
       {!membre ? (
@@ -2239,9 +2619,9 @@ function FideliteClientForm({ totalPrice, orderId }) {
               value={contact} onChange={e => setContact(e.target.value)}
               onKeyDown={e => e.key === "Enter" && checkContact()}
               placeholder={contactType === "email" ? "votre@email.com" : "06 12 34 56 78"}
-              style={{ flex: 1, padding: "0.55rem 0.75rem", borderRadius: 8, border: "1.5px solid var(--border)", fontFamily: "'DM Sans', sans-serif", fontSize: "0.88rem", outline: "none", background: "var(--cream)" }}
+              style={{ flex: 1, padding: "0.55rem 0.75rem", borderRadius: 8, border: "1.5px solid var(--border)", fontFamily: "'DM Sans', sans-serif", fontSize: "0.88rem", outline: "none", background: "var(--surface)" }}
             />
-            <button onClick={checkContact} disabled={loading} style={{ padding: "0.55rem 0.9rem", borderRadius: 8, border: "none", background: "var(--dark)", color: "white", cursor: "pointer", fontWeight: 600, fontFamily: "'DM Sans', sans-serif", fontSize: "0.82rem" }}>
+            <button onClick={checkContact} disabled={loading} style={{ padding: "0.55rem 0.9rem", borderRadius: 8, border: "none", background: "var(--text)", color: "white", cursor: "pointer", fontWeight: 600, fontFamily: "'DM Sans', sans-serif", fontSize: "0.82rem" }}>
               {loading ? "⏳" : "OK"}
             </button>
           </div>
@@ -2254,13 +2634,13 @@ function FideliteClientForm({ totalPrice, orderId }) {
           <div style={{ background: "#E8E0D4", borderRadius: 100, height: 8, overflow: "hidden" }}>
             <div style={{ width: Math.min(100, (membre.points / seuil1) * 100) + "%", background: "var(--gold)", height: "100%", borderRadius: 100 }} />
           </div>
-          <div style={{ fontSize: "0.72rem", color: "var(--warm-gray)", marginTop: "0.3rem" }}>
+          <div style={{ fontSize: "0.72rem", color: "var(--text2)", marginTop: "0.3rem" }}>
             {membre.points}/{seuil1} pts • +{pointsGagnes} pts avec cette commande
           </div>
         </div>
       )}
       {(membre || contact.length > 3) && (
-        <button onClick={savePoints} disabled={loading || !contact} style={{ width: "100%", marginTop: "0.5rem", padding: "0.6rem", background: "var(--gold)", color: "var(--dark)", border: "none", borderRadius: 8, cursor: "pointer", fontWeight: 700, fontFamily: "'DM Sans', sans-serif", fontSize: "0.85rem" }}>
+        <button onClick={savePoints} disabled={loading || !contact} style={{ width: "100%", marginTop: "0.5rem", padding: "0.6rem", background: "var(--gold)", color: "var(--text)", border: "none", borderRadius: 8, cursor: "pointer", fontWeight: 700, fontFamily: "'DM Sans', sans-serif", fontSize: "0.85rem" }}>
           {loading ? "⏳ Enregistrement..." : membre ? `✅ Ajouter ${pointsGagnes} points` : `🎉 Rejoindre & gagner ${pointsGagnes} points`}
         </button>
       )}
@@ -2315,7 +2695,7 @@ function FideliteTab() {
             <div style={{ fontWeight: 700, color: isActive ? "var(--green)" : "var(--red)" }}>
               {isActive ? "✅ Programme actif" : "⏸ Programme inactif"}
             </div>
-            <div style={{ fontSize: "0.78rem", color: "var(--warm-gray)", marginTop: "0.2rem" }}>
+            <div style={{ fontSize: "0.78rem", color: "var(--text2)", marginTop: "0.2rem" }}>
               {isActive ? "Les clients peuvent accumuler des points" : "Activez pour démarrer la fidélité"}
             </div>
           </div>
@@ -2391,12 +2771,12 @@ function FideliteTab() {
         Un client qui dépense 60€ en une soirée atteint directement le seuil 1.
       </div>
 
-      <button onClick={saveSettings} style={{ padding: "0.75rem 2rem", background: saved ? "var(--green)" : "var(--dark)", color: "white", border: "none", borderRadius: 10, cursor: "pointer", fontWeight: 700, fontFamily: "'DM Sans', sans-serif", marginBottom: "1.5rem", transition: "background 0.3s" }}>
+      <button onClick={saveSettings} style={{ padding: "0.75rem 2rem", background: saved ? "var(--green)" : "var(--text)", color: "white", border: "none", borderRadius: 10, cursor: "pointer", fontWeight: 700, fontFamily: "'DM Sans', sans-serif", marginBottom: "1.5rem", transition: "background 0.3s" }}>
         {saved ? "✅ Enregistré !" : "💾 Enregistrer la configuration"}
       </button>
 
       {/* Liste membres */}
-      <div style={{ fontWeight: 600, fontSize: "0.9rem", color: "var(--warm-gray)", marginBottom: "0.75rem" }}>
+      <div style={{ fontWeight: 600, fontSize: "0.9rem", color: "var(--text2)", marginBottom: "0.75rem" }}>
         👥 Membres ({membres.length}) — classés par points
       </div>
       {membres.length === 0 ? (
@@ -2406,16 +2786,16 @@ function FideliteTab() {
           <div style={{ fontSize: "1.2rem" }}>{m.contact_type === "email" ? "📧" : "📱"}</div>
           <div style={{ flex: 1 }}>
             <div style={{ fontWeight: 500, fontSize: "0.88rem" }}>{m.contact}</div>
-            <div style={{ fontSize: "0.72rem", color: "var(--warm-gray)", marginTop: "0.1rem" }}>
+            <div style={{ fontSize: "0.72rem", color: "var(--text2)", marginTop: "0.1rem" }}>
               Total cumulé : {m.points_total} pts • Depuis {new Date(m.created_at).toLocaleDateString("fr-FR")}
             </div>
           </div>
           <div style={{ textAlign: "right", minWidth: 60 }}>
             <div style={{ fontFamily: "'Playfair Display', serif", fontSize: "1.1rem", color: "var(--gold)" }}>{m.points}</div>
-            <div style={{ fontSize: "0.68rem", color: "var(--warm-gray)" }}>points</div>
+            <div style={{ fontSize: "0.68rem", color: "var(--text2)" }}>points</div>
           </div>
           <div style={{ display: "flex", gap: "0.3rem" }}>
-            <button onClick={() => resetMembre(m.id)} style={{ padding: "0.3rem 0.6rem", background: "transparent", border: "1.5px solid var(--border)", borderRadius: 6, cursor: "pointer", fontSize: "0.75rem", color: "var(--warm-gray)" }} title="Remettre à zéro">↩</button>
+            <button onClick={() => resetMembre(m.id)} style={{ padding: "0.3rem 0.6rem", background: "transparent", border: "1.5px solid var(--border)", borderRadius: 6, cursor: "pointer", fontSize: "0.75rem", color: "var(--text2)" }} title="Remettre à zéro">↩</button>
             <button className="del-btn" onClick={() => deleteMembre(m.id)}>✕</button>
           </div>
         </div>
@@ -2506,7 +2886,7 @@ function PromosTab() {
           </div>
         </div>
         {form.code && form.discount && (
-          <div style={{ background: '#FFF8EE', border: '1px solid var(--gold)', borderRadius: 8, padding: '0.5rem 0.75rem', fontSize: '0.82rem', marginBottom: '0.75rem', color: 'var(--dark)' }}>
+          <div style={{ background: '#FFF8EE', border: '1px solid var(--gold)', borderRadius: 8, padding: '0.5rem 0.75rem', fontSize: '0.82rem', marginBottom: '0.75rem', color: 'var(--text)' }}>
             🏷 Le code <strong>{form.code || '...'}</strong> donnera <strong>{form.discount}% de réduction</strong>, utilisable <strong>{form.maxUses} fois</strong>
           </div>
         )}
@@ -2515,10 +2895,10 @@ function PromosTab() {
       </div>
 
       {/* Liste des promos */}
-      <div style={{ fontWeight: 600, fontSize: '0.9rem', marginBottom: '0.75rem', color: 'var(--warm-gray)' }}>
+      <div style={{ fontWeight: 600, fontSize: '0.9rem', marginBottom: '0.75rem', color: 'var(--text2)' }}>
         Codes actifs et passés ({promos.length})
       </div>
-      {loading ? <div className="pulse" style={{ color: 'var(--warm-gray)', fontSize: '0.85rem' }}>Chargement...</div> :
+      {loading ? <div className="pulse" style={{ color: 'var(--text2)', fontSize: '0.85rem' }}>Chargement...</div> :
         promos.length === 0 ? (
           <div className="empty-state"><div className="empty-icon">🏷</div><div>Aucun code promo créé</div></div>
         ) : promos.map(promo => (
@@ -2528,13 +2908,13 @@ function PromosTab() {
             display: 'flex', alignItems: 'center', gap: '0.75rem', flexWrap: 'wrap'
           }}>
             <div style={{ background: promo.active ? '#D4EDDA' : '#F8F8F8', borderRadius: 8, padding: '0.4rem 0.8rem' }}>
-              <span style={{ fontWeight: 800, fontSize: '1rem', letterSpacing: '0.05em', color: promo.active ? 'var(--green)' : 'var(--warm-gray)', fontFamily: 'monospace' }}>
+              <span style={{ fontWeight: 800, fontSize: '1rem', letterSpacing: '0.05em', color: promo.active ? 'var(--green)' : 'var(--text2)', fontFamily: 'monospace' }}>
                 {promo.code}
               </span>
             </div>
             <div style={{ flex: 1 }}>
               <div style={{ fontWeight: 600, fontSize: '0.88rem' }}>−{promo.discount}% de réduction</div>
-              <div style={{ fontSize: '0.75rem', color: 'var(--warm-gray)', marginTop: '0.1rem' }}>
+              <div style={{ fontSize: '0.75rem', color: 'var(--text2)', marginTop: '0.1rem' }}>
                 {promo.uses}/{promo.max_uses} utilisation{promo.max_uses > 1 ? 's' : ''}
                 {promo.uses >= promo.max_uses && ' — Épuisé'}
               </div>
@@ -2606,7 +2986,7 @@ function ThemeTab() {
 
       {/* Thèmes prédéfinis */}
       <div style={{ marginBottom: '1.5rem' }}>
-        <div style={{ fontSize: '0.82rem', color: 'var(--warm-gray)', fontWeight: 500, marginBottom: '0.75rem' }}>
+        <div style={{ fontSize: '0.82rem', color: 'var(--text2)', fontWeight: 500, marginBottom: '0.75rem' }}>
           Thèmes prédéfinis — cliquez pour prévisualiser
         </div>
         <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(130px, 1fr))', gap: '0.75rem' }}>
@@ -2629,7 +3009,7 @@ function ThemeTab() {
                   <div style={{ height: 4, width: '50%', borderRadius: 2, background: vars['--gold'] }} />
                 </div>
               </div>
-              <div style={{ padding: '0.4rem', background: selectedTheme === name ? '#FFF8EE' : 'white', fontSize: '0.78rem', fontWeight: 600, color: selectedTheme === name ? 'var(--gold)' : 'var(--dark)', textAlign: 'center', fontFamily: "'DM Sans', sans-serif" }}>
+              <div style={{ padding: '0.4rem', background: selectedTheme === name ? '#FFF8EE' : 'white', fontSize: '0.78rem', fontWeight: 600, color: selectedTheme === name ? 'var(--gold)' : 'var(--text)', textAlign: 'center', fontFamily: "'DM Sans', sans-serif" }}>
                 {selectedTheme === name ? '✓ ' : ''}{name}
               </div>
             </button>
@@ -2648,8 +3028,8 @@ function ThemeTab() {
                 style={{ width: 36, height: 36, borderRadius: 8, border: '1.5px solid var(--border)', cursor: 'pointer', padding: 2 }}
               />
               <div>
-                <div style={{ fontSize: '0.75rem', fontWeight: 600, color: 'var(--dark)' }}>{label}</div>
-                <div style={{ fontSize: '0.68rem', color: 'var(--warm-gray)', fontFamily: 'monospace' }}>{currentVars[key]}</div>
+                <div style={{ fontSize: '0.75rem', fontWeight: 600, color: 'var(--text)' }}>{label}</div>
+                <div style={{ fontSize: '0.68rem', color: 'var(--text2)', fontFamily: 'monospace' }}>{currentVars[key]}</div>
               </div>
             </div>
           ))}
@@ -2657,15 +3037,15 @@ function ThemeTab() {
       </div>
 
       {/* Aperçu rapide */}
-      <div style={{ background: 'var(--cream)', border: '1.5px solid var(--border)', borderRadius: 14, padding: '1rem', marginBottom: '1rem' }}>
-        <div style={{ fontSize: '0.78rem', color: 'var(--warm-gray)', marginBottom: '0.5rem' }}>👁 Aperçu en direct</div>
-        <div style={{ background: 'var(--dark)', borderRadius: 8, padding: '0.5rem 0.75rem', display: 'flex', gap: '0.5rem', alignItems: 'center', marginBottom: '0.5rem' }}>
+      <div style={{ background: 'var(--surface)', border: '1.5px solid var(--border)', borderRadius: 14, padding: '1rem', marginBottom: '1rem' }}>
+        <div style={{ fontSize: '0.78rem', color: 'var(--text2)', marginBottom: '0.5rem' }}>👁 Aperçu en direct</div>
+        <div style={{ background: 'var(--text)', borderRadius: 8, padding: '0.5rem 0.75rem', display: 'flex', gap: '0.5rem', alignItems: 'center', marginBottom: '0.5rem' }}>
           <div style={{ color: 'var(--gold)', fontWeight: 700, fontSize: '0.85rem' }}>🎉 Noisy en Fête</div>
-          <div style={{ marginLeft: 'auto', background: 'var(--gold)', borderRadius: 100, padding: '0.2rem 0.7rem', fontSize: '0.72rem', fontWeight: 600, color: 'var(--dark)' }}>Commander</div>
+          <div style={{ marginLeft: 'auto', background: 'var(--gold)', borderRadius: 100, padding: '0.2rem 0.7rem', fontSize: '0.72rem', fontWeight: 600, color: 'var(--text)' }}>Commander</div>
         </div>
         <div style={{ background: 'white', borderRadius: 8, padding: '0.75rem', border: '1.5px solid var(--border)', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
           <div>
-            <div style={{ fontWeight: 500, fontSize: '0.85rem', color: 'var(--dark)' }}>🍷 Vin rouge</div>
+            <div style={{ fontWeight: 500, fontSize: '0.85rem', color: 'var(--text)' }}>🍷 Vin rouge</div>
             <div style={{ color: 'var(--gold)', fontWeight: 600, fontSize: '0.78rem' }}>5.50 €</div>
           </div>
           <div style={{ display: 'flex', gap: '0.3rem', alignItems: 'center' }}>
@@ -2680,13 +3060,13 @@ function ThemeTab() {
         {/* GRAND ECRAN TV */}
       <div style={{ background: 'white', border: '1.5px solid var(--border)', borderRadius: 14, padding: '1.2rem', marginBottom: '1rem' }}>
         <div style={{ fontWeight: 600, marginBottom: '0.3rem' }}>📺 Grand écran TV</div>
-        <div style={{ fontSize: '0.78rem', color: 'var(--warm-gray)', marginBottom: '0.75rem' }}>
+        <div style={{ fontSize: '0.78rem', color: 'var(--text2)', marginBottom: '0.75rem' }}>
           Affichez les numéros d&apos;emplacements prêts sur une TV ou un vidéoprojecteur.
         </div>
-        <div style={{ background: 'var(--cream)', borderRadius: 8, padding: '0.6rem 0.9rem', fontSize: '0.82rem', marginBottom: '0.75rem', fontFamily: 'monospace', wordBreak: 'break-all' }}>
+        <div style={{ background: 'var(--surface)', borderRadius: 8, padding: '0.6rem 0.9rem', fontSize: '0.82rem', marginBottom: '0.75rem', fontFamily: 'monospace', wordBreak: 'break-all' }}>
           🔗 {window.location.origin}?ecran=1
         </div>
-        <button onClick={() => window.open(window.location.origin + '?ecran=1', '_blank')} style={{ padding: '0.6rem 1.2rem', background: 'var(--dark)', color: 'white', border: 'none', borderRadius: 8, cursor: 'pointer', fontWeight: 600, fontFamily: "'DM Sans', sans-serif", fontSize: '0.85rem' }}>
+        <button onClick={() => window.open(window.location.origin + '?ecran=1', '_blank')} style={{ padding: '0.6rem 1.2rem', background: 'var(--text)', color: 'white', border: 'none', borderRadius: 8, cursor: 'pointer', fontWeight: 600, fontFamily: "'DM Sans', sans-serif", fontSize: '0.85rem' }}>
           📺 Ouvrir le grand écran
         </button>
       </div>
@@ -2696,12 +3076,12 @@ function ThemeTab() {
         <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
           <div>
             <div style={{ fontWeight: 600 }}>📍 Suivi de commande en direct</div>
-            <div style={{ fontSize: '0.78rem', color: 'var(--warm-gray)', marginTop: '0.2rem' }}>
+            <div style={{ fontSize: '0.78rem', color: 'var(--text2)', marginTop: '0.2rem' }}>
               Après le paiement, le client voit une page avec la progression de sa commande en temps réel.
             </div>
           </div>
           <button onClick={() => saveSetting('tracking_active', settings.tracking_active === 'true' ? 'false' : 'true')}
-            style={{ padding: '0.5rem 1rem', borderRadius: 8, border: 'none', cursor: 'pointer', fontWeight: 700, fontFamily: "'DM Sans', sans-serif", fontSize: '0.82rem', background: settings.tracking_active === 'true' ? 'var(--green)' : 'var(--warm-gray)', color: 'white', whiteSpace: 'nowrap' }}>
+            style={{ padding: '0.5rem 1rem', borderRadius: 8, border: 'none', cursor: 'pointer', fontWeight: 700, fontFamily: "'DM Sans', sans-serif", fontSize: '0.82rem', background: settings.tracking_active === 'true' ? 'var(--green)' : 'var(--text2)', color: 'white', whiteSpace: 'nowrap' }}>
             {settings.tracking_active === 'true' ? '✅ Activé' : '⏸ Désactivé'}
           </button>
         </div>
@@ -2710,14 +3090,14 @@ function ThemeTab() {
       {/* MESSAGE D'URGENCE */}
       <div style={{ background: 'white', border: '1.5px solid var(--border)', borderRadius: 14, padding: '1.2rem', marginBottom: '1rem' }}>
         <div style={{ fontWeight: 600, marginBottom: '0.3rem' }}>⚠️ Message d&apos;urgence</div>
-        <div style={{ fontSize: '0.78rem', color: 'var(--warm-gray)', marginBottom: '0.75rem' }}>
+        <div style={{ fontSize: '0.78rem', color: 'var(--text2)', marginBottom: '0.75rem' }}>
           S&apos;affiche en bandeau rouge sur tous les téléphones clients connectés. Idéal pour signaler une rupture de stock ou un changement.
         </div>
         <UrgentMessageAdmin />
       </div>
 
       <button onClick={save} style={{
-          padding: '0.75rem 2rem', background: saved ? 'var(--green)' : 'var(--dark)',
+          padding: '0.75rem 2rem', background: saved ? 'var(--green)' : 'var(--text)',
           color: 'white', border: 'none', borderRadius: 10, cursor: 'pointer',
           fontWeight: 700, fontFamily: "'DM Sans', sans-serif", fontSize: '0.95rem',
           transition: 'background 0.3s'
@@ -2725,7 +3105,7 @@ function ThemeTab() {
           {saved ? '✅ Thème enregistré !' : '💾 Enregistrer le thème'}
         </button>
         <button onClick={() => applyTheme('Classique')} style={{
-          padding: '0.75rem 1.2rem', background: 'white', color: 'var(--dark)',
+          padding: '0.75rem 1.2rem', background: 'white', color: 'var(--text)',
           border: '1.5px solid var(--border)', borderRadius: 10, cursor: 'pointer',
           fontFamily: "'DM Sans', sans-serif", fontSize: '0.85rem'
         }}>
@@ -2749,7 +3129,7 @@ function UrgentMessageAdmin() {
       <textarea value={msg} onChange={e => setMsg(e.target.value)}
         placeholder="Ex: ⚠️ Rupture de stock bière, remplacée par cidre ce soir !"
         rows={2}
-        style={{ width: '100%', padding: '0.6rem 0.75rem', borderRadius: 8, border: '1.5px solid var(--border)', fontFamily: "'DM Sans', sans-serif", fontSize: '0.85rem', outline: 'none', background: 'var(--cream)', resize: 'none', marginBottom: '0.75rem' }}
+        style={{ width: '100%', padding: '0.6rem 0.75rem', borderRadius: 8, border: '1.5px solid var(--border)', fontFamily: "'DM Sans', sans-serif", fontSize: '0.85rem', outline: 'none', background: 'var(--surface)', resize: 'none', marginBottom: '0.75rem' }}
       />
       <div style={{ display: 'flex', gap: '0.5rem', flexWrap: 'wrap' }}>
         <button onClick={() => sendUrgentMessage(msg)} disabled={!msg.trim()} style={{
@@ -2759,7 +3139,7 @@ function UrgentMessageAdmin() {
         }}>📢 Envoyer à tous</button>
         {isActive && (
           <button onClick={() => { saveSetting('urgent_active', 'false'); saveSetting('urgent_msg', ''); setMsg(''); }} style={{
-            padding: '0.6rem 1rem', background: 'var(--dark)', color: 'white',
+            padding: '0.6rem 1rem', background: 'var(--text)', color: 'white',
             border: 'none', borderRadius: 8, cursor: 'pointer', fontWeight: 600,
             fontFamily: "'DM Sans', sans-serif"
           }}>✕ Effacer</button>
@@ -2818,7 +3198,7 @@ function ConfigTab() {
         <div style={{ fontWeight: 700, fontSize: '1rem', color: isClosed ? 'var(--red)' : 'var(--green)', marginBottom: '0.3rem' }}>
           {isClosed ? '🔒 Commandes fermées' : '✅ Commandes ouvertes'}
         </div>
-        <div style={{ fontSize: '0.78rem', color: 'var(--warm-gray)', marginBottom: '0.9rem' }}>
+        <div style={{ fontSize: '0.78rem', color: 'var(--text2)', marginBottom: '0.9rem' }}>
           {isClosed
             ? 'Les clients ne peuvent plus passer de commande.'
             : 'Les clients peuvent commander normalement.'}
@@ -2837,7 +3217,7 @@ function ConfigTab() {
             opacity: isClosed ? 0.5 : 1
           }}>🔴 Fermer maintenant</button>
         </div>
-        <div style={{ fontSize: '0.72rem', color: 'var(--warm-gray)', marginTop: '0.6rem' }}>
+        <div style={{ fontSize: '0.72rem', color: 'var(--text2)', marginTop: '0.6rem' }}>
           💡 &quot;Forcer l&apos;ouverture&quot; ignore l&apos;heure de fermeture automatique
         </div>
       </div>
@@ -2845,7 +3225,7 @@ function ConfigTab() {
       {/* Heure de fermeture automatique */}
       <div style={{ background: 'white', border: '1.5px solid var(--border)', borderRadius: 14, padding: '1.2rem', marginBottom: '1rem' }}>
         <div style={{ fontWeight: 600, marginBottom: '0.3rem' }}>🕙 Heure de fermeture automatique</div>
-        <div style={{ fontSize: '0.78rem', color: 'var(--warm-gray)', marginBottom: '0.75rem' }}>
+        <div style={{ fontSize: '0.78rem', color: 'var(--text2)', marginBottom: '0.75rem' }}>
           Les commandes se ferment automatiquement à cette heure sur toutes les pages. Par défaut : 22h00.
         </div>
         <input
@@ -2854,7 +3234,7 @@ function ConfigTab() {
           style={{
             padding: '0.6rem 0.9rem', borderRadius: 8, border: '1.5px solid var(--border)',
             fontFamily: "'DM Sans', sans-serif", fontSize: '1rem', outline: 'none',
-            background: 'var(--cream)', fontWeight: 600
+            background: 'var(--surface)', fontWeight: 600
           }}
         />
       </div>
@@ -2862,7 +3242,7 @@ function ConfigTab() {
       {/* Message d'accueil */}
       <div style={{ background: 'white', border: '1.5px solid var(--border)', borderRadius: 14, padding: '1.2rem', marginBottom: '1rem' }}>
         <div style={{ fontWeight: 600, marginBottom: '0.3rem' }}>🎉 Message d&apos;accueil</div>
-        <div style={{ fontSize: '0.78rem', color: 'var(--warm-gray)', marginBottom: '0.75rem' }}>
+        <div style={{ fontSize: '0.78rem', color: 'var(--text2)', marginBottom: '0.75rem' }}>
           Affiché aux clients sur la page de sélection de table. Laissez vide pour ne rien afficher.
         </div>
         <textarea
@@ -2873,7 +3253,7 @@ function ConfigTab() {
           style={{
             width: '100%', padding: '0.6rem 0.75rem', borderRadius: 8,
             border: '1.5px solid var(--border)', fontFamily: "'DM Sans', sans-serif",
-            fontSize: '0.88rem', outline: 'none', background: 'var(--cream)',
+            fontSize: '0.88rem', outline: 'none', background: 'var(--surface)',
             resize: 'vertical', lineHeight: 1.5
           }}
         />
@@ -2882,14 +3262,14 @@ function ConfigTab() {
       {/* Fidélité */}
       <div style={{ background: 'white', border: '1.5px solid var(--border)', borderRadius: 14, padding: '1.2rem', marginBottom: '1rem' }}>
         <div style={{ fontWeight: 600, marginBottom: '0.3rem' }}>🎁 Offre fidélité</div>
-        <div style={{ fontSize: '0.78rem', color: 'var(--warm-gray)', marginBottom: '0.75rem' }}>
+        <div style={{ fontSize: '0.78rem', color: 'var(--text2)', marginBottom: '0.75rem' }}>
           Choisissez un produit et définissez à partir de combien d&apos;achats le suivant est offert.
         </div>
         <div style={{ display: 'flex', flexDirection: 'column', gap: '0.5rem', marginBottom: '0.75rem' }}>
           <div className="form-field">
             <label>Produit concerné</label>
             <select value={loyaltyItem} onChange={e => setLoyaltyItem(e.target.value)}
-              style={{ padding: '0.55rem 0.75rem', borderRadius: 8, border: '1.5px solid var(--border)', fontFamily: "'DM Sans', sans-serif", fontSize: '0.9rem', background: 'var(--cream)', outline: 'none' }}>
+              style={{ padding: '0.55rem 0.75rem', borderRadius: 8, border: '1.5px solid var(--border)', fontFamily: "'DM Sans', sans-serif", fontSize: '0.9rem', background: 'var(--surface)', outline: 'none' }}>
               <option value="">-- Aucun --</option>
               {loyaltyMenu.map(item => (
                 <option key={item.id} value={item.name}>{item.emoji} {item.name} ({Number(item.price).toFixed(2)} €)</option>
@@ -2900,7 +3280,7 @@ function ConfigTab() {
             <label>Offert tous les combien d&apos;achats ?</label>
             <input type="number" min="2" max="20" value={loyaltyEvery}
               onChange={e => setLoyaltyEvery(e.target.value)}
-              style={{ padding: '0.55rem 0.75rem', borderRadius: 8, border: '1.5px solid var(--border)', fontFamily: "'DM Sans', sans-serif", fontSize: '0.9rem', background: 'var(--cream)', outline: 'none', maxWidth: 120 }}
+              style={{ padding: '0.55rem 0.75rem', borderRadius: 8, border: '1.5px solid var(--border)', fontFamily: "'DM Sans', sans-serif", fontSize: '0.9rem', background: 'var(--surface)', outline: 'none', maxWidth: 120 }}
             />
           </div>
           <div style={{ display: 'flex', gap: '0.5rem', alignItems: 'center' }}>
@@ -2909,7 +3289,7 @@ function ConfigTab() {
           </div>
         </div>
         {loyaltyItem && loyaltyEvery && loyaltyActive && (
-          <div style={{ background: '#FFF8EE', border: '1px solid var(--gold)', borderRadius: 8, padding: '0.6rem 0.9rem', fontSize: '0.82rem', color: 'var(--dark)' }}>
+          <div style={{ background: '#FFF8EE', border: '1px solid var(--gold)', borderRadius: 8, padding: '0.6rem 0.9rem', fontSize: '0.82rem', color: 'var(--text)' }}>
             🎁 1 {loyaltyItem} offert toutes les {loyaltyEvery} achetées
           </div>
         )}
@@ -2918,13 +3298,13 @@ function ConfigTab() {
       {/* GRAND ECRAN TV */}
       <div style={{ background: 'white', border: '1.5px solid var(--border)', borderRadius: 14, padding: '1.2rem', marginBottom: '1rem' }}>
         <div style={{ fontWeight: 600, marginBottom: '0.3rem' }}>📺 Grand écran TV</div>
-        <div style={{ fontSize: '0.78rem', color: 'var(--warm-gray)', marginBottom: '0.75rem' }}>
+        <div style={{ fontSize: '0.78rem', color: 'var(--text2)', marginBottom: '0.75rem' }}>
           Affichez les numéros d&apos;emplacements prêts sur une TV ou un vidéoprojecteur.
         </div>
-        <div style={{ background: 'var(--cream)', borderRadius: 8, padding: '0.6rem 0.9rem', fontSize: '0.82rem', marginBottom: '0.75rem', fontFamily: 'monospace', wordBreak: 'break-all' }}>
+        <div style={{ background: 'var(--surface)', borderRadius: 8, padding: '0.6rem 0.9rem', fontSize: '0.82rem', marginBottom: '0.75rem', fontFamily: 'monospace', wordBreak: 'break-all' }}>
           🔗 {window.location.origin}?ecran=1
         </div>
-        <button onClick={() => window.open(window.location.origin + '?ecran=1', '_blank')} style={{ padding: '0.6rem 1.2rem', background: 'var(--dark)', color: 'white', border: 'none', borderRadius: 8, cursor: 'pointer', fontWeight: 600, fontFamily: "'DM Sans', sans-serif", fontSize: '0.85rem' }}>
+        <button onClick={() => window.open(window.location.origin + '?ecran=1', '_blank')} style={{ padding: '0.6rem 1.2rem', background: 'var(--text)', color: 'white', border: 'none', borderRadius: 8, cursor: 'pointer', fontWeight: 600, fontFamily: "'DM Sans', sans-serif", fontSize: '0.85rem' }}>
           📺 Ouvrir le grand écran
         </button>
       </div>
@@ -2934,12 +3314,12 @@ function ConfigTab() {
         <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
           <div>
             <div style={{ fontWeight: 600 }}>📍 Suivi de commande en direct</div>
-            <div style={{ fontSize: '0.78rem', color: 'var(--warm-gray)', marginTop: '0.2rem' }}>
+            <div style={{ fontSize: '0.78rem', color: 'var(--text2)', marginTop: '0.2rem' }}>
               Après le paiement, le client voit une page avec la progression de sa commande en temps réel.
             </div>
           </div>
           <button onClick={() => saveSetting('tracking_active', settings.tracking_active === 'true' ? 'false' : 'true')}
-            style={{ padding: '0.5rem 1rem', borderRadius: 8, border: 'none', cursor: 'pointer', fontWeight: 700, fontFamily: "'DM Sans', sans-serif", fontSize: '0.82rem', background: settings.tracking_active === 'true' ? 'var(--green)' : 'var(--warm-gray)', color: 'white', whiteSpace: 'nowrap' }}>
+            style={{ padding: '0.5rem 1rem', borderRadius: 8, border: 'none', cursor: 'pointer', fontWeight: 700, fontFamily: "'DM Sans', sans-serif", fontSize: '0.82rem', background: settings.tracking_active === 'true' ? 'var(--green)' : 'var(--text2)', color: 'white', whiteSpace: 'nowrap' }}>
             {settings.tracking_active === 'true' ? '✅ Activé' : '⏸ Désactivé'}
           </button>
         </div>
@@ -2948,14 +3328,14 @@ function ConfigTab() {
       {/* MESSAGE D'URGENCE */}
       <div style={{ background: 'white', border: '1.5px solid var(--border)', borderRadius: 14, padding: '1.2rem', marginBottom: '1rem' }}>
         <div style={{ fontWeight: 600, marginBottom: '0.3rem' }}>⚠️ Message d&apos;urgence</div>
-        <div style={{ fontSize: '0.78rem', color: 'var(--warm-gray)', marginBottom: '0.75rem' }}>
+        <div style={{ fontSize: '0.78rem', color: 'var(--text2)', marginBottom: '0.75rem' }}>
           S&apos;affiche en bandeau rouge sur tous les téléphones clients connectés. Idéal pour signaler une rupture de stock ou un changement.
         </div>
         <UrgentMessageAdmin />
       </div>
 
       <button onClick={save} style={{
-        padding: '0.75rem 2rem', background: saved ? 'var(--green)' : 'var(--dark)',
+        padding: '0.75rem 2rem', background: saved ? 'var(--green)' : 'var(--text)',
         color: 'white', border: 'none', borderRadius: 10, cursor: 'pointer',
         fontWeight: 700, fontFamily: "'DM Sans', sans-serif", fontSize: '0.95rem',
         transition: 'background 0.3s'
@@ -3008,14 +3388,14 @@ function ArchivesTab() {
             <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: '0.75rem' }}>
               <div>
                 <div style={{ fontFamily: "'Playfair Display', serif", fontSize: '1rem', textTransform: 'capitalize' }}>{date}</div>
-                <div style={{ fontSize: '0.78rem', color: 'var(--warm-gray)', marginTop: '0.2rem' }}>{orders.length} commandes</div>
+                <div style={{ fontSize: '0.78rem', color: 'var(--text2)', marginTop: '0.2rem' }}>{orders.length} commandes</div>
               </div>
               <div style={{ textAlign: 'right' }}>
                 <div style={{ color: 'var(--gold)', fontWeight: 700, fontSize: '1.1rem' }}>{total.toFixed(2)} €</div>
-                {tips > 0 && <div style={{ fontSize: '0.72rem', color: 'var(--warm-gray)' }}>dont {tips.toFixed(2)} € pourboires</div>}
+                {tips > 0 && <div style={{ fontSize: '0.72rem', color: 'var(--text2)' }}>dont {tips.toFixed(2)} € pourboires</div>}
               </div>
             </div>
-            <div style={{ fontSize: '0.78rem', color: 'var(--warm-gray)' }}>
+            <div style={{ fontSize: '0.78rem', color: 'var(--text2)' }}>
               🏆 Top : {topItems.map(([name, d]) => `${d.emoji} ${name} ×${d.qty}`).join(' · ')}
             </div>
           </div>
@@ -3125,8 +3505,8 @@ function AdminView() {
   const tabStyle = (tab) => ({
     padding: '0.5rem 1.2rem', borderRadius: 100, border: '1.5px solid var(--border)',
     cursor: 'pointer', fontFamily: "'DM Sans', sans-serif", fontWeight: 600, fontSize: '0.85rem',
-    background: activeTab === tab ? 'var(--dark)' : 'white',
-    color: activeTab === tab ? 'white' : 'var(--dark)',
+    background: activeTab === tab ? 'var(--text)' : 'white',
+    color: activeTab === tab ? 'white' : 'var(--text)',
     transition: 'all 0.2s'
   });
 
@@ -3187,24 +3567,24 @@ function AdminView() {
                 </div>
                 {/* Suppléments */}
                 <div style={{ marginBottom: '0.75rem' }}>
-                  <div style={{ fontSize: '0.78rem', fontWeight: 600, color: 'var(--warm-gray)', marginBottom: '0.4rem' }}>➕ Suppléments disponibles</div>
+                  <div style={{ fontSize: '0.78rem', fontWeight: 600, color: 'var(--text2)', marginBottom: '0.4rem' }}>➕ Suppléments disponibles</div>
                   {(editForm.extras || []).map((ex, i) => (
                     <div key={i} style={{ display: 'flex', gap: '0.4rem', marginBottom: '0.3rem', alignItems: 'center' }}>
                       <input value={ex.name} onChange={e => {
                         const extras = [...(editForm.extras||[])]; extras[i] = {...extras[i], name: e.target.value};
                         setEditForm(f => ({...f, extras}));
-                      }} placeholder="Ex: Chantilly" style={{ flex: 2, padding: '0.4rem 0.6rem', borderRadius: 6, border: '1.5px solid var(--border)', fontFamily: "'DM Sans', sans-serif", fontSize: '0.82rem', outline: 'none', background: 'var(--cream)' }} />
+                      }} placeholder="Ex: Chantilly" style={{ flex: 2, padding: '0.4rem 0.6rem', borderRadius: 6, border: '1.5px solid var(--border)', fontFamily: "'DM Sans', sans-serif", fontSize: '0.82rem', outline: 'none', background: 'var(--surface)' }} />
                       <input type="number" value={ex.price} onChange={e => {
                         const extras = [...(editForm.extras||[])]; extras[i] = {...extras[i], price: e.target.value};
                         setEditForm(f => ({...f, extras}));
-                      }} placeholder="0.50" style={{ flex: 1, padding: '0.4rem 0.6rem', borderRadius: 6, border: '1.5px solid var(--border)', fontFamily: "'DM Sans', sans-serif", fontSize: '0.82rem', outline: 'none', background: 'var(--cream)' }} />
-                      <span style={{ fontSize: '0.75rem', color: 'var(--warm-gray)' }}>€</span>
+                      }} placeholder="0.50" style={{ flex: 1, padding: '0.4rem 0.6rem', borderRadius: 6, border: '1.5px solid var(--border)', fontFamily: "'DM Sans', sans-serif", fontSize: '0.82rem', outline: 'none', background: 'var(--surface)' }} />
+                      <span style={{ fontSize: '0.75rem', color: 'var(--text2)' }}>€</span>
                       <button onClick={() => setEditForm(f => ({...f, extras: f.extras.filter((_,j) => j!==i)}))}
                         style={{ padding: '0.3rem 0.5rem', background: 'transparent', border: '1px solid var(--border)', borderRadius: 6, cursor: 'pointer', color: 'var(--red)', fontSize: '0.8rem' }}>✕</button>
                     </div>
                   ))}
                   <button onClick={() => setEditForm(f => ({...f, extras: [...(f.extras||[]), {name:'', price:''}]}))}
-                    style={{ padding: '0.3rem 0.8rem', background: 'var(--cream)', border: '1.5px dashed var(--border)', borderRadius: 6, cursor: 'pointer', fontSize: '0.78rem', fontFamily: "'DM Sans', sans-serif", color: 'var(--dark)' }}>
+                    style={{ padding: '0.3rem 0.8rem', background: 'var(--surface)', border: '1.5px dashed var(--border)', borderRadius: 6, cursor: 'pointer', fontSize: '0.78rem', fontFamily: "'DM Sans', sans-serif", color: 'var(--text)' }}>
                     + Ajouter un supplément
                   </button>
                 </div>
@@ -3221,7 +3601,7 @@ function AdminView() {
                   <div className="menu-admin-cat">{item.category}</div>
                 </div>
                 <span className="menu-admin-price">{Number(item.price).toFixed(2)} €</span>
-                <div style={{ display: 'flex', alignItems: 'center', gap: '0.25rem', background: 'var(--cream)', borderRadius: 8, padding: '0.2rem 0.4rem', border: '1.5px solid var(--border)' }}>
+                <div style={{ display: 'flex', alignItems: 'center', gap: '0.25rem', background: 'var(--surface)', borderRadius: 8, padding: '0.2rem 0.4rem', border: '1.5px solid var(--border)' }}>
                   <button
                     onClick={() => {
                       if (item.stock === null || item.stock === undefined) return;
@@ -3229,15 +3609,15 @@ function AdminView() {
                       else updateStock(item, item.stock - 1);
                     }}
                     title="Réduire le stock (à 0 = illimité)"
-                    style={{ width: 20, height: 20, border: 'none', background: 'none', cursor: 'pointer', fontWeight: 700, fontSize: '1rem', color: 'var(--dark)' }}>−</button>
+                    style={{ width: 20, height: 20, border: 'none', background: 'none', cursor: 'pointer', fontWeight: 700, fontSize: '1rem', color: 'var(--text)' }}>−</button>
                   <span
-                    style={{ minWidth: 28, textAlign: 'center', fontSize: '0.82rem', fontWeight: 600, cursor: 'pointer', color: item.stock === null || item.stock === undefined ? 'var(--green)' : 'var(--dark)' }}
+                    style={{ minWidth: 28, textAlign: 'center', fontSize: '0.82rem', fontWeight: 600, cursor: 'pointer', color: item.stock === null || item.stock === undefined ? 'var(--green)' : 'var(--text)' }}
                     title="Cliquer pour basculer illimité/limité"
                     onClick={() => updateStock(item, item.stock === null || item.stock === undefined ? 10 : null)}
                   >
                     {item.stock === null || item.stock === undefined ? '∞' : item.stock}
                   </span>
-                  <button onClick={() => updateStock(item, (item.stock ?? 0) + 1)} style={{ width: 20, height: 20, border: 'none', background: 'none', cursor: 'pointer', fontWeight: 700, fontSize: '1rem', color: 'var(--dark)' }}>+</button>
+                  <button onClick={() => updateStock(item, (item.stock ?? 0) + 1)} style={{ width: 20, height: 20, border: 'none', background: 'none', cursor: 'pointer', fontWeight: 700, fontSize: '1rem', color: 'var(--text)' }}>+</button>
                 </div>
                 <button className={`avail-toggle ${item.available ? 'on' : 'off'}`} onClick={() => toggleAvail(item)}>
                   {item.available ? '✓ Dispo' : '✗ Indispo'}
@@ -3253,7 +3633,7 @@ function AdminView() {
 
           {/* Sélecteur d'emoji par catégorie */}
           <div style={{ marginBottom: '0.8rem' }}>
-            <label style={{ fontSize: '0.78rem', color: 'var(--warm-gray)', fontWeight: 500, display: 'block', marginBottom: '0.4rem' }}>Choisir un emoji</label>
+            <label style={{ fontSize: '0.78rem', color: 'var(--text2)', fontWeight: 500, display: 'block', marginBottom: '0.4rem' }}>Choisir un emoji</label>
             {[
               { label: '🥗 Entrées', emojis: ['🥗','🍲','🧅','🫕','🥚','🧀','🍱','🥙','🫙','🥣','🐟','🦐','🥓','🫛','🍄','🥕','🧆','🫔'] },
               { label: '🍽 Plats', emojis: ['🥩','🍗','🍖','🌮','🍝','🍜','🍛','🥘','🫚','🐓','🦞','🦑','🥞','🌯','🍔','🌭','🍕','🥫','🍚','🫓'] },
@@ -3262,7 +3642,7 @@ function AdminView() {
               { label: '➕ Autres', emojis: ['🎉','⭐','🔥','✨','💯','🏆','👌','😋','🤤','❤️','🌿','🫶','🎊','🪄','💎','🌟'] },
             ].map(group => (
               <div key={group.label} style={{ marginBottom: '0.5rem' }}>
-                <div style={{ fontSize: '0.72rem', color: 'var(--warm-gray)', marginBottom: '0.3rem' }}>{group.label}</div>
+                <div style={{ fontSize: '0.72rem', color: 'var(--text2)', marginBottom: '0.3rem' }}>{group.label}</div>
                 <div style={{ display: 'flex', flexWrap: 'wrap', gap: '0.3rem' }}>
                   {group.emojis.map(e => (
                     <button key={e} onClick={() => setForm(f => ({ ...f, emoji: e }))}
@@ -3280,9 +3660,9 @@ function AdminView() {
             ))}
           </div>
 
-          <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', marginBottom: '0.75rem', padding: '0.5rem 0.75rem', background: 'var(--cream)', borderRadius: 8, border: '1.5px solid var(--border)' }}>
+          <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', marginBottom: '0.75rem', padding: '0.5rem 0.75rem', background: 'var(--surface)', borderRadius: 8, border: '1.5px solid var(--border)' }}>
             <span style={{ fontSize: '1.4rem' }}>{form.emoji}</span>
-            <span style={{ fontSize: '0.82rem', color: 'var(--warm-gray)' }}>Emoji sélectionné</span>
+            <span style={{ fontSize: '0.82rem', color: 'var(--text2)' }}>Emoji sélectionné</span>
           </div>
 
           <div className="form-row">
@@ -3318,7 +3698,7 @@ function AdminView() {
             </div>
           ))}
           {/* Récap financier */}
-          <div style={{ background: 'var(--dark)', color: 'white', borderRadius: 12, padding: '1rem 1.2rem', marginTop: '1rem' }}>
+          <div style={{ background: 'var(--text)', color: 'white', borderRadius: 12, padding: '1rem 1.2rem', marginTop: '1rem' }}>
             <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '0.5rem' }}>
               <span style={{ fontWeight: 600 }}>Total commandes</span>
               <span style={{ fontFamily: "'Playfair Display', serif", fontSize: '1.1rem', color: 'var(--gold)' }}>{totalRevenue.toFixed(2)} €</span>
@@ -3361,7 +3741,7 @@ function AdminView() {
                     ['🙏 Pourboires', `${tips.toFixed(2)} €`],
                   ].map(([label, val]) => (
                     <div key={label} style={{ background: 'white', borderRadius: 8, padding: '0.6rem 0.75rem' }}>
-                      <div style={{ fontSize: '0.72rem', color: 'var(--warm-gray)' }}>{label}</div>
+                      <div style={{ fontSize: '0.72rem', color: 'var(--text2)' }}>{label}</div>
                       <div style={{ fontWeight: 600, fontSize: '0.85rem', marginTop: '0.2rem' }}>{val}</div>
                     </div>
                   ))}
@@ -3377,7 +3757,7 @@ function AdminView() {
                 <span style={{ fontWeight: 600 }}>Table {order.table_num} — #{order.id}</span>
                 <span style={{ color: 'var(--gold)', fontWeight: 700 }}>{Number(order.total).toFixed(2)} €</span>
               </div>
-              <div style={{ fontSize: '0.8rem', color: 'var(--warm-gray)' }}>
+              <div style={{ fontSize: '0.8rem', color: 'var(--text2)' }}>
                 {order.items.map((it, i) => `${it.emoji} ${it.name} ×${it.qty}`).join(' · ')}
               </div>
               <div style={{ fontSize: '0.72rem', color: '#ccc', marginTop: '0.3rem' }}>
@@ -3389,7 +3769,7 @@ function AdminView() {
           {/* Export Excel */}
           <div style={{ marginTop: '1.5rem', padding: '1.2rem', background: '#EEF4FF', border: '1.5px solid #BDD0F5', borderRadius: 14 }}>
             <div style={{ fontWeight: 600, marginBottom: '0.4rem', color: 'var(--blue)' }}>📥 Export Excel</div>
-            <p style={{ fontSize: '0.82rem', color: 'var(--warm-gray)', marginBottom: '0.75rem' }}>
+            <p style={{ fontSize: '0.82rem', color: 'var(--text2)', marginBottom: '0.75rem' }}>
               Télécharger toutes les commandes de la soirée en fichier Excel.
             </p>
             <button onClick={() => {
@@ -3418,7 +3798,7 @@ function AdminView() {
 
           <div style={{ marginTop: '1rem', padding: '1.2rem', background: '#FFF5F5', border: '1.5px solid #F5C6CB', borderRadius: 14 }}>
             <div style={{ fontWeight: 600, marginBottom: '0.4rem', color: 'var(--red)' }}>🔄 Remise à zéro</div>
-            <p style={{ fontSize: '0.82rem', color: 'var(--warm-gray)', marginBottom: '1rem' }}>
+            <p style={{ fontSize: '0.82rem', color: 'var(--text2)', marginBottom: '1rem' }}>
               Efface toutes les commandes de la soirée. À faire en fin de service, avant la prochaine soirée.
             </p>
             <button onClick={handleReset} disabled={resetting} style={{
@@ -3460,7 +3840,7 @@ function AdminView() {
       {activeTab === 'qr' && <>
         <div className="section-title">QR Code unique</div>
         <div className="qr-section">
-          <p style={{ fontSize: '0.85rem', color: 'var(--warm-gray)', marginBottom: '0.5rem' }}>
+          <p style={{ fontSize: '0.85rem', color: 'var(--text2)', marginBottom: '0.5rem' }}>
             Un seul QR code pour toutes les tables. Le client choisit son numéro à l'arrivée.
           </p>
           <img
@@ -3531,6 +3911,7 @@ export default function App() {
   useEffect(() => {
     const t = VISUAL_THEMES[visualTheme];
     if (t) Object.entries(t).forEach(([k, v]) => { if (k.startsWith('--')) document.documentElement.style.setProperty(k, v); });
+    document.body.style.background = t?.['--bg'] || '#fff';
     localStorage.setItem('nef-visual-theme', visualTheme);
   }, [visualTheme]);
 
@@ -3561,7 +3942,7 @@ export default function App() {
         {view === 'admin' && <AdminView />}
         <footer style={{
           textAlign: 'center', padding: '1.5rem', fontSize: '0.75rem',
-          color: 'var(--warm-gray)', borderTop: '1px solid var(--border)',
+          color: 'var(--text2)', borderTop: '1px solid var(--border)',
           marginTop: '2rem'
         }}>
           <a href="https://noisyenfete.fr" target="_blank" rel="noreferrer"
