@@ -3922,9 +3922,9 @@ export default function App() {
       <style>{css}</style>
       <div className="app">
         <nav className="nav">
-          <span className="nav-title">
-            <img src="/icon32.png" alt="" style={{ width: 36, height: 36, verticalAlign: 'middle', marginRight: '0.4rem', borderRadius: '50%' }} />
-            {RESTAURANT}
+          <span className="nav-title" onClick={() => { setView('client'); }} style={{ cursor: 'pointer' }}>
+            <img src="/icon32.png" alt="" style={{ width: 42, height: 42, verticalAlign: 'middle', marginRight: '0.5rem', borderRadius: '50%' }} />
+            <span style={{ fontFamily: "'Playfair Display', Georgia, serif", fontWeight: 700, letterSpacing: '-0.01em' }}>{RESTAURANT}</span>
           </span>
           <div className="theme-switcher">
             <button className={`theme-switch-btn ${visualTheme === 'light' ? 'active' : ''}`} onClick={() => setVisualTheme('light')} title="Thème clair">☀️</button>
@@ -3938,13 +3938,21 @@ export default function App() {
         {view === 'kitchen' && <KitchenView />}
         {view === 'admin' && <AdminView />}
         <footer style={{
-          textAlign: 'center', padding: '1.5rem', fontSize: '0.75rem',
+          padding: '1rem 1.5rem', fontSize: '0.72rem',
           color: 'var(--text2)', borderTop: '1px solid var(--border)',
-          marginTop: '2rem'
+          marginTop: '2rem', display: 'flex', alignItems: 'center',
+          justifyContent: 'center', gap: '0.5rem', flexWrap: 'wrap'
         }}>
           <a href="https://noisyenfete.fr" target="_blank" rel="noreferrer"
-            style={{ color: 'var(--gold)', fontWeight: 600, textDecoration: 'none' }}>
-            🎉 noisyenfete.fr
+            style={{ color: 'var(--accent2)', fontWeight: 700, textDecoration: 'none' }}>
+            noisyenfete.fr
+          </a>
+          <span style={{ color: 'var(--border)' }}>·</span>
+          <span>Développé par William H.</span>
+          <span style={{ color: 'var(--border)' }}>·</span>
+          <a href="mailto:noisyenfete@gmail.com"
+            style={{ color: 'var(--accent2)', fontWeight: 600, textDecoration: 'none' }}>
+            Prendre contact
           </a>
         </footer>
         {pinTarget && (
