@@ -1392,7 +1392,6 @@ function ClientView() {
   return (
     <div className="client-wrap">
       <div className="hero">
-        <img src="/logo.png" alt="Noisy en Fête" style={{ width: 100, height: 100, borderRadius: '50%', objectFit: 'cover', marginBottom: '0.8rem', boxShadow: '0 0 0 3px rgba(200,149,58,0.5), 0 8px 32px rgba(0,0,0,0.4)', border: '3px solid rgba(200,149,58,0.6)' }} />
         <div className="hero-title">{RESTAURANT}</div>
         <div className="hero-sub">✦ Commandez depuis votre emplacement ✦</div>
       </div>
