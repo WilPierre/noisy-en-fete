@@ -211,27 +211,27 @@ const css = `
 
   /* TABLE SELECTOR */
   .table-select-wrap {
-    max-width: 440px;
+    max-width: 400px;
     margin: 0 auto;
-    padding: 2.5rem 1.25rem;
+    padding: 1.5rem 1.25rem 2rem;
     text-align: center;
   }
 
   .table-grid {
     display: grid;
     grid-template-columns: repeat(4, 1fr);
-    gap: 0.5rem;
-    margin-top: 1.5rem;
+    gap: 0.4rem;
+    margin-top: 1.25rem;
   }
 
   .table-btn {
-    aspect-ratio: 1;
+    padding: 0.6rem 0.25rem;
     border-radius: var(--r);
     border: 1.5px solid var(--border);
     background: var(--bg);
     cursor: pointer;
     font-family: 'Inter', sans-serif;
-    font-size: 1.05rem;
+    font-size: 0.95rem;
     font-weight: 700;
     color: var(--text);
     transition: all 0.15s var(--ease);
@@ -1133,8 +1133,8 @@ function TableSelector({ onSelect, welcomeMsg }) {
           fontWeight: 600, lineHeight: 1.5, boxShadow: '0 4px 16px rgba(200,149,58,0.3)'
         }}>🎉 {welcomeMsg}</div>
       )}
-      <div style={{ fontFamily: "'Playfair Display', serif", fontSize: "1.9rem", color: 'var(--text)', fontWeight: 700 }}>Votre emplacement</div>
-      <p style={{ color: "var(--text2)", fontSize: "0.9rem", marginTop: "0.4rem", fontWeight: 400 }}>Choisissez votre numéro ci-dessous</p>
+      <div style={{ fontSize: "1.5rem", color: 'var(--text)', fontWeight: 800, letterSpacing: '-0.03em' }}>Votre emplacement</div>
+      <p style={{ color: "var(--text2)", fontSize: "0.85rem", marginTop: "0.3rem", fontWeight: 400 }}>Choisissez votre numéro ci-dessous</p>
       <div className="table-grid">
         {Array.from({ length: 28 }, (_, i) => i + 1).map(n => (
           <button key={n} className="table-btn" onClick={() => onSelect(n)}>{n}</button>
@@ -1771,12 +1771,9 @@ function ClientView() {
 
   return (
     <div className="client-wrap">
-      <div className="hero">
-        <div className="hero-title">{RESTAURANT}</div>
-        <div className="hero-sub">✦ Commandez depuis votre emplacement ✦</div>
-      </div>
-      <div style={{ textAlign: 'center' }}>
-        <span className="table-badge">Emplacement {tableNum}</span>
+      <div style={{ padding: '1.25rem 1.25rem 0', display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
+        <img src="/logo.png" alt="Noisy en Fête" style={{ height: 36, width: 'auto' }} />
+        <span className="table-badge" style={{ margin: 0 }}>Emplacement {tableNum}</span>
       </div>
 
       {notifState === 'ask' && (
