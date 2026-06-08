@@ -1662,13 +1662,7 @@ function ClientView() {
   const [promoDiscount, setPromoDiscount] = useState(0);
   const [consigneLiquide, setConsigneLiquide] = useState(false);
 
-  // Config consigne depuis settings
-  const CONSIGNE_PRIX = parseFloat(settings.consigne_prix || '1');
-  const CONSIGNE_PRODUITS = (settings.consigne_produits || 'Bière pression 30cl').split(',').map(s => s.trim());
 
-  // Calcul consigne automatique
-  const consigneQty = cartItems.filter(i => CONSIGNE_PRODUITS.some(p => i.name.toLowerCase().includes(p.toLowerCase()))).reduce((s, i) => s + i.qty, 0);
-  const consigneAmount = consigneQty * CONSIGNE_PRIX;
   const settings = useSettings();
 
   // Vérifier si les commandes sont fermées
@@ -1734,6 +1728,12 @@ function ClientView() {
     }
     return items;
   })();
+
+  // Config consigne depuis settings
+  const CONSIGNE_PRIX = parseFloat(settings.consigne_prix || '1');
+  const CONSIGNE_PRODUITS = (settings.consigne_produits || 'Bière pression 30cl').split(',').map(s => s.trim());
+  const consigneQty = cartItems.filter(i => CONSIGNE_PRODUITS.some(p => i.name.toLowerCase().includes(p.toLowerCase()))).reduce((s, i) => s + i.qty, 0);
+  const consigneAmount = consigneQty * CONSIGNE_PRIX;
 
   const loyaltyDiscount = cartItems.reduce((s, i) => s + i.free * i.price, 0);
   const promoAmount = promoDiscount > 0 ? Math.round((basePrice + extrasTotal - loyaltyDiscount) * promoDiscount) / 100 : 0;
