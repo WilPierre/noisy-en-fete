@@ -1186,7 +1186,7 @@ function NotificationBanner({ onAccept, onDecline }) {
             <div style={{ fontSize: '0.75rem', color: 'var(--text2)', lineHeight: 1.5, marginBottom: '0.6rem' }}>
               Ajoutez ce site à votre écran d&apos;accueil pour être alerté quand votre commande est prête :
             </div>
-            {[['1','Appuyez sur ⬆️ Partager en bas de Safari'],['2',"Choisissez "Sur l'écran d'accueil""],['3','Rouvrez l'app depuis l'écran d'accueil']].map(([n,t]) => (
+            {[['1','Appuyez sur ⬆️ Partager en bas de Safari'],['2',"Choisissez \"Sur l\'écran d\'accueil\""],['3',"Rouvrez l\'app depuis l\'écran d\'accueil"]].map(([n,t]) => (
               <div key={n} style={{ display: 'flex', alignItems: 'center', gap: '0.4rem', fontSize: '0.75rem', color: 'var(--text)', marginBottom: '0.25rem' }}>
                 <div style={{ width: 18, height: 18, borderRadius: '50%', background: 'var(--accent2)', color: '#fff', display: 'flex', alignItems: 'center', justifyContent: 'center', fontWeight: 800, fontSize: '0.62rem', flexShrink: 0 }}>{n}</div>
                 {t}
