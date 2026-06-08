@@ -1171,33 +1171,48 @@ function sendNotification(title, body) {
 
 // ─── NOTIFICATION BANNER ──────────────────────────────────────────────────────
 function NotificationBanner({ onAccept, onDecline }) {
+  const isIOS = /iphone|ipad|ipod/i.test(navigator.userAgent);
+  const isStandalone = window.matchMedia('(display-mode: standalone)').matches || window.navigator.standalone;
+
+  if (isIOS && !isStandalone) {
+    return (
+      <div style={{ background: 'var(--surface)', border: '1.5px solid var(--border)', borderRadius: 14, padding: '1rem 1.1rem', margin: '0.75rem 1.25rem' }}>
+        <div style={{ display: 'flex', gap: '0.65rem' }}>
+          <span style={{ fontSize: '1.3rem', flexShrink: 0 }}>🍎</span>
+          <div>
+            <div style={{ fontWeight: 700, fontSize: '0.85rem', color: 'var(--text)', marginBottom: '0.3rem' }}>
+              Notifications sur iPhone
+            </div>
+            <div style={{ fontSize: '0.75rem', color: 'var(--text2)', lineHeight: 1.5, marginBottom: '0.6rem' }}>
+              Ajoutez ce site à votre écran d&apos;accueil pour être alerté quand votre commande est prête :
+            </div>
+            {[['1','Appuyez sur ⬆️ Partager en bas de Safari'],['2',"Choisissez "Sur l'écran d'accueil""],['3','Rouvrez l'app depuis l'écran d'accueil']].map(([n,t]) => (
+              <div key={n} style={{ display: 'flex', alignItems: 'center', gap: '0.4rem', fontSize: '0.75rem', color: 'var(--text)', marginBottom: '0.25rem' }}>
+                <div style={{ width: 18, height: 18, borderRadius: '50%', background: 'var(--accent2)', color: '#fff', display: 'flex', alignItems: 'center', justifyContent: 'center', fontWeight: 800, fontSize: '0.62rem', flexShrink: 0 }}>{n}</div>
+                {t}
+              </div>
+            ))}
+            <button onClick={onDecline} style={{ marginTop: '0.6rem', fontSize: '0.72rem', color: 'var(--text2)', background: 'none', border: 'none', cursor: 'pointer', padding: 0, textDecoration: 'underline' }}>
+              Continuer sans notification
+            </button>
+          </div>
+        </div>
+      </div>
+    );
+  }
+
   return (
-    <div style={{
-      background: 'white', border: '1.5px solid var(--border)', borderRadius: 16,
-      padding: '1.2rem', margin: '1rem 0', boxShadow: '0 4px 20px rgba(0,0,0,0.08)'
-    }}>
-      <div style={{ fontWeight: 600, fontSize: '0.95rem', marginBottom: '0.5rem' }}>
-        📳 Être notifié quand votre commande est prête ?
-      </div>
-      <div style={{ fontSize: '0.78rem', color: 'var(--text2)', lineHeight: 1.6, marginBottom: '1rem' }}>
-        <span style={{ display: 'block' }}>✅ <strong>Android :</strong> acceptez simplement la notification ci-dessous</span>
-        <span style={{ display: 'block', marginTop: '0.3rem' }}>🍎 <strong>iPhone :</strong> ajoutez d&apos;abord ce site à votre écran d&apos;accueil
-          <span style={{ display: 'block', paddingLeft: '1.2rem', color: '#aaa' }}>
-            Safari → icône partager ⬆️ → "Sur l&apos;écran d&apos;accueil" → revenez ici
-          </span>
-        </span>
-      </div>
-      <div style={{ display: 'flex', gap: '0.5rem' }}>
-        <button onClick={onAccept} style={{
-          flex: 1, padding: '0.6rem', borderRadius: 8, border: 'none',
-          background: 'var(--gold)', color: 'var(--text)', fontWeight: 700,
-          cursor: 'pointer', fontFamily: "'DM Sans', sans-serif", fontSize: '0.85rem'
-        }}>Oui, m&apos;avertir</button>
-        <button onClick={onDecline} style={{
-          flex: 1, padding: '0.6rem', borderRadius: 8,
-          border: '1.5px solid var(--border)', background: 'white',
-          cursor: 'pointer', fontFamily: "'DM Sans', sans-serif", fontSize: '0.85rem'
-        }}>Non merci</button>
+    <div style={{ background: 'var(--surface)', border: '1.5px solid var(--border)', borderRadius: 14, padding: '0.9rem 1.1rem', margin: '0.75rem 1.25rem' }}>
+      <div style={{ display: 'flex', alignItems: 'center', gap: '0.65rem' }}>
+        <span style={{ fontSize: '1.3rem' }}>🔔</span>
+        <div style={{ flex: 1 }}>
+          <div style={{ fontWeight: 700, fontSize: '0.83rem', color: 'var(--text)' }}>Être notifié quand c&apos;est prêt ?</div>
+          <div style={{ fontSize: '0.72rem', color: 'var(--text2)', marginTop: '0.1rem' }}>Alerte dès que votre commande est prête</div>
+        </div>
+        <div style={{ display: 'flex', flexDirection: 'column', gap: '0.3rem' }}>
+          <button onClick={onAccept} style={{ padding: '0.4rem 0.85rem', borderRadius: 8, border: 'none', background: 'var(--text)', color: '#fff', fontWeight: 700, cursor: 'pointer', fontFamily: 'Inter, sans-serif', fontSize: '0.78rem', whiteSpace: 'nowrap' }}>Activer</button>
+          <button onClick={onDecline} style={{ padding: '0.3rem 0.85rem', borderRadius: 8, border: '1.5px solid var(--border)', background: 'transparent', color: 'var(--text2)', cursor: 'pointer', fontFamily: 'Inter, sans-serif', fontSize: '0.72rem' }}>Non merci</button>
+        </div>
       </div>
     </div>
   );
@@ -1752,42 +1767,68 @@ function ClientView() {
   );
 
   if (success) return (
-    <div className="client-wrap">
-      <div className="success-box">
-        <div className="success-icon">✅</div>
-        <div className="success-title">Commande & paiement confirmés !</div>
-        <p className="success-sub">
-          Votre paiement a été accepté.<br />
-          Votre commande est en cours de préparation.
-          {notifState === 'accepted'
-            ? <><br /><strong>📳 Vous serez notifié dès qu'elle sera prête !</strong></>
-            : <><br />Un serveur vous apportera vos plats sous peu.</>
-          }
-        </p>
+    <div style={{ minHeight: '100vh', background: 'var(--bg)', display: 'flex', flexDirection: 'column' }}>
+      <div style={{ background: 'var(--text)', padding: '0.85rem 1.25rem', display: 'flex', alignItems: 'center', gap: '0.6rem' }}>
+        <img src="/logo.png" alt="Noisy en Fête" style={{ height: 30, width: 'auto' }} />
+        <span style={{ color: '#fff', fontWeight: 700, fontSize: '0.92rem' }}>{RESTAURANT}</span>
+      </div>
+      <div style={{ flex: 1, maxWidth: 480, margin: '0 auto', width: '100%', padding: '2rem 1.25rem 3rem' }}>
+        <div style={{ textAlign: 'center', marginBottom: '2rem' }}>
+          <div style={{ width: 72, height: 72, borderRadius: '50%', background: '#DCFCE7', display: 'flex', alignItems: 'center', justifyContent: 'center', margin: '0 auto 1rem', animation: 'bounceIn 0.5s' }}>
+            <span style={{ fontSize: '2.2rem' }}>✅</span>
+          </div>
+          <h1 style={{ fontSize: '1.4rem', fontWeight: 800, color: 'var(--text)', letterSpacing: '-0.03em', marginBottom: '0.4rem' }}>
+            Commande confirmée !
+          </h1>
+          <p style={{ color: 'var(--text2)', fontSize: '0.85rem', lineHeight: 1.6 }}>
+            Paiement accepté · Emplacement {tableNum}
+          </p>
+          {notifState === 'accepted' && (
+            <div style={{ display: 'inline-flex', alignItems: 'center', gap: '0.35rem', background: '#DCFCE7', color: '#166534', borderRadius: 100, padding: '0.3rem 0.85rem', fontSize: '0.75rem', fontWeight: 700, marginTop: '0.6rem' }}>
+              📳 Notification activée
+            </div>
+          )}
+        </div>
+
+        <div style={{ background: 'var(--surface)', borderRadius: 14, padding: '1.1rem', marginBottom: '1rem', border: '1.5px solid var(--border)' }}>
+          <div style={{ fontSize: '0.68rem', fontWeight: 700, color: 'var(--text2)', textTransform: 'uppercase', letterSpacing: '0.06em', marginBottom: '0.65rem' }}>
+            Votre commande
+          </div>
+          {cartItems.length > 0 ? cartItems.map((item, i) => (
+            <div key={i} style={{ display: 'flex', justifyContent: 'space-between', padding: '0.4rem 0', borderBottom: i < cartItems.length - 1 ? '1px solid var(--border)' : 'none', fontSize: '0.85rem', color: 'var(--text)' }}>
+              <span>{item.emoji} {item.name} ×{item.qty}</span>
+              <span style={{ fontWeight: 600 }}>{(item.price * item.qty).toFixed(2)} €</span>
+            </div>
+          )) : <div style={{ color: 'var(--text2)', fontSize: '0.82rem' }}>Commande enregistrée ✓</div>}
+        </div>
+
         <ReceiptEmailForm orderId={orderId} />
         <FideliteClientForm totalPrice={totalPrice} orderId={orderId} />
 
-        <div style={{ display: 'flex', flexDirection: 'column', gap: '0.75rem', alignItems: 'center', marginTop: '1.5rem' }}>
-          <button className="new-order-btn" style={{ background: 'var(--gold)', width: '100%', maxWidth: 280 }}
-            onClick={() => { setSuccess(false); setCart({}); }}>
-            ➕ Commander autre chose (Emplacement {tableNum})
+        <div style={{ display: 'flex', flexDirection: 'column', gap: '0.5rem', marginTop: '1.25rem' }}>
+          <button onClick={() => { setSuccess(false); setCart({}); }}
+            style={{ width: '100%', padding: '0.85rem', background: 'var(--text)', color: '#fff', border: 'none', borderRadius: 12, fontWeight: 700, fontSize: '0.88rem', cursor: 'pointer', fontFamily: 'Inter, sans-serif' }}>
+            ➕ Commander autre chose
           </button>
-            <button className="new-order-btn" style={{ background: 'white', color: 'var(--text)', border: '1.5px solid var(--border)', width: '100%', maxWidth: 280 }}
-            onClick={() => { setSuccess(false); setCart({}); setTableNum(null); setOrderId(null); setNotifState('ask'); setNotified(false); }}>
-            🔄 Nouvelle table
-          </button>
-          <button className="new-order-btn" style={{ background: 'var(--blue)', color: 'white', width: '100%', maxWidth: 280 }}
-            onClick={() => {
-              const text = `Je suis à ${RESTAURANT} ce soir ! 🎉 Commandez en scannant le QR code sur place. ${window.location.origin}`;
-              if (navigator.share) { navigator.share({ title: RESTAURANT, text, url: window.location.origin }); }
+          <div style={{ display: 'flex', gap: '0.5rem' }}>
+            <button onClick={() => { setSuccess(false); setCart({}); setTableNum(null); setOrderId(null); setNotifState('ask'); setNotified(false); }}
+              style={{ flex: 1, padding: '0.75rem', background: 'var(--surface)', color: 'var(--text)', border: '1.5px solid var(--border)', borderRadius: 12, fontWeight: 600, fontSize: '0.82rem', cursor: 'pointer', fontFamily: 'Inter, sans-serif' }}>
+              🔄 Changer d&apos;emplacement
+            </button>
+            <button onClick={() => {
+              const text = `Je suis à ${RESTAURANT} ce soir ! 🎉 ${window.location.origin}`;
+              if (navigator.share) navigator.share({ title: RESTAURANT, text, url: window.location.origin });
               else { navigator.clipboard.writeText(text); alert('Lien copié !'); }
-            }}>
-            📲 Partager l&apos;événement
-          </button>
+            }}
+              style={{ flex: 1, padding: '0.75rem', background: 'var(--surface)', color: 'var(--text)', border: '1.5px solid var(--border)', borderRadius: 12, fontWeight: 600, fontSize: '0.82rem', cursor: 'pointer', fontFamily: 'Inter, sans-serif' }}>
+              📲 Partager
+            </button>
+          </div>
         </div>
       </div>
     </div>
   );
+
 
   return (
     <div className="client-wrap">
