@@ -679,6 +679,21 @@ const css = `
     padding: 1.25rem;
     border: 1.5px solid var(--border);
     transition: box-shadow 0.15s var(--ease);
+    animation: cardIn 0.4s cubic-bezier(0.32, 0.72, 0, 1);
+  }
+
+  @keyframes cardIn {
+    from { opacity: 0; transform: translateY(12px) scale(0.98); }
+    to { opacity: 1; transform: translateY(0) scale(1); }
+  }
+
+  .order-card.urgent {
+    animation: cardIn 0.4s cubic-bezier(0.32, 0.72, 0, 1), urgentPulse 2s ease-in-out infinite 0.4s;
+  }
+
+  @keyframes urgentPulse {
+    0%, 100% { box-shadow: 0 0 0 0 rgba(220, 38, 38, 0); }
+    50% { box-shadow: 0 0 0 6px rgba(220, 38, 38, 0.15); }
   }
 
   .order-card.attente { border-left: 4px solid #F59E0B; }
@@ -1487,7 +1502,6 @@ function GrandEcran() {
 // ─── ORDER TRACKING ──────────────────────────────────────────────────────────
 function OrderTracking({ orderId, tableNum, onNewOrder }) {
   const [order, setOrder] = useState(null);
-  const settings = useSettings();
 
   useEffect(() => {
     if (!orderId) return;
@@ -1499,84 +1513,83 @@ function OrderTracking({ orderId, tableNum, onNewOrder }) {
     return () => supabase.removeChannel(channel);
   }, [orderId]);
 
-  if (!order) return null;
+  if (!order) return (
+    <div style={{ minHeight: '100vh', background: 'var(--bg)', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+      <div className="pulse" style={{ color: 'var(--text2)' }}>Chargement...</div>
+    </div>
+  );
 
   const steps = [
-    { key: 'en attente paiement', label: 'Paiement', icon: '💳' },
     { key: 'en attente', label: 'Reçue', icon: '📋' },
     { key: 'en préparation', label: 'En préparation', icon: '👨‍🍳' },
     { key: 'prêt', label: 'Prête !', icon: '✅' },
-    { key: 'servi', label: 'Servie', icon: '🎉' },
+    { key: 'servi', label: 'Récupérée', icon: '🎉' },
   ];
   const currentIdx = steps.findIndex(s => s.key === order.status);
+  const isReady = order.status === 'prêt';
+  const isDone = order.status === 'servi';
 
   return (
-    <div className="client-wrap">
+    <div style={{ minHeight: '100vh', background: 'var(--bg)', display: 'flex', flexDirection: 'column' }}>
       <UrgentBanner />
-      <div style={{ textAlign: 'center', padding: '1.5rem 0 1rem' }}>
-        <div style={{ fontFamily: "'Playfair Display', serif", fontSize: '1.8rem' }}>🎉 Noisy en Fête</div>
-        <div style={{ color: 'var(--text2)', fontSize: '0.85rem', marginTop: '0.3rem' }}>Emplacement {tableNum} — Commande #{orderId}</div>
+      <div style={{ background: 'var(--text)', padding: '0.85rem 1.25rem', display: 'flex', alignItems: 'center', gap: '0.6rem' }}>
+        <img src="/logo.png" alt="Noisy en Fête" style={{ height: 30, width: 'auto' }} />
+        <span style={{ color: '#fff', fontWeight: 700, fontSize: '0.92rem', flex: 1 }}>Noisy en Fête</span>
+        <span style={{ color: 'rgba(255,255,255,0.5)', fontSize: '0.72rem' }}>Emp. {tableNum} · #{orderId}</span>
       </div>
-
-      {/* Statut principal */}
-      <div style={{
-        background: order.status === 'prêt' ? 'var(--green)' : order.status === 'servi' ? '#E8F5E9' : 'var(--text)',
-        borderRadius: 16, padding: '1.5rem', textAlign: 'center', marginBottom: '1.5rem',
-        color: order.status === 'servi' ? 'var(--text)' : 'white'
-      }}>
-        <div style={{ fontSize: '2.5rem', marginBottom: '0.5rem' }}>
-          {order.status === 'prêt' ? '🔔' : order.status === 'servi' ? '🎉' : order.status === 'en préparation' ? '👨‍🍳' : '⏳'}
-        </div>
-        <div style={{ fontFamily: "'Playfair Display', serif", fontSize: '1.4rem', marginBottom: '0.3rem' }}>
-          {order.status === 'prêt' ? 'Votre commande est prête !' :
-           order.status === 'servi' ? 'Bonne dégustation !' :
-           order.status === 'en préparation' ? 'En cours de préparation...' :
-           'Commande reçue, patience...'}
-        </div>
-        {order.status === 'prêt' && (
-          <div style={{ fontSize: '0.88rem', opacity: 0.9 }}>Venez récupérer votre commande au stand 🎪</div>
-        )}
-      </div>
-
-      {/* Barre de progression */}
-      <div style={{ background: 'white', border: '1.5px solid var(--border)', borderRadius: 14, padding: '1.2rem', marginBottom: '1.5rem' }}>
-        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', position: 'relative' }}>
-          <div style={{ position: 'absolute', top: 16, left: '10%', right: '10%', height: 3, background: 'var(--border)', borderRadius: 2, zIndex: 0 }}>
-            <div style={{ width: Math.max(0, (currentIdx / (steps.length - 1)) * 100) + '%', height: '100%', background: 'var(--gold)', borderRadius: 2, transition: 'width 0.8s ease' }} />
+      <div style={{ flex: 1, maxWidth: 480, margin: '0 auto', width: '100%', padding: '1.5rem 1.25rem 2rem' }}>
+        <div style={{
+          borderRadius: 20, padding: '2rem 1.5rem', textAlign: 'center', marginBottom: '1.5rem',
+          background: isReady ? '#DCFCE7' : isDone ? 'var(--surface)' : 'var(--text)',
+          color: isReady || isDone ? 'var(--text)' : '#fff',
+          transition: 'all 0.5s ease'
+        }}>
+          <div style={{ fontSize: '3rem', marginBottom: '0.75rem', animation: isReady ? 'bounceIn 0.5s' : 'none' }}>
+            {isReady ? '🔔' : isDone ? '🎉' : order.status === 'en préparation' ? '👨‍🍳' : '⏳'}
           </div>
-          {steps.map((step, i) => (
-            <div key={step.key} style={{ flex: 1, textAlign: 'center', zIndex: 1 }}>
-              <div style={{
-                width: 32, height: 32, borderRadius: '50%', margin: '0 auto 0.4rem',
-                display: 'flex', alignItems: 'center', justifyContent: 'center',
-                background: i <= currentIdx ? 'var(--gold)' : 'white',
-                border: i <= currentIdx ? '2px solid var(--gold)' : '2px solid var(--border)',
-                fontSize: '0.9rem', transition: 'all 0.4s'
-              }}>{i <= currentIdx ? step.icon : '○'}</div>
-              <div style={{ fontSize: '0.62rem', color: i <= currentIdx ? 'var(--text)' : 'var(--text2)', fontWeight: i === currentIdx ? 700 : 400, lineHeight: 1.2 }}>{step.label}</div>
+          <div style={{ fontSize: '1.3rem', fontWeight: 800, letterSpacing: '-0.03em', marginBottom: '0.4rem' }}>
+            {isReady ? 'Votre commande est prête !' : isDone ? 'Bonne dégustation !' : order.status === 'en préparation' ? 'En cours de préparation...' : 'Commande reçue !'}
+          </div>
+          <div style={{ fontSize: '0.82rem', opacity: 0.7 }}>
+            {isReady ? '🎪 Venez récupérer au stand' : isDone ? 'Merci et à bientôt !' : 'Nous préparons votre commande'}
+          </div>
+        </div>
+
+        <div style={{ background: 'var(--surface)', borderRadius: 14, padding: '1.25rem', marginBottom: '1.25rem', border: '1.5px solid var(--border)' }}>
+          <div style={{ position: 'relative' }}>
+            <div style={{ position: 'absolute', top: 15, left: '12%', right: '12%', height: 2, background: 'var(--border)', borderRadius: 1 }}>
+              <div style={{ width: `${Math.max(0, (currentIdx / (steps.length - 1)) * 100)}%`, height: '100%', background: 'var(--text)', borderRadius: 1, transition: 'width 0.8s ease' }} />
+            </div>
+            <div style={{ display: 'flex', justifyContent: 'space-between', position: 'relative', zIndex: 1 }}>
+              {steps.map((step, i) => (
+                <div key={step.key} style={{ flex: 1, textAlign: 'center' }}>
+                  <div style={{ width: 30, height: 30, borderRadius: '50%', margin: '0 auto 0.5rem', display: 'flex', alignItems: 'center', justifyContent: 'center', background: i <= currentIdx ? 'var(--text)' : 'var(--bg)', border: `2px solid ${i <= currentIdx ? 'var(--text)' : 'var(--border)'}`, fontSize: '0.85rem', transition: 'all 0.4s ease' }}>
+                    {i <= currentIdx ? step.icon : <div style={{ width: 8, height: 8, borderRadius: '50%', background: 'var(--border)' }} />}
+                  </div>
+                  <div style={{ fontSize: '0.62rem', fontWeight: i === currentIdx ? 700 : 400, color: i <= currentIdx ? 'var(--text)' : 'var(--text2)', lineHeight: 1.3 }}>{step.label}</div>
+                </div>
+              ))}
+            </div>
+          </div>
+        </div>
+
+        <div style={{ background: 'var(--surface)', borderRadius: 14, padding: '1.1rem', marginBottom: '1.25rem', border: '1.5px solid var(--border)' }}>
+          <div style={{ fontSize: '0.68rem', fontWeight: 700, color: 'var(--text2)', textTransform: 'uppercase', letterSpacing: '0.06em', marginBottom: '0.65rem' }}>Votre commande</div>
+          {order.items.map((item, i) => (
+            <div key={i} style={{ display: 'flex', justifyContent: 'space-between', padding: '0.4rem 0', borderBottom: i < order.items.length - 1 ? '1px solid var(--border)' : 'none', fontSize: '0.85rem', color: 'var(--text)' }}>
+              <span>{item.emoji} {item.name} ×{item.qty}</span>
+              <span style={{ fontWeight: 600 }}>{(item.price * item.qty).toFixed(2)} €</span>
             </div>
           ))}
-        </div>
-      </div>
-
-      {/* Récap commande */}
-      <div style={{ background: 'white', border: '1.5px solid var(--border)', borderRadius: 14, padding: '1rem', marginBottom: '1rem' }}>
-        <div style={{ fontWeight: 600, fontSize: '0.88rem', marginBottom: '0.75rem' }}>📋 Votre commande</div>
-        {order.items.map((item, i) => (
-          <div key={i} style={{ display: 'flex', justifyContent: 'space-between', padding: '0.4rem 0', borderBottom: '1px solid var(--border)', fontSize: '0.85rem' }}>
-            <span>{item.emoji} {item.name} ×{item.qty}</span>
-            <span style={{ fontWeight: 600 }}>{(item.price * item.qty).toFixed(2)} €</span>
+          <div style={{ display: 'flex', justifyContent: 'space-between', fontWeight: 800, paddingTop: '0.6rem', fontSize: '0.9rem', color: 'var(--text)' }}>
+            <span>Total payé</span><span>{Number(order.total).toFixed(2)} €</span>
           </div>
-        ))}
-        <div style={{ display: 'flex', justifyContent: 'space-between', fontWeight: 700, paddingTop: '0.6rem', color: 'var(--gold)' }}>
-          <span>Total payé</span>
-          <span>{Number(order.total).toFixed(2)} €</span>
         </div>
-      </div>
 
-      <button className="new-order-btn" style={{ width: '100%', textAlign: 'center' }} onClick={onNewOrder}>
-        ➕ Passer une nouvelle commande
-      </button>
+        <button onClick={onNewOrder} style={{ width: '100%', padding: '0.85rem', background: 'var(--text)', color: '#fff', border: 'none', borderRadius: 12, fontWeight: 700, fontSize: '0.88rem', cursor: 'pointer', fontFamily: 'Inter, sans-serif' }}>
+          ➕ Passer une nouvelle commande
+        </button>
+      </div>
     </div>
   );
 }
@@ -2042,6 +2055,8 @@ function KitchenView() {
     } catch(e) {}
   };
 
+  const [tick, setTick] = useState(0);
+
   const fetchOrders = useCallback(async () => {
     const { data } = await supabase.from('orders')
       .select('*').eq('paid', true).neq('status', 'servi')
@@ -2059,7 +2074,9 @@ function KitchenView() {
     const channel = supabase.channel('kitchen')
       .on('postgres_changes', { event: '*', schema: 'public', table: 'orders' }, fetchOrders)
       .subscribe();
-    return () => supabase.removeChannel(channel);
+    // Rafraîchir les minuteurs toutes les 30 secondes
+    const timer = setInterval(() => setTick(t => t + 1), 30000);
+    return () => { supabase.removeChannel(channel); clearInterval(timer); };
   }, [fetchOrders]);
 
   const updateStatus = async (id, status) => {
@@ -2069,7 +2086,18 @@ function KitchenView() {
 
   const elapsed = (time) => {
     const m = Math.floor((Date.now() - new Date(time)) / 60000);
-    return m === 0 ? "À l'instant" : `Il y a ${m} min`;
+    return m === 0 ? "À l'instant" : `${m} min`;
+  };
+
+  const elapsedColor = (time) => {
+    const m = Math.floor((Date.now() - new Date(time)) / 60000);
+    if (m < 5) return '#16A34A';
+    if (m < 10) return '#F59E0B';
+    return '#DC2626';
+  };
+
+  const elapsedUrgent = (time) => {
+    return Math.floor((Date.now() - new Date(time)) / 60000) >= 10;
   };
 
   const cardClass = { 'en attente': 'attente', 'en préparation': 'preparation', 'prêt': 'pret' };
@@ -2098,7 +2126,7 @@ function KitchenView() {
       ) : (
         <div className="orders-grid">
           {orders.map(order => (
-            <div key={order.id} className={`order-card ${cardClass[order.status] || ''}`}>
+            <div key={order.id} className={`order-card ${cardClass[order.status] || ''} ${elapsedUrgent(order.created_at) && order.status === 'en attente' ? 'urgent' : ''}`}>
               <div className="order-top">
                 <div>
                   <div className="order-table">Emplacement {order.table_num}</div>
@@ -2106,7 +2134,14 @@ function KitchenView() {
                 </div>
                 <span className={`status-badge ${badgeClass[order.status]}`}>{order.status}</span>
               </div>
-              <div className="order-time">⏱ {elapsed(order.created_at)}</div>
+              <div className="order-time" style={{
+                color: elapsedColor(order.created_at),
+                fontWeight: elapsedUrgent(order.created_at) ? 700 : 500,
+                display: 'flex', alignItems: 'center', gap: '0.3rem'
+              }}>
+                {elapsedUrgent(order.created_at) ? '🔴' : '⏱'} {elapsed(order.created_at)}
+                {elapsedUrgent(order.created_at) && <span style={{ fontSize: '0.65rem', background: '#FEE2E2', color: '#DC2626', padding: '0.1rem 0.4rem', borderRadius: 100, fontWeight: 700 }}>URGENT</span>}
+              </div>
               {order.comment && (
                 <div style={{ background: '#FFF8EE', border: '1px solid var(--gold)', borderRadius: 8, padding: '0.4rem 0.7rem', marginBottom: '0.4rem', fontSize: '0.82rem', color: 'var(--text)' }}>
                   💬 {order.comment}
@@ -2319,6 +2354,45 @@ function CaisseTab() {
 
   const handlePrint = () => window.print();
 
+  const handleExportPDF = () => {
+    const date = new Date().toLocaleDateString('fr-FR', { weekday: 'long', day: 'numeric', month: 'long', year: 'numeric' });
+    const salesRows = salesList.map(i => `<tr><td>${i.emoji} ${i.name}</td><td style="text-align:center">${i.qty}</td><td style="text-align:right">${i.revenue.toFixed(2)} €</td></tr>`).join('');
+    const html = `<!DOCTYPE html><html><head><meta charset="utf-8"><title>Caisse - Noisy en Fête</title>
+    <style>
+      body { font-family: -apple-system, sans-serif; max-width: 400px; margin: 0 auto; padding: 2rem; color: #111; }
+      h1 { font-size: 1.4rem; text-align: center; margin-bottom: 0.25rem; }
+      .sub { text-align: center; color: #888; font-size: 0.85rem; margin-bottom: 1.5rem; }
+      .divider { border: none; border-top: 1px solid #eee; margin: 1rem 0; }
+      table { width: 100%; border-collapse: collapse; font-size: 0.88rem; }
+      th { text-align: left; padding: 0.4rem 0; border-bottom: 2px solid #111; font-size: 0.72rem; text-transform: uppercase; letter-spacing: 0.05em; color: #888; }
+      td { padding: 0.4rem 0; border-bottom: 1px solid #eee; }
+      .total-row { font-weight: 800; font-size: 1.1rem; }
+      .info { display: flex; justify-content: space-between; font-size: 0.82rem; padding: 0.2rem 0; }
+      .info span:last-child { font-weight: 600; }
+      .footer { text-align: center; color: #aaa; font-size: 0.72rem; margin-top: 2rem; }
+    </style></head><body>
+    <h1>🎉 Noisy en Fête</h1>
+    <div class="sub">${date}</div>
+    <hr class="divider">
+    <div class="info"><span>Première commande</span><span>${startTime}</span></div>
+    <div class="info"><span>Dernière commande</span><span>${endTime}</span></div>
+    <div class="info"><span>Nombre de commandes</span><span>${today.length}</span></div>
+    <hr class="divider">
+    <table><thead><tr><th>Article</th><th style="text-align:center">Qté</th><th style="text-align:right">Total</th></tr></thead>
+    <tbody>${salesRows}</tbody></table>
+    <hr class="divider">
+    <div class="info"><span>Ventes</span><span>${totalCA.toFixed(2)} €</span></div>
+    ${totalTips > 0 ? `<div class="info"><span>Pourboires</span><span>+${totalTips.toFixed(2)} €</span></div>` : ''}
+    ${totalRemises > 0 ? `<div class="info"><span>Remises fidélité</span><span>-${totalRemises.toFixed(2)} €</span></div>` : ''}
+    <div class="info total-row"><span>TOTAL ENCAISSÉ</span><span>${totalEncaisse.toFixed(2)} €</span></div>
+    <div class="footer">Généré le ${new Date().toLocaleString('fr-FR')}</div>
+    </body></html>`;
+    const win = window.open('', '_blank');
+    win.document.write(html);
+    win.document.close();
+    win.print();
+  };
+
   const handleReset = async () => {
     if (!window.confirm('⚠️ Remettre la caisse à zéro ? Toutes les commandes seront supprimées.')) return;
     setResetting(true);
@@ -2335,9 +2409,14 @@ function CaisseTab() {
     <div>
       <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '1rem' }}>
         <div className="view-title" style={{ fontSize: '1.4rem' }}>🧾 Caisse fin de soirée</div>
-        <button onClick={handlePrint} style={{ padding: '0.5rem 1rem', background: 'var(--text)', color: 'white', border: 'none', borderRadius: 8, cursor: 'pointer', fontWeight: 600, fontFamily: "'DM Sans', sans-serif", fontSize: '0.82rem' }}>
-          🖨 Imprimer
-        </button>
+        <div style={{ display: 'flex', gap: '0.5rem' }}>
+          <button onClick={handlePrint} style={{ padding: '0.5rem 1rem', background: 'var(--text)', color: 'white', border: 'none', borderRadius: 8, cursor: 'pointer', fontWeight: 600, fontFamily: 'Inter, sans-serif', fontSize: '0.82rem' }}>
+            🖨 Imprimer
+          </button>
+          <button onClick={handleExportPDF} style={{ padding: '0.5rem 1rem', background: 'var(--accent2)', color: 'white', border: 'none', borderRadius: 8, cursor: 'pointer', fontWeight: 600, fontFamily: 'Inter, sans-serif', fontSize: '0.82rem' }}>
+            📄 Export PDF
+          </button>
+        </div>
       </div>
 
       {/* Rapport */}
@@ -3469,33 +3548,59 @@ function ArchivesTab() {
 
   return (
     <div>
-      <div className="section-title">Historique des soirées ({dates.length})</div>
-      {dates.map(date => {
+      {/* Stats globales */}
+      {dates.length > 1 && (() => {
+        const totaux = dates.map(d => byDate[d].reduce((s,o) => s + Number(o.total), 0));
+        const meilleure = Math.max(...totaux);
+        const moyenne = totaux.reduce((a,b) => a+b, 0) / totaux.length;
+        const allItems = {};
+        allOrders.forEach(o => o.items.forEach(it => {
+          if (!allItems[it.name]) allItems[it.name] = { emoji: it.emoji, qty: 0 };
+          allItems[it.name].qty += it.qty;
+        }));
+        const topAll = Object.entries(allItems).sort((a,b) => b[1].qty-a[1].qty)[0];
+        return (
+          <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3,1fr)', gap: '0.6rem', marginBottom: '1.5rem' }}>
+            {[['🏆','Meilleure soirée', meilleure.toFixed(0)+' €'],['📊','Moyenne/soirée', moyenne.toFixed(0)+' €'],['⭐','Article star', topAll ? topAll[1].emoji+' '+topAll[0].split(' ')[0] : '-']].map(([icon,label,val]) => (
+              <div key={label} style={{ background: 'var(--surface)', borderRadius: 12, padding: '0.9rem', border: '1.5px solid var(--border)', textAlign: 'center' }}>
+                <div style={{ fontSize: '1.3rem', marginBottom: '0.2rem' }}>{icon}</div>
+                <div style={{ fontSize: '1rem', fontWeight: 800, color: 'var(--text)', letterSpacing: '-0.02em' }}>{val}</div>
+                <div style={{ fontSize: '0.65rem', color: 'var(--text2)', marginTop: '0.2rem', textTransform: 'uppercase', letterSpacing: '0.04em' }}>{label}</div>
+              </div>
+            ))}
+          </div>
+        );
+      })()}
+      <div style={{ fontSize: '0.72rem', fontWeight: 700, color: 'var(--text2)', textTransform: 'uppercase', letterSpacing: '0.06em', marginBottom: '0.75rem' }}>
+        Historique ({dates.length} soirée{dates.length > 1 ? 's' : ''})
+      </div>
+      {dates.map((date, idx) => {
         const orders = byDate[date];
         const total = orders.reduce((s, o) => s + Number(o.total), 0);
         const tips = orders.reduce((s, o) => s + Number(o.tip || 0), 0);
+        const prevDate = dates[idx + 1];
+        const prevTotal = prevDate ? byDate[prevDate].reduce((s,o) => s + Number(o.total), 0) : null;
+        const diff = prevTotal ? ((total - prevTotal) / prevTotal * 100).toFixed(0) : null;
         const items = {};
         orders.forEach(o => o.items.forEach(it => {
           if (!items[it.name]) items[it.name] = { emoji: it.emoji, qty: 0 };
           items[it.name].qty += it.qty;
         }));
         const topItems = Object.entries(items).sort((a,b) => b[1].qty - a[1].qty).slice(0, 3);
-
         return (
-          <div key={date} style={{ background: 'white', border: '1.5px solid var(--border)', borderRadius: 14, padding: '1.2rem', marginBottom: '1rem' }}>
-            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: '0.75rem' }}>
+          <div key={date} style={{ background: 'var(--bg)', border: '1.5px solid var(--border)', borderRadius: 14, padding: '1.1rem', marginBottom: '0.6rem' }}>
+            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: '0.6rem' }}>
               <div>
-                <div style={{ fontFamily: "'Playfair Display', serif", fontSize: '1rem', textTransform: 'capitalize' }}>{date}</div>
-                <div style={{ fontSize: '0.78rem', color: 'var(--text2)', marginTop: '0.2rem' }}>{orders.length} commandes</div>
+                <div style={{ fontWeight: 700, fontSize: '0.9rem', color: 'var(--text)', textTransform: 'capitalize' }}>{date}</div>
+                <div style={{ fontSize: '0.72rem', color: 'var(--text2)', marginTop: '0.1rem' }}>{orders.length} commandes</div>
               </div>
               <div style={{ textAlign: 'right' }}>
-                <div style={{ color: 'var(--gold)', fontWeight: 700, fontSize: '1.1rem' }}>{total.toFixed(2)} €</div>
-                {tips > 0 && <div style={{ fontSize: '0.72rem', color: 'var(--text2)' }}>dont {tips.toFixed(2)} € pourboires</div>}
+                <div style={{ fontWeight: 800, fontSize: '1rem', color: 'var(--text)' }}>{total.toFixed(2)} €</div>
+                {diff && <div style={{ fontSize: '0.7rem', color: Number(diff) >= 0 ? 'var(--success)' : 'var(--error)', fontWeight: 600 }}>{Number(diff) >= 0 ? '↑' : '↓'} {Math.abs(Number(diff))}% vs soirée précédente</div>}
+                {tips > 0 && <div style={{ fontSize: '0.68rem', color: 'var(--text2)' }}>+{tips.toFixed(2)} € pourboires</div>}
               </div>
             </div>
-            <div style={{ fontSize: '0.78rem', color: 'var(--text2)' }}>
-              🏆 Top : {topItems.map(([name, d]) => `${d.emoji} ${name} ×${d.qty}`).join(' · ')}
-            </div>
+            <div style={{ fontSize: '0.75rem', color: 'var(--text2)' }}>🏆 {topItems.map(([name, d]) => `${d.emoji} ${name} ×${d.qty}`).join(' · ')}</div>
           </div>
         );
       })}
