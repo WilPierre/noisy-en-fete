@@ -1505,12 +1505,53 @@ function OrderTracking({ orderId, tableNum, onNewOrder }) {
 
   useEffect(() => {
     if (!orderId) return;
-    supabase.from('orders').select('*').eq('id', orderId).single().then(({ data }) => data && setOrder(data));
+
+    // Chargement initial
+    const fetchOrder = async () => {
+      const { data } = await supabase.from('orders').select('*').eq('id', orderId).single();
+      if (data) setOrder(data);
+    };
+    fetchOrder();
+
+    // Realtime pour mise à jour instantanée
     const channel = supabase.channel('tracking-' + orderId)
-      .on('postgres_changes', { event: 'UPDATE', schema: 'public', table: 'orders', filter: 'id=eq.' + orderId }, payload => {
+      .on('postgres_changes', {
+        event: 'UPDATE', schema: 'public', table: 'orders',
+        filter: `id=eq.${orderId}`
+      }, payload => {
+        const prev = order;
         setOrder(payload.new);
+        // Notification push client quand commande prête
+        if (payload.new.status === 'prêt' && (!prev || prev.status !== 'prêt')) {
+          sendNotification(
+            '🔔 Votre commande est prête !',
+            'Venez récupérer votre commande au stand 🎪'
+          );
+          // Vibration sur mobile
+          if (navigator.vibrate) navigator.vibrate([300, 100, 300]);
+        }
       }).subscribe();
-    return () => supabase.removeChannel(channel);
+
+    // Polling toutes les 5 secondes en backup (si realtime échoue sur mobile)
+    const poll = setInterval(fetchOrder, 5000);
+
+    return () => {
+      supabase.removeChannel(channel);
+      clearInterval(poll);
+    };
+  }, [orderId]);
+
+  const [connected, setConnected] = useState(true);
+
+  // Vérifier la connexion
+  useEffect(() => {
+    const check = setInterval(async () => {
+      try {
+        await supabase.from('orders').select('id').eq('id', orderId).single();
+        setConnected(true);
+      } catch { setConnected(false); }
+    }, 10000);
+    return () => clearInterval(check);
   }, [orderId]);
 
   if (!order) return (
@@ -1536,6 +1577,10 @@ function OrderTracking({ orderId, tableNum, onNewOrder }) {
         <img src="/logo.png" alt="Noisy en Fête" style={{ height: 30, width: 'auto' }} />
         <span style={{ color: '#fff', fontWeight: 700, fontSize: '0.92rem', flex: 1 }}>Noisy en Fête</span>
         <span style={{ color: 'rgba(255,255,255,0.5)', fontSize: '0.72rem' }}>Emp. {tableNum} · #{orderId}</span>
+        <span style={{ display: 'flex', alignItems: 'center', gap: '0.25rem', fontSize: '0.68rem', color: connected ? '#4ADE80' : '#F87171' }}>
+          <span style={{ width: 6, height: 6, borderRadius: '50%', background: connected ? '#4ADE80' : '#F87171', display: 'inline-block' }} />
+          {connected ? 'En direct' : 'Reconnexion...'}
+        </span>
       </div>
       <div style={{ flex: 1, maxWidth: 480, margin: '0 auto', width: '100%', padding: '1.5rem 1.25rem 2rem' }}>
         <div style={{
@@ -1586,7 +1631,7 @@ function OrderTracking({ orderId, tableNum, onNewOrder }) {
           </div>
         </div>
 
-        <button onClick={onNewOrder} style={{ width: '100%', padding: '0.85rem', background: 'var(--text)', color: '#fff', border: 'none', borderRadius: 12, fontWeight: 700, fontSize: '0.88rem', cursor: 'pointer', fontFamily: 'Inter, sans-serif' }}>
+        <button onClick={onNewOrder} style={{ width: '100%', padding: '0.85rem', background: 'var(--accent2)', color: '#fff', border: 'none', borderRadius: 12, fontWeight: 700, fontSize: '0.88rem', cursor: 'pointer', fontFamily: 'Inter, sans-serif', boxShadow: '0 4px 16px rgba(200,149,58,0.3)' }}>
           ➕ Passer une nouvelle commande
         </button>
       </div>
@@ -2081,6 +2126,7 @@ function KitchenView() {
 
   const updateStatus = async (id, status) => {
     await supabase.from('orders').update({ status }).eq('id', id);
+    if (status === 'prêt') sendNotification('✅ Commande prête !', 'Commande marquée comme prête.');
     fetchOrders();
   };
 
