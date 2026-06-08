@@ -3955,7 +3955,7 @@ function AdminView() {
 }
 
 // ─── PIN MODAL ────────────────────────────────────────────────────────────────
-const STAFF_PIN = '2010'; // Change ce code ici
+const STAFF_PIN = '917764'; // Change ce code ici
 
 function PinModal({ title, onSuccess, onClose }) {
   const [pin, setPin] = useState('');
