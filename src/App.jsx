@@ -2591,8 +2591,28 @@ function TestTab() {
       )}
 
       {result && (
-        <div style={{ background: result.ok ? '#DCFCE7' : '#FEE2E2', border: `1.5px solid ${result.ok ? '#86EFAC' : '#FCA5A5'}`, borderRadius: 12, padding: '0.85rem 1rem', marginBottom: '1rem', fontSize: '0.85rem', fontWeight: 600, color: result.ok ? '#166534' : '#991B1B' }}>
-          {result.ok ? '✅' : '❌'} {result.msg}
+        <div style={{ marginBottom: '1rem' }}>
+          <div style={{ background: result.ok ? '#DCFCE7' : '#FEE2E2', border: `1.5px solid ${result.ok ? '#86EFAC' : '#FCA5A5'}`, borderRadius: 12, padding: '0.85rem 1rem', fontSize: '0.85rem', fontWeight: 600, color: result.ok ? '#166534' : '#991B1B', marginBottom: result.ok && result.id ? '0.5rem' : 0 }}>
+            {result.ok ? '✅' : '❌'} {result.msg}
+          </div>
+          {result.ok && result.id && (
+            <div style={{ background: 'var(--surface)', border: '1.5px solid var(--border)', borderRadius: 12, padding: '0.85rem 1rem', fontSize: '0.82rem', color: 'var(--text2)' }}>
+              <div style={{ fontWeight: 600, color: 'var(--text)', marginBottom: '0.4rem' }}>📱 Simuler la vue client</div>
+              <div style={{ marginBottom: '0.6rem', lineHeight: 1.5 }}>
+                Ouvre ce lien sur ton téléphone pour voir la page de suivi en temps réel :
+              </div>
+              <div style={{ background: 'var(--bg)', borderRadius: 8, padding: '0.5rem 0.75rem', fontFamily: 'monospace', fontSize: '0.75rem', wordBreak: 'break-all', marginBottom: '0.6rem', color: 'var(--text)' }}>
+                {window.location.origin}?tracking={result.id}&table={tableNum}
+              </div>
+              <button onClick={() => {
+                const url = `${window.location.origin}?tracking=${result.id}&table=${tableNum}`;
+                if (navigator.share) navigator.share({ title: 'Suivi commande test', url });
+                else { navigator.clipboard.writeText(url); alert('Lien copié !'); }
+              }} style={{ padding: '0.45rem 0.9rem', background: 'var(--text)', color: '#fff', border: 'none', borderRadius: 8, fontWeight: 600, cursor: 'pointer', fontFamily: 'Inter, sans-serif', fontSize: '0.8rem' }}>
+                📋 Copier le lien
+              </button>
+            </div>
+          )}
         </div>
       )}
 
@@ -4246,6 +4266,17 @@ export default function App() {
 
   // Grand écran TV accessible via ?ecran=1
   if (new URLSearchParams(window.location.search).get('ecran') === '1') return <GrandEcran />;
+
+  // Suivi de commande direct via ?tracking=ID&table=N
+  const trackingId = new URLSearchParams(window.location.search).get('tracking');
+  const trackingTable = new URLSearchParams(window.location.search).get('table');
+  if (trackingId) return (
+    <OrderTracking
+      orderId={parseInt(trackingId)}
+      tableNum={parseInt(trackingTable) || 1}
+      onNewOrder={() => window.location.href = window.location.origin}
+    />
+  );
 
   // Appliquer le thème visuel
   useEffect(() => {
