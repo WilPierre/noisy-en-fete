@@ -2477,6 +2477,139 @@ function CaisseTab() {
   );
 }
 
+// ─── TEST TAB ─────────────────────────────────────────────────────────────────
+function TestTab() {
+  const [menu, setMenu] = useState([]);
+  const [selectedItems, setSelectedItems] = useState({});
+  const [tableNum, setTableNum] = useState(1);
+  const [sending, setSending] = useState(false);
+  const [result, setResult] = useState(null);
+
+  useEffect(() => {
+    supabase.from('menu').select('*').eq('available', true).order('category')
+      .then(({ data }) => data && setMenu(data));
+  }, []);
+
+  const total = menu.reduce((s, i) => s + (selectedItems[i.id] || 0) * Number(i.price), 0);
+  const totalItems = Object.values(selectedItems).reduce((s, q) => s + q, 0);
+
+  const setQty = (id, qty) => setSelectedItems(prev => ({ ...prev, [id]: Math.max(0, qty) }));
+
+  const sendTestOrder = async () => {
+    if (totalItems === 0) { alert('Ajoutez au moins un article !'); return; }
+    setSending(true);
+    setResult(null);
+
+    const items = menu.filter(i => selectedItems[i.id] > 0).map(i => ({
+      name: i.name, qty: selectedItems[i.id], price: Number(i.price), emoji: i.emoji, free: 0
+    }));
+
+    const { data, error } = await supabase.from('orders').insert({
+      table_num: tableNum,
+      items,
+      total,
+      tip: 0,
+      comment: '🧪 COMMANDE TEST',
+      paid: true,
+      status: 'en attente',
+      consigne: 0,
+      consigne_liquide: false
+    }).select().single();
+
+    setSending(false);
+    if (error) {
+      setResult({ ok: false, msg: 'Erreur : ' + error.message });
+    } else {
+      setResult({ ok: true, msg: `Commande test #${data.id} envoyée en cuisine !`, id: data.id });
+      setSelectedItems({});
+    }
+  };
+
+  const deleteTestOrders = async () => {
+    if (!window.confirm('Supprimer toutes les commandes TEST ?')) return;
+    await supabase.from('orders').delete().like('comment', '%TEST%');
+    setResult({ ok: true, msg: 'Commandes test supprimées ✓' });
+  };
+
+  return (
+    <div>
+      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: '1rem' }}>
+        <div>
+          <div className="view-title" style={{ fontSize: '1.4rem' }}>🧪 Mode Test</div>
+          <div className="view-sub" style={{ marginBottom: 0 }}>Créez une fausse commande sans paiement pour tester le système</div>
+        </div>
+      </div>
+
+      {/* Avertissement */}
+      <div style={{ background: '#FEF9C3', border: '1.5px solid #EAB308', borderRadius: 12, padding: '0.85rem 1rem', marginBottom: '1.25rem', fontSize: '0.82rem', color: '#713F12' }}>
+        ⚠️ Les commandes test sont marquées <strong>🧪 COMMANDE TEST</strong> en cuisine et comptent dans les stats. Supprimez-les après le test.
+      </div>
+
+      {/* Sélection table */}
+      <div style={{ background: 'var(--surface)', borderRadius: 12, padding: '1rem', marginBottom: '1rem', border: '1.5px solid var(--border)' }}>
+        <div style={{ fontSize: '0.72rem', fontWeight: 700, color: 'var(--text2)', textTransform: 'uppercase', letterSpacing: '0.06em', marginBottom: '0.6rem' }}>Emplacement</div>
+        <div style={{ display: 'flex', gap: '0.4rem', flexWrap: 'wrap' }}>
+          {[1,2,3,4,5,6,7,8].map(n => (
+            <button key={n} onClick={() => setTableNum(n)}
+              style={{ width: 36, height: 36, borderRadius: 8, border: `1.5px solid ${tableNum === n ? 'var(--text)' : 'var(--border)'}`, background: tableNum === n ? 'var(--text)' : 'var(--bg)', color: tableNum === n ? '#fff' : 'var(--text)', fontWeight: 700, cursor: 'pointer', fontSize: '0.88rem', fontFamily: 'Inter, sans-serif' }}>
+              {n}
+            </button>
+          ))}
+        </div>
+      </div>
+
+      {/* Sélection articles */}
+      <div style={{ background: 'var(--surface)', borderRadius: 12, padding: '1rem', marginBottom: '1rem', border: '1.5px solid var(--border)' }}>
+        <div style={{ fontSize: '0.72rem', fontWeight: 700, color: 'var(--text2)', textTransform: 'uppercase', letterSpacing: '0.06em', marginBottom: '0.75rem' }}>Articles</div>
+        <div style={{ display: 'flex', flexDirection: 'column', gap: '0' }}>
+          {menu.map((item, i) => (
+            <div key={item.id} style={{ display: 'flex', alignItems: 'center', gap: '0.75rem', padding: '0.6rem 0', borderBottom: i < menu.length - 1 ? '1px solid var(--border)' : 'none' }}>
+              <span style={{ fontSize: '1.3rem', width: 32, textAlign: 'center' }}>{item.emoji}</span>
+              <div style={{ flex: 1, fontSize: '0.85rem', fontWeight: 500, color: 'var(--text)' }}>{item.name}</div>
+              <span style={{ fontSize: '0.78rem', color: 'var(--text2)', marginRight: '0.5rem' }}>{Number(item.price).toFixed(2)} €</span>
+              <div style={{ display: 'flex', alignItems: 'center', gap: '0.4rem' }}>
+                <button onClick={() => setQty(item.id, (selectedItems[item.id] || 0) - 1)}
+                  style={{ width: 26, height: 26, borderRadius: '50%', border: '1.5px solid var(--border)', background: 'var(--bg)', cursor: 'pointer', fontWeight: 700, fontSize: '0.9rem', display: 'flex', alignItems: 'center', justifyContent: 'center', color: 'var(--text)' }}>−</button>
+                <span style={{ width: 20, textAlign: 'center', fontWeight: 700, fontSize: '0.88rem', color: 'var(--text)' }}>{selectedItems[item.id] || 0}</span>
+                <button onClick={() => setQty(item.id, (selectedItems[item.id] || 0) + 1)}
+                  style={{ width: 26, height: 26, borderRadius: '50%', border: '1.5px solid var(--border)', background: 'var(--bg)', cursor: 'pointer', fontWeight: 700, fontSize: '0.9rem', display: 'flex', alignItems: 'center', justifyContent: 'center', color: 'var(--text)' }}>+</button>
+              </div>
+            </div>
+          ))}
+        </div>
+      </div>
+
+      {/* Total et envoi */}
+      {totalItems > 0 && (
+        <div style={{ background: 'var(--surface)', borderRadius: 12, padding: '1rem', marginBottom: '1rem', border: '1.5px solid var(--border)', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+          <div>
+            <div style={{ fontWeight: 800, fontSize: '1rem', color: 'var(--text)' }}>{totalItems} article{totalItems > 1 ? 's' : ''}</div>
+            <div style={{ fontSize: '0.78rem', color: 'var(--text2)' }}>Emplacement {tableNum}</div>
+          </div>
+          <div style={{ fontWeight: 800, fontSize: '1.2rem', color: 'var(--text)' }}>{total.toFixed(2)} €</div>
+        </div>
+      )}
+
+      {result && (
+        <div style={{ background: result.ok ? '#DCFCE7' : '#FEE2E2', border: `1.5px solid ${result.ok ? '#86EFAC' : '#FCA5A5'}`, borderRadius: 12, padding: '0.85rem 1rem', marginBottom: '1rem', fontSize: '0.85rem', fontWeight: 600, color: result.ok ? '#166534' : '#991B1B' }}>
+          {result.ok ? '✅' : '❌'} {result.msg}
+        </div>
+      )}
+
+      <div style={{ display: 'flex', gap: '0.6rem' }}>
+        <button onClick={sendTestOrder} disabled={sending || totalItems === 0}
+          style={{ flex: 1, padding: '0.85rem', background: totalItems > 0 ? 'var(--text)' : 'var(--border)', color: '#fff', border: 'none', borderRadius: 12, fontWeight: 700, fontSize: '0.88rem', cursor: totalItems > 0 ? 'pointer' : 'not-allowed', fontFamily: 'Inter, sans-serif' }}>
+          {sending ? '⏳ Envoi...' : '🚀 Envoyer la commande test'}
+        </button>
+        <button onClick={deleteTestOrders}
+          style={{ padding: '0.85rem 1rem', background: 'var(--surface)', color: 'var(--error)', border: `1.5px solid var(--border)`, borderRadius: 12, fontWeight: 600, fontSize: '0.82rem', cursor: 'pointer', fontFamily: 'Inter, sans-serif', whiteSpace: 'nowrap' }}>
+          🗑 Nettoyer
+        </button>
+      </div>
+    </div>
+  );
+}
+
 // ─── ECRAN TAB ───────────────────────────────────────────────────────────────
 function EcranTab() {
   const settings = useSettings();
@@ -3736,6 +3869,7 @@ function AdminView() {
         <button style={tabStyle('caisse')} onClick={() => setActiveTab('caisse')}>🧾 Caisse</button>
         <button style={tabStyle('fidelite')} onClick={() => setActiveTab('fidelite')}>💎 Fidélité</button>
         <button style={tabStyle('ecran')} onClick={() => setActiveTab('ecran')}>📺 Écran</button>
+        <button style={tabStyle('test')} onClick={() => setActiveTab('test')}>🧪 Test</button>
       </div>
 
       {/* TAB MENU */}
@@ -4036,6 +4170,9 @@ function AdminView() {
 
       {/* TAB ECRAN */}
       {activeTab === 'ecran' && <EcranTab />}
+
+      {/* TAB TEST */}
+      {activeTab === 'test' && <TestTab />}
       {/* TAB ARCHIVES */}
       {activeTab === 'archives' && <ArchivesTab />}
 
