@@ -1013,7 +1013,7 @@ const css = `
 `;
 
 // ─── STRIPE PAYMENT FORM ──────────────────────────────────────────────────────
-function PaymentForm({ totalPrice, tableNum, cartItems, comment, onSuccess }) {
+function PaymentForm({ totalPrice, tableNum, cartItems, comment, consigneAmount, consigneLiquide, onSuccess }) {
   const stripe = useStripe();
   const elements = useElements();
   const [paying, setPaying] = useState(false);
@@ -1022,7 +1022,8 @@ function PaymentForm({ totalPrice, tableNum, cartItems, comment, onSuccess }) {
   const [customTip, setCustomTip] = useState('');
 
   const tipAmount = customTip !== '' ? parseFloat(customTip) || 0 : tip;
-  const grandTotal = totalPrice + tipAmount;
+  const consignePayee = consigneAmount > 0 && !consigneLiquide ? consigneAmount : 0;
+  const grandTotal = totalPrice + tipAmount + consignePayee;
 
   const handlePay = async () => {
     if (!stripe || !elements) return;
@@ -1031,7 +1032,7 @@ function PaymentForm({ totalPrice, tableNum, cartItems, comment, onSuccess }) {
     try {
       const { data: order, error: dbErr } = await supabase
         .from('orders')
-        .insert({ table_num: tableNum, items: cartItems, total: totalPrice, tip: tipAmount, comment: comment || '', paid: false, status: 'en attente paiement' })
+        .insert({ table_num: tableNum, items: cartItems, total: totalPrice, tip: tipAmount, comment: comment || '', consigne: consigneAmount || 0, consigne_liquide: consigneLiquide || false, paid: false, status: 'en attente paiement' })
         .select().single();
       if (dbErr) throw new Error('Erreur base de données');
 
@@ -1112,8 +1113,18 @@ function PaymentForm({ totalPrice, tableNum, cartItems, comment, onSuccess }) {
         }} />
       </div>
       {error && <div className="pay-error">⚠️ {error}</div>}
+      {consigneAmount > 0 && (
+        <div style={{ background: '#FFF8EE', border: '1px solid #C8953A', borderRadius: 8, padding: '0.7rem 0.9rem', marginTop: '0.75rem', fontSize: '0.82rem' }}>
+          <div style={{ fontWeight: 700, marginBottom: '0.2rem' }}>🍺 Consigne verre{consigneAmount > 1 ? 's' : ''} : {consigneAmount.toFixed(2)} €</div>
+          <div style={{ color: '#666', lineHeight: 1.5 }}>
+            {consigneLiquide
+              ? '💵 À régler en liquide à la caisse — rendue au retour du verre'
+              : '💳 Incluse dans le paiement CB — rendue en liquide au retour du verre'}
+          </div>
+        </div>
+      )}
       <button className="pay-btn" onClick={handlePay} disabled={paying || !stripe}>
-        {paying ? '⏳ Traitement...' : `🔒 Payer ${grandTotal.toFixed(2)} €${tipAmount > 0 ? ` (dont ${tipAmount.toFixed(2)} € de pourboire)` : ''}`}
+        {paying ? '⏳ Traitement...' : `🔒 Payer ${grandTotal.toFixed(2)} €`}
       </button>
       <div className="secure-badge">🔒 Paiement sécurisé par Stripe — vos données sont chiffrées</div>
     </div>
@@ -1649,6 +1660,15 @@ function ClientView() {
   const [comment, setComment] = useState('');
   const [selectedExtras, setSelectedExtras] = useState({});
   const [promoDiscount, setPromoDiscount] = useState(0);
+  const [consigneLiquide, setConsigneLiquide] = useState(false);
+
+  // Config consigne depuis settings
+  const CONSIGNE_PRIX = parseFloat(settings.consigne_prix || '1');
+  const CONSIGNE_PRODUITS = (settings.consigne_produits || 'Bière pression 30cl').split(',').map(s => s.trim());
+
+  // Calcul consigne automatique
+  const consigneQty = cartItems.filter(i => CONSIGNE_PRODUITS.some(p => i.name.toLowerCase().includes(p.toLowerCase()))).reduce((s, i) => s + i.qty, 0);
+  const consigneAmount = consigneQty * CONSIGNE_PRIX;
   const settings = useSettings();
 
   // Vérifier si les commandes sont fermées
@@ -1890,11 +1910,38 @@ function ClientView() {
               </div>
             )}
             <div className="cart-total-line">
+            {consigneAmount > 0 && (
+              <div className="cart-line" style={{ color: '#C8953A', fontWeight: 600 }}>
+                <span>🍺 Consigne verre{consigneQty > 1 ? 's' : ''} {consigneLiquide ? '(liquide 💵)' : '(CB 💳)'}</span>
+                <span>{consigneLiquide ? '0.00' : consigneAmount.toFixed(2)} €</span>
+              </div>
+            )}
               <span>Total</span>
               <span style={{ color: 'var(--gold)' }}>{totalPrice.toFixed(2)} €</span>
             </div>
             {/* CODE PROMO */}
             <PromoCodeField onApply={(discount) => setPromoDiscount(discount)} />
+
+            {/* CONSIGNE VERRES */}
+            {consigneAmount > 0 && (
+              <div style={{ background: '#FFFBF0', border: '1.5px solid #C8953A', borderRadius: 10, padding: '0.9rem', marginTop: '0.75rem' }}>
+                <div style={{ fontWeight: 700, fontSize: '0.88rem', marginBottom: '0.4rem', display: 'flex', alignItems: 'center', gap: '0.4rem' }}>
+                  🍺 Consigne verre{consigneQty > 1 ? 's' : ''} : {consigneAmount.toFixed(2)} €
+                </div>
+                <div style={{ fontSize: '0.78rem', color: '#666', marginBottom: '0.75rem', lineHeight: 1.5 }}>
+                  1€ par verre · Remboursée en liquide au retour du verre au stand
+                </div>
+                <label style={{ display: 'flex', alignItems: 'flex-start', gap: '0.6rem', cursor: 'pointer' }}>
+                  <input type="checkbox" checked={consigneLiquide} onChange={e => setConsigneLiquide(e.target.checked)}
+                    style={{ accentColor: '#C8953A', width: 16, height: 16, marginTop: 2, flexShrink: 0 }} />
+                  <span style={{ fontSize: '0.82rem', color: '#444', lineHeight: 1.4 }}>
+                    <strong>Je préfère payer la consigne ({consigneAmount.toFixed(2)} €) en liquide à la caisse</strong>
+                    <br />
+                    <span style={{ color: '#888' }}>Le montant CB sera réduit d&apos;autant</span>
+                  </span>
+                </label>
+              </div>
+            )}
 
             <div style={{ marginTop: '1rem' }}>
               <div style={{ fontSize: '0.82rem', fontWeight: 600, color: 'var(--text2)', marginBottom: '0.4rem' }}>
@@ -1919,7 +1966,9 @@ function ClientView() {
                 tableNum={tableNum}
                 cartItems={cartItems}
                 comment={comment}
-                onSuccess={(id) => { setOrderId(id); setSuccess(true); setCart({}); setShowCart(false); setComment(''); setPromoDiscount(0); }}
+                consigneAmount={consigneAmount}
+                consigneLiquide={consigneLiquide}
+                onSuccess={(id) => { setOrderId(id); setSuccess(true); setCart({}); setShowCart(false); setComment(''); setPromoDiscount(0); setConsigneLiquide(false); }}
               />
             </Elements>
           </div>
@@ -2023,8 +2072,13 @@ function KitchenView() {
                 </div>
               )}
               {order.items.some(i => i.free > 0) && (
-                <div style={{ background: '#D4EDDA', border: '1px solid #C3E6CB', borderRadius: 8, padding: '0.4rem 0.7rem', marginBottom: '0.6rem', fontSize: '0.82rem', color: '#155724', fontWeight: 600 }}>
+                <div style={{ background: '#D4EDDA', border: '1px solid #C3E6CB', borderRadius: 8, padding: '0.4rem 0.7rem', marginBottom: '0.4rem', fontSize: '0.82rem', color: '#155724', fontWeight: 600 }}>
                   🎁 {order.items.filter(i => i.free > 0).map(i => `${i.free}× ${i.name} OFFERT`).join(', ')}
+                </div>
+              )}
+              {order.consigne > 0 && (
+                <div style={{ background: order.consigne_liquide ? '#FEF3C7' : '#EFF6FF', border: `1px solid ${order.consigne_liquide ? '#F59E0B' : '#93C5FD'}`, borderRadius: 8, padding: '0.4rem 0.7rem', marginBottom: '0.6rem', fontSize: '0.82rem', fontWeight: 700, color: order.consigne_liquide ? '#92400E' : '#1E40AF' }}>
+                  🍺 Consigne : {Number(order.consigne).toFixed(2)} € — {order.consigne_liquide ? '⚠️ À ENCAISSER EN LIQUIDE' : '✅ Payée par CB'}
                 </div>
               )}
               <div className="order-items">
@@ -3156,6 +3210,8 @@ function ConfigTab() {
   const settings = useSettings();
   const [welcome, setWelcome] = useState('');
   const [eventName, setEventName] = useState('');
+  const [consignePrix, setConsignePrix] = useState('1');
+  const [consigneProduits, setConsigneProduits] = useState('Bière pression 30cl');
   const [closingTime, setClosingTime] = useState('22:00');
   const [loyaltyItem, setLoyaltyItem] = useState('');
   const [loyaltyEvery, setLoyaltyEvery] = useState('4');
@@ -3166,6 +3222,8 @@ function ConfigTab() {
   useEffect(() => {
     setWelcome(settings.welcome || '');
     setEventName(settings.event_name || '');
+    setConsignePrix(settings.consigne_prix || '1');
+    setConsigneProduits(settings.consigne_produits || 'Bière pression 30cl');
     setClosingTime(settings.closing_time || '22:00');
     setLoyaltyItem(settings.loyalty_item || '');
     setLoyaltyEvery(settings.loyalty_every || '4');
@@ -3178,6 +3236,8 @@ function ConfigTab() {
   const save = async () => {
     await saveSetting('welcome', welcome);
     await saveSetting('event_name', eventName);
+    await saveSetting('consigne_prix', consignePrix);
+    await saveSetting('consigne_produits', consigneProduits);
     await saveSetting('closing_time', closingTime);
     await saveSetting('loyalty_item', loyaltyItem);
     await saveSetting('loyalty_every', loyaltyEvery);
