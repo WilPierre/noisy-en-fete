@@ -1775,7 +1775,12 @@ function ClientView() {
     setNotifState(granted ? 'accepted' : 'declined');
   };
 
-  const categories = ['Tous', ...new Set(menu.map(i => i.category))];
+  const CAT_ORDER = ['Boissons', 'Entrées', 'Plats', 'Desserts'];
+  const categories = [
+    ...CAT_ORDER.filter(c => menu.some(i => i.category === c)),
+    ...menu.map(i => i.category).filter(c => !CAT_ORDER.includes(c)).filter((c, i, a) => a.indexOf(c) === i),
+    'Tous'
+  ];
   const filtered = activeCategory === 'Tous' ? menu : menu.filter(i => i.category === activeCategory);
   const totalItems = Object.values(cart).reduce((s, q) => s + q, 0);
   const basePrice = menu.reduce((s, item) => s + (cart[item.id] || 0) * item.price, 0);
