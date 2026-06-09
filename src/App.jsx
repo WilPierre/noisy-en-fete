@@ -1939,7 +1939,7 @@ function ClientView() {
                     <div className="item-price">{Number(item.price).toFixed(2)} €</div>
                     {item.ingredients && (
                       <div style={{ fontSize: '0.7rem', color: 'var(--text2)', marginTop: '0.2rem', lineHeight: 1.4 }}>
-                        🌿 {item.ingredients}
+                        {item.ingredients}
                       </div>
                     )}
                     {(() => {
