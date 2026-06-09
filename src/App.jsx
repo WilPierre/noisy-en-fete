@@ -1730,6 +1730,7 @@ function ClientView() {
   const [orderId, setOrderId] = useState(null);
   const [notifState, setNotifState] = useState('ask');
   const [notified, setNotified] = useState(false);
+  const [loyaltyOffers, setLoyaltyOffers] = useState([]);
   const [comment, setComment] = useState('');
   const [selectedExtras, setSelectedExtras] = useState({});
   const [promoDiscount, setPromoDiscount] = useState(0);
@@ -1749,6 +1750,7 @@ function ClientView() {
   })();
 
   useEffect(() => {
+    supabase.from('loyalty_offers').select('*').eq('active', true).then(({ data }) => data && setLoyaltyOffers(data));
     supabase.from('menu').select('*').eq('available', true).order('position', { ascending: true, nullsFirst: false }).then(({ data }) => {
       if (data) setMenu(data);
       setLoading(false);
@@ -1796,7 +1798,15 @@ function ClientView() {
     }));
     // Appliquer la fidélité
     const ls = settings;
-    if (ls.loyalty_active === 'true' && ls.loyalty_item && ls.loyalty_every) {
+    // Multi-offres fidélité
+    if (loyaltyOffers && loyaltyOffers.length > 0) {
+      items.forEach(item => {
+        const offer = loyaltyOffers.find(o => o.active && o.product_name === item.name);
+        if (offer && item.qty >= offer.every_n + 1) {
+          item.free = Math.floor(item.qty / (offer.every_n + 1));
+        }
+      });
+    } else if (ls.loyalty_active === 'true' && ls.loyalty_item && ls.loyalty_every) {
       const every = parseInt(ls.loyalty_every);
       items.forEach(item => {
         if (item.name === ls.loyalty_item && item.qty >= every + 1) {
@@ -1931,17 +1941,15 @@ function ClientView() {
                         🌿 {item.ingredients}
                       </div>
                     )}
-                    {settings.loyalty_active === 'true' && settings.loyalty_item && item.name && settings.loyalty_item.trim() === item.name.trim() && (
-                      <div style={{
-                        display: 'inline-flex', alignItems: 'center', gap: '0.3rem',
-                        marginTop: '0.3rem', background: '#FFF8EE',
-                        border: '1px solid var(--gold)', borderRadius: 6,
-                        padding: '0.2rem 0.5rem', fontSize: '0.72rem',
-                        color: 'var(--gold)', fontWeight: 600
-                      }}>
-                        🎁 1 offerte toutes les {settings.loyalty_every || '4'} achetées
-                      </div>
-                    )}
+                    {(() => {
+                      const offer = loyaltyOffers.find(o => o.product_name === item.name);
+                      if (!offer) return null;
+                      return (
+                        <div style={{ display: 'inline-flex', alignItems: 'center', gap: '0.3rem', marginTop: '0.3rem', background: '#FFF8EE', border: '1px solid var(--accent2)', borderRadius: 6, padding: '0.2rem 0.5rem', fontSize: '0.72rem', color: 'var(--accent2)', fontWeight: 600 }}>
+                          🎁 1 offerte toutes les {offer.every_n} achetées
+                        </div>
+                      );
+                    })()}
                   </div>
                   <div className="qty-ctrl">
                     <button className="qty-btn" onClick={() => setQty(item.id, (cart[item.id] || 0) - 1)}>−</button>
@@ -3534,6 +3542,98 @@ function UrgentMessageAdmin() {
   );
 }
 
+// ─── LOYALTY OFFERS SECTION ──────────────────────────────────────────────────
+function LoyaltyOffersSection({ loyaltyMenu }) {
+  const [offers, setOffers] = useState([]);
+  const [loading, setLoading] = useState(true);
+
+  const fetchOffers = async () => {
+    const { data } = await supabase.from('loyalty_offers').select('*').order('created_at');
+    if (data) setOffers(data);
+    setLoading(false);
+  };
+
+  useEffect(() => { fetchOffers(); }, []);
+
+  const addOffer = async () => {
+    const { data } = await supabase.from('loyalty_offers')
+      .insert({ product_name: '', every_n: 4, active: true })
+      .select().single();
+    if (data) setOffers(o => [...o, data]);
+  };
+
+  const updateOffer = async (id, field, value) => {
+    setOffers(o => o.map(offer => offer.id === id ? { ...offer, [field]: value } : offer));
+    await supabase.from('loyalty_offers').update({ [field]: value }).eq('id', id);
+  };
+
+  const deleteOffer = async (id) => {
+    if (!window.confirm('Supprimer cette offre ?')) return;
+    await supabase.from('loyalty_offers').delete().eq('id', id);
+    setOffers(o => o.filter(offer => offer.id !== id));
+  };
+
+  return (
+    <div style={{ background: 'white', border: '1.5px solid var(--border)', borderRadius: 14, padding: '1.2rem', marginBottom: '1rem' }}>
+      <div style={{ fontWeight: 600, marginBottom: '0.3rem' }}>🎁 Offres fidélité</div>
+      <div style={{ fontSize: '0.78rem', color: 'var(--text2)', marginBottom: '0.75rem' }}>
+        Définissez une ou plusieurs offres : achetez N produits, le suivant est offert.
+      </div>
+
+      {loading ? (
+        <div style={{ color: 'var(--text2)', fontSize: '0.82rem' }}>Chargement...</div>
+      ) : offers.length === 0 ? (
+        <div style={{ fontSize: '0.82rem', color: 'var(--text2)', marginBottom: '0.75rem', fontStyle: 'italic' }}>
+          Aucune offre configurée.
+        </div>
+      ) : (
+        <div style={{ display: 'flex', flexDirection: 'column', gap: '0.75rem', marginBottom: '0.75rem' }}>
+          {offers.map(offer => (
+            <div key={offer.id} style={{ background: 'var(--surface)', borderRadius: 10, padding: '0.85rem', border: '1.5px solid var(--border)' }}>
+              <div style={{ display: 'flex', gap: '0.5rem', marginBottom: '0.5rem', flexWrap: 'wrap' }}>
+                <select value={offer.product_name}
+                  onChange={e => updateOffer(offer.id, 'product_name', e.target.value)}
+                  style={{ flex: 1, minWidth: 160, padding: '0.45rem 0.6rem', borderRadius: 8, border: '1.5px solid var(--border)', fontFamily: 'Inter, sans-serif', fontSize: '0.85rem', background: 'var(--bg)', color: 'var(--text)', outline: 'none' }}>
+                  <option value="">-- Choisir un produit --</option>
+                  {loyaltyMenu.map(item => (
+                    <option key={item.id} value={item.name}>{item.emoji} {item.name} ({Number(item.price).toFixed(2)} €)</option>
+                  ))}
+                </select>
+                <div style={{ display: 'flex', alignItems: 'center', gap: '0.4rem', flexShrink: 0 }}>
+                  <span style={{ fontSize: '0.78rem', color: 'var(--text2)', whiteSpace: 'nowrap' }}>1 offert tous les</span>
+                  <input type="number" min="2" max="20" value={offer.every_n}
+                    onChange={e => updateOffer(offer.id, 'every_n', parseInt(e.target.value) || 2)}
+                    style={{ width: 55, padding: '0.45rem 0.5rem', borderRadius: 8, border: '1.5px solid var(--border)', fontFamily: 'Inter, sans-serif', fontSize: '0.85rem', background: 'var(--bg)', color: 'var(--text)', outline: 'none', textAlign: 'center' }} />
+                  <span style={{ fontSize: '0.78rem', color: 'var(--text2)' }}>achetés</span>
+                </div>
+              </div>
+              <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                <label style={{ display: 'flex', alignItems: 'center', gap: '0.4rem', cursor: 'pointer', fontSize: '0.8rem' }}>
+                  <input type="checkbox" checked={offer.active}
+                    onChange={e => updateOffer(offer.id, 'active', e.target.checked)}
+                    style={{ accentColor: 'var(--accent2)' }} />
+                  {offer.active ? '✅ Offre active' : '⏸ Offre inactive'}
+                </label>
+                {offer.product_name && offer.active && (
+                  <div style={{ fontSize: '0.72rem', color: 'var(--accent2)', fontWeight: 600 }}>
+                    🎁 1 {offer.product_name} offert(e) toutes les {offer.every_n} achetées
+                  </div>
+                )}
+                <button onClick={() => deleteOffer(offer.id)} className="del-btn" style={{ marginLeft: '0.5rem' }}>✕</button>
+              </div>
+            </div>
+          ))}
+        </div>
+      )}
+
+      <button onClick={addOffer}
+        style={{ padding: '0.55rem 1rem', background: 'var(--text)', color: '#fff', border: 'none', borderRadius: 8, cursor: 'pointer', fontWeight: 600, fontFamily: 'Inter, sans-serif', fontSize: '0.82rem' }}>
+        ➕ Ajouter une offre
+      </button>
+    </div>
+  );
+}
+
 // ─── CONFIG TAB ──────────────────────────────────────────────────────────────
 function ConfigTab() {
   const settings = useSettings();
@@ -3645,41 +3745,8 @@ function ConfigTab() {
         />
       </div>
 
-      {/* Fidélité */}
-      <div style={{ background: 'white', border: '1.5px solid var(--border)', borderRadius: 14, padding: '1.2rem', marginBottom: '1rem' }}>
-        <div style={{ fontWeight: 600, marginBottom: '0.3rem' }}>🎁 Offre fidélité</div>
-        <div style={{ fontSize: '0.78rem', color: 'var(--text2)', marginBottom: '0.75rem' }}>
-          Choisissez un produit et définissez à partir de combien d&apos;achats le suivant est offert.
-        </div>
-        <div style={{ display: 'flex', flexDirection: 'column', gap: '0.5rem', marginBottom: '0.75rem' }}>
-          <div className="form-field">
-            <label>Produit concerné</label>
-            <select value={loyaltyItem} onChange={e => setLoyaltyItem(e.target.value)}
-              style={{ padding: '0.55rem 0.75rem', borderRadius: 8, border: '1.5px solid var(--border)', fontFamily: "'DM Sans', sans-serif", fontSize: '0.9rem', background: 'var(--surface)', outline: 'none' }}>
-              <option value="">-- Aucun --</option>
-              {loyaltyMenu.map(item => (
-                <option key={item.id} value={item.name}>{item.emoji} {item.name} ({Number(item.price).toFixed(2)} €)</option>
-              ))}
-            </select>
-          </div>
-          <div className="form-field">
-            <label>Offert tous les combien d&apos;achats ?</label>
-            <input type="number" min="2" max="20" value={loyaltyEvery}
-              onChange={e => setLoyaltyEvery(e.target.value)}
-              style={{ padding: '0.55rem 0.75rem', borderRadius: 8, border: '1.5px solid var(--border)', fontFamily: "'DM Sans', sans-serif", fontSize: '0.9rem', background: 'var(--surface)', outline: 'none', maxWidth: 120 }}
-            />
-          </div>
-          <div style={{ display: 'flex', gap: '0.5rem', alignItems: 'center' }}>
-            <input type="checkbox" id="loyaltyActive" checked={loyaltyActive} onChange={e => setLoyaltyActive(e.target.checked)} style={{ accentColor: 'var(--gold)' }} />
-            <label htmlFor="loyaltyActive" style={{ fontSize: '0.85rem', cursor: 'pointer' }}>Activer cette offre</label>
-          </div>
-        </div>
-        {loyaltyItem && loyaltyEvery && loyaltyActive && (
-          <div style={{ background: '#FFF8EE', border: '1px solid var(--gold)', borderRadius: 8, padding: '0.6rem 0.9rem', fontSize: '0.82rem', color: 'var(--text)' }}>
-            🎁 1 {loyaltyItem} offert toutes les {loyaltyEvery} achetées
-          </div>
-        )}
-      </div>
+      {/* Fidélité - multi-offres */}
+      <LoyaltyOffersSection loyaltyMenu={loyaltyMenu} />
 
       {/* GRAND ECRAN TV */}
       <div style={{ background: 'white', border: '1.5px solid var(--border)', borderRadius: 14, padding: '1.2rem', marginBottom: '1rem' }}>
