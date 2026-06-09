@@ -3873,19 +3873,40 @@ function AdminView() {
     }
   };
 
+  const [dragId, setDragId] = useState(null);
+  const [dragOver, setDragOver] = useState(null);
+
+  const onDragStart = (id) => setDragId(id);
+  const onDragOver = (e, id) => { e.preventDefault(); setDragOver(id); };
+  const onDragEnd = () => { setDragId(null); setDragOver(null); };
+
+  const onDrop = async (e, targetId) => {
+    e.preventDefault();
+    if (!dragId || dragId === targetId) { onDragEnd(); return; }
+    const newMenu = [...menu];
+    const fromIdx = newMenu.findIndex(i => i.id === dragId);
+    const toIdx = newMenu.findIndex(i => i.id === targetId);
+    // Réordonner localement
+    const [moved] = newMenu.splice(fromIdx, 1);
+    newMenu.splice(toIdx, 0, moved);
+    // Sauvegarder les nouvelles positions
+    const updates = newMenu.map((item, pos) => ({ id: item.id, position: pos }));
+    setMenu(newMenu.map((item, pos) => ({ ...item, position: pos })));
+    for (const u of updates) {
+      await supabase.from('menu').update({ position: u.position }).eq('id', u.id);
+    }
+    onDragEnd();
+  };
+
   const moveItem = async (id, direction) => {
     const idx = menu.findIndex(i => i.id === id);
     const newMenu = [...menu];
     const swapIdx = direction === 'up' ? idx - 1 : idx + 1;
     if (swapIdx < 0 || swapIdx >= newMenu.length) return;
-
-    // Échanger les positions
     const posA = newMenu[idx].position ?? idx;
     const posB = newMenu[swapIdx].position ?? swapIdx;
     await supabase.from('menu').update({ position: posB }).eq('id', newMenu[idx].id);
     await supabase.from('menu').update({ position: posA }).eq('id', newMenu[swapIdx].id);
-
-    // Mettre à jour localement
     [newMenu[idx], newMenu[swapIdx]] = [newMenu[swapIdx], newMenu[idx]];
     newMenu[idx] = { ...newMenu[idx], position: posA };
     newMenu[swapIdx] = { ...newMenu[swapIdx], position: posB };
@@ -4027,13 +4048,28 @@ function AdminView() {
                 </div>
               </div>
             ) : (
-              <div className="menu-admin-item">
+              <div className="menu-admin-item"
+                  draggable
+                  onDragStart={() => onDragStart(item.id)}
+                  onDragOver={(e) => onDragOver(e, item.id)}
+                  onDrop={(e) => onDrop(e, item.id)}
+                  onDragEnd={onDragEnd}
+                  style={{
+                    cursor: 'grab',
+                    opacity: dragId === item.id ? 0.4 : 1,
+                    borderColor: dragOver === item.id ? 'var(--accent2)' : undefined,
+                    borderStyle: dragOver === item.id ? 'dashed' : undefined,
+                    transform: dragOver === item.id ? 'scale(1.01)' : 'none',
+                    transition: 'all 0.15s ease',
+                    background: dragOver === item.id ? 'var(--surface)' : undefined,
+                  }}>
                 <div style={{ display: 'flex', flexDirection: 'column', gap: '2px', flexShrink: 0, marginRight: '0.25rem' }}>
                   <button onClick={() => moveItem(item.id, 'up')} disabled={idx === 0}
                     style={{ width: 22, height: 22, border: '1px solid var(--border)', borderRadius: 4, background: 'var(--surface)', cursor: idx === 0 ? 'not-allowed' : 'pointer', fontSize: '0.65rem', display: 'flex', alignItems: 'center', justifyContent: 'center', opacity: idx === 0 ? 0.3 : 1, color: 'var(--text)', padding: 0 }}>▲</button>
                   <button onClick={() => moveItem(item.id, 'down')} disabled={idx === menu.length - 1}
                     style={{ width: 22, height: 22, border: '1px solid var(--border)', borderRadius: 4, background: 'var(--surface)', cursor: idx === menu.length - 1 ? 'not-allowed' : 'pointer', fontSize: '0.65rem', display: 'flex', alignItems: 'center', justifyContent: 'center', opacity: idx === menu.length - 1 ? 0.3 : 1, color: 'var(--text)', padding: 0 }}>▼</button>
                 </div>
+                <div style={{ color: '#CCC', fontSize: '1rem', cursor: 'grab', padding: '0 0.15rem', flexShrink: 0, userSelect: 'none', letterSpacing: '-2px' }} title="Glisser pour réordonner">⠿</div>
                 <span style={{ fontSize: '1.3rem' }}>{item.emoji}</span>
                 <div className="menu-admin-info">
                   <div className="menu-admin-name">{item.name}</div>
