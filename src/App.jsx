@@ -1921,6 +1921,11 @@ function ClientView() {
                   <div className="item-info">
                     <div className="item-name">{item.name}</div>
                     <div className="item-price">{Number(item.price).toFixed(2)} €</div>
+                    {item.ingredients && (
+                      <div style={{ fontSize: '0.7rem', color: 'var(--text2)', marginTop: '0.2rem', lineHeight: 1.4 }}>
+                        🌿 {item.ingredients}
+                      </div>
+                    )}
                     {settings.loyalty_active === 'true' && settings.loyalty_item && item.name && settings.loyalty_item.trim() === item.name.trim() && (
                       <div style={{
                         display: 'inline-flex', alignItems: 'center', gap: '0.3rem',
@@ -3875,7 +3880,8 @@ function AdminView() {
       price: String(item.price),
       emoji: item.emoji,
       category: item.category,
-      extras: item.extras || []
+      extras: item.extras || [],
+      ingredients: item.ingredients || ''
     });
   };
 
@@ -3886,7 +3892,8 @@ function AdminView() {
       price: parseFloat(editForm.price),
       emoji: editForm.emoji,
       category: editForm.category,
-      extras: (editForm.extras || []).map(e => ({ name: e.name, price: parseFloat(e.price) || 0 }))
+      extras: (editForm.extras || []).map(e => ({ name: e.name, price: parseFloat(e.price) || 0 })),
+      ingredients: editForm.ingredients || ''
     };
     const { error } = await supabase.from('menu').update(updates).eq('id', id);
     if (error) { console.error('Erreur saveEdit:', error); alert('Erreur lors de la sauvegarde : ' + error.message); return; }
@@ -3967,6 +3974,10 @@ function AdminView() {
                     <label>Prix (€)</label>
                     <input type="number" value={editForm.price} onChange={e => setEditForm(f => ({ ...f, price: e.target.value }))} />
                   </div>
+                </div>
+                <div className="form-field" style={{ marginBottom: '0.75rem' }}>
+                  <label>Ingrédients (optionnel)</label>
+                  <input value={editForm.ingredients || ''} onChange={e => setEditForm(f => ({ ...f, ingredients: e.target.value }))} placeholder="Ex: Tomates, poivrons, ketchup..." />
                 </div>
                 {/* Suppléments */}
                 <div style={{ marginBottom: '0.75rem' }}>
