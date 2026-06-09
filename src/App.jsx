@@ -1749,7 +1749,7 @@ function ClientView() {
   })();
 
   useEffect(() => {
-    supabase.from('menu').select('*').eq('available', true).order('category').then(({ data }) => {
+    supabase.from('menu').select('*').eq('available', true).order('position', { ascending: true, nullsFirst: false }).then(({ data }) => {
       if (data) setMenu(data);
       setLoading(false);
     });
@@ -2537,7 +2537,7 @@ function TestTab() {
   const [result, setResult] = useState(null);
 
   useEffect(() => {
-    supabase.from('menu').select('*').eq('available', true).order('category')
+    supabase.from('menu').select('*').eq('available', true).order('position', { ascending: true, nullsFirst: false })
       .then(({ data }) => data && setMenu(data));
   }, []);
 
@@ -3552,7 +3552,7 @@ function ConfigTab() {
     setLoyaltyItem(settings.loyalty_item || '');
     setLoyaltyEvery(settings.loyalty_every || '4');
     setLoyaltyActive(settings.loyalty_active === 'true');
-    supabase.from('menu').select('id,name,emoji,price').order('category').then(({ data }) => data && setLoyaltyMenu(data));
+    supabase.from('menu').select('id,name,emoji,price').order('position', { ascending: true, nullsFirst: false }).then(({ data }) => data && setLoyaltyMenu(data));
   }, [settings.welcome, settings.closing_time, settings.loyalty_item, settings.loyalty_every, settings.loyalty_active]);
 
   const isClosed = settings.closed === 'true';
