@@ -3995,10 +3995,6 @@ function AdminView() {
                 <div style={{ fontWeight: 600, fontSize: '0.85rem', marginBottom: '0.75rem', color: 'var(--gold)' }}>✏️ Modifier "{item.name}"</div>
                 <div className="form-row">
                   <div className="form-field">
-                    <label>Emoji</label>
-                    <input value={editForm.emoji} onChange={e => setEditForm(f => ({ ...f, emoji: e.target.value }))} style={{ fontSize: '1.2rem' }} />
-                  </div>
-                  <div className="form-field">
                     <label>Catégorie</label>
                     <select value={editForm.category} onChange={e => setEditForm(f => ({ ...f, category: e.target.value }))}>
                       {['Entrées', 'Plats', 'Desserts', 'Boissons'].map(c => <option key={c}>{c}</option>)}
@@ -4015,6 +4011,43 @@ function AdminView() {
                     <input type="number" value={editForm.price} onChange={e => setEditForm(f => ({ ...f, price: e.target.value }))} />
                   </div>
                 </div>
+                {/* Sélecteur emoji visuel */}
+                <div style={{ marginBottom: '0.75rem' }}>
+                  <label style={{ fontSize: '0.7rem', color: 'var(--text2)', fontWeight: 700, textTransform: 'uppercase', letterSpacing: '0.06em', display: 'block', marginBottom: '0.4rem' }}>
+                    Emoji — sélectionné : <span style={{ fontSize: '1.2rem' }}>{editForm.emoji}</span>
+                  </label>
+                  {[
+                    { label: '🥗 Entrées', emojis: ['🥗','🍲','🧅','🫕','🥚','🧀','🍱','🥙','🫙','🥣','🐟','🦐','🥓','🫛','🍄','🥕','🧆','🫔','🥬','🫑','🥒','🍅','🧄','🫘'] },
+                    { label: '🍽 Plats', emojis: ['🥩','🍗','🍖','🌮','🍝','🍜','🍛','🥘','🐓','🦞','🦑','🌯','🍔','🌭','🍕','🥫','🍚','🫓','🥪','🌽','🍣','🍤','🦀','🐠'] },
+                    { label: '🧇 Snacks', emojis: ['🧇','🥞','🧈','🥐','🥖','🫓','🥨','🧀','🌰','🍿','🥜','🫔','🌮','🌯'] },
+                    { label: '🍮 Desserts', emojis: ['🍮','🍫','🧁','🎂','🍰','🍩','🍪','🥧','🍨','🍦','🍬','🍭','🍯','🫐','🍓','🍒','🍑','🥝','🍇','🍉','🍊','🍋','🍌','🍎'] },
+                    { label: '🍷 Vins', emojis: ['🍷','🍸','🥂','🍾','🫗'] },
+                    { label: '🍺 Bières', emojis: ['🍺','🍻','🫗'] },
+                    { label: '🥃 Cocktails', emojis: ['🥃','🍸','🍹','🧉','🍶'] },
+                    { label: '☕ Chauds', emojis: ['☕','🍵','🫖','🧋'] },
+                    { label: '🥤 Froids', emojis: ['🥤','🧃','💧','🧊','🥛','🍋'] },
+                    { label: '➕ Autres', emojis: ['🎉','⭐','🔥','✨','💯','🏆','👌','😋','🤤','❤️','🌿','🫶','🎊','🪄','💎','🌟','🎪','🎭','🎈'] },
+                  ].map(group => (
+                    <div key={group.label} style={{ marginBottom: '0.4rem' }}>
+                      <div style={{ fontSize: '0.68rem', color: 'var(--text2)', marginBottom: '0.2rem', fontWeight: 600 }}>{group.label}</div>
+                      <div style={{ display: 'flex', flexWrap: 'wrap', gap: '0.25rem' }}>
+                        {group.emojis.map(e => (
+                          <button key={e} type="button" onClick={() => setEditForm(f => ({ ...f, emoji: e }))}
+                            style={{
+                              width: 34, height: 34, fontSize: '1.1rem', borderRadius: 7, cursor: 'pointer',
+                              border: editForm.emoji === e ? '2px solid var(--accent2)' : '1.5px solid var(--border)',
+                              background: editForm.emoji === e ? '#FFF8EE' : 'var(--bg)',
+                              display: 'flex', alignItems: 'center', justifyContent: 'center',
+                              transition: 'all 0.1s', transform: editForm.emoji === e ? 'scale(1.15)' : 'none'
+                            }}>
+                            {e}
+                          </button>
+                        ))}
+                      </div>
+                    </div>
+                  ))}
+                </div>
+
                 <div className="form-field" style={{ marginBottom: '0.75rem' }}>
                   <label>Ingrédients (optionnel)</label>
                   <input value={editForm.ingredients || ''} onChange={e => setEditForm(f => ({ ...f, ingredients: e.target.value }))} placeholder="Ex: Tomates, poivrons, ketchup..." />
