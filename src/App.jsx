@@ -4110,11 +4110,16 @@ function AdminView() {
           <div style={{ marginBottom: '0.8rem' }}>
             <label style={{ fontSize: '0.78rem', color: 'var(--text2)', fontWeight: 500, display: 'block', marginBottom: '0.4rem' }}>Choisir un emoji</label>
             {[
-              { label: '🥗 Entrées', emojis: ['🥗','🍲','🧅','🫕','🥚','🧀','🍱','🥙','🫙','🥣','🐟','🦐','🥓','🫛','🍄','🥕','🧆','🫔'] },
-              { label: '🍽 Plats', emojis: ['🥩','🍗','🍖','🌮','🍝','🍜','🍛','🥘','🫚','🐓','🦞','🦑','🥞','🌯','🍔','🌭','🍕','🥫','🍚','🫓'] },
-              { label: '🍮 Desserts', emojis: ['🍮','🍫','🧁','🎂','🍰','🍩','🍪','🥧','🍨','🍦','🍬','🍭','🍯','🫐','🍓','🍒','🍑','🥝'] },
-              { label: '🍷 Boissons', emojis: ['🍷','🍺','🍻','🥂','🍾','🍸','🍹','🧉','☕','🍵','🧃','🥤','💧','🫖','🧊','🍶'] },
-              { label: '➕ Autres', emojis: ['🎉','⭐','🔥','✨','💯','🏆','👌','😋','🤤','❤️','🌿','🫶','🎊','🪄','💎','🌟'] },
+              { label: '🥗 Entrées & Salades', emojis: ['🥗','🍲','🧅','🫕','🥚','🧀','🍱','🥙','🫙','🥣','🐟','🦐','🥓','🫛','🍄','🥕','🧆','🫔','🥬','🫑','🥒','🍅','🧄','🫘'] },
+              { label: '🍽 Plats principaux', emojis: ['🥩','🍗','🍖','🌮','🍝','🍜','🍛','🥘','🐓','🦞','🦑','🌯','🍔','🌭','🍕','🥫','🍚','🫓','🥪','🌽','🫚','🍣','🍤','🦀','🐠','🥩'] },
+              { label: '🧇 Snacks & Petite restauration', emojis: ['🧇','🥞','🧈','🥐','🥖','🫓','🥨','🧀','🌰','🍿','🥜','🫙','🫔','🌮','🌯','🥙','🍱'] },
+              { label: '🍮 Desserts & Sucreries', emojis: ['🍮','🍫','🧁','🎂','🍰','🍩','🍪','🥧','🍨','🍦','🍬','🍭','🍯','🫐','🍓','🍒','🍑','🥝','🍇','🍉','🍊','🍋','🍌','🍎','🍐','🥭','🍍','🥥','🍔'] },
+              { label: '🍷 Vins', emojis: ['🍷','🍸','🥂','🍾','🫗'] },
+              { label: '🍺 Bières', emojis: ['🍺','🍻','🫗'] },
+              { label: '🥃 Spiritueux & Cocktails', emojis: ['🥃','🍸','🍹','🧉','🫗','🍶'] },
+              { label: '☕ Boissons chaudes', emojis: ['☕','🍵','🫖','🧋'] },
+              { label: '🥤 Boissons froides & Softs', emojis: ['🥤','🧃','💧','🫗','🧊','🥛','🍋'] },
+              { label: '➕ Autres', emojis: ['🎉','⭐','🔥','✨','💯','🏆','👌','😋','🤤','❤️','🌿','🫶','🎊','🪄','💎','🌟','🎪','🎭','🎈'] },
             ].map(group => (
               <div key={group.label} style={{ marginBottom: '0.5rem' }}>
                 <div style={{ fontSize: '0.72rem', color: 'var(--text2)', marginBottom: '0.3rem' }}>{group.label}</div>
