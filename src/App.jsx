@@ -3824,7 +3824,7 @@ function AdminView() {
   const loadOrders = () => supabase.from('orders').select('*').then(({ data }) => data && setOrders(data));
 
   useEffect(() => {
-    supabase.from('menu').select('*').order('category').then(({ data }) => data && setMenu(data));
+    supabase.from('menu').select('*').order('position', { ascending: true, nullsFirst: false }).then(({ data }) => data && setMenu(data));
     loadOrders();
   }, []);
 
@@ -3871,6 +3871,25 @@ function AdminView() {
       await supabase.from('menu').update({ stock, available: stock > 0 }).eq('id', item.id);
       setMenu(m => m.map(i => i.id === item.id ? { ...i, stock, available: stock > 0 } : i));
     }
+  };
+
+  const moveItem = async (id, direction) => {
+    const idx = menu.findIndex(i => i.id === id);
+    const newMenu = [...menu];
+    const swapIdx = direction === 'up' ? idx - 1 : idx + 1;
+    if (swapIdx < 0 || swapIdx >= newMenu.length) return;
+
+    // Échanger les positions
+    const posA = newMenu[idx].position ?? idx;
+    const posB = newMenu[swapIdx].position ?? swapIdx;
+    await supabase.from('menu').update({ position: posB }).eq('id', newMenu[idx].id);
+    await supabase.from('menu').update({ position: posA }).eq('id', newMenu[swapIdx].id);
+
+    // Mettre à jour localement
+    [newMenu[idx], newMenu[swapIdx]] = [newMenu[swapIdx], newMenu[idx]];
+    newMenu[idx] = { ...newMenu[idx], position: posA };
+    newMenu[swapIdx] = { ...newMenu[swapIdx], position: posB };
+    setMenu(newMenu);
   };
 
   const startEdit = (item) => {
@@ -3948,7 +3967,7 @@ function AdminView() {
       {/* TAB MENU */}
       {activeTab === 'menu' && <>
         <div className="section-title">Menu ({menu.length} articles)</div>
-        {menu.map(item => (
+        {menu.map((item, idx) => (
           <div key={item.id}>
             {editingId === item.id ? (
               <div style={{ background: '#FFFBF0', border: '2px solid var(--gold)', borderRadius: 12, padding: '1rem', marginBottom: '0.5rem' }}>
@@ -4009,6 +4028,12 @@ function AdminView() {
               </div>
             ) : (
               <div className="menu-admin-item">
+                <div style={{ display: 'flex', flexDirection: 'column', gap: '2px', flexShrink: 0, marginRight: '0.25rem' }}>
+                  <button onClick={() => moveItem(item.id, 'up')} disabled={idx === 0}
+                    style={{ width: 22, height: 22, border: '1px solid var(--border)', borderRadius: 4, background: 'var(--surface)', cursor: idx === 0 ? 'not-allowed' : 'pointer', fontSize: '0.65rem', display: 'flex', alignItems: 'center', justifyContent: 'center', opacity: idx === 0 ? 0.3 : 1, color: 'var(--text)', padding: 0 }}>▲</button>
+                  <button onClick={() => moveItem(item.id, 'down')} disabled={idx === menu.length - 1}
+                    style={{ width: 22, height: 22, border: '1px solid var(--border)', borderRadius: 4, background: 'var(--surface)', cursor: idx === menu.length - 1 ? 'not-allowed' : 'pointer', fontSize: '0.65rem', display: 'flex', alignItems: 'center', justifyContent: 'center', opacity: idx === menu.length - 1 ? 0.3 : 1, color: 'var(--text)', padding: 0 }}>▼</button>
+                </div>
                 <span style={{ fontSize: '1.3rem' }}>{item.emoji}</span>
                 <div className="menu-admin-info">
                   <div className="menu-admin-name">{item.name}</div>
