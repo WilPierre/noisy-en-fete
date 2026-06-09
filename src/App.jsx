@@ -1723,7 +1723,7 @@ function ClientView() {
   const [tableNum, setTableNum] = useState(null);
   const [menu, setMenu] = useState([]);
   const [cart, setCart] = useState({});
-  const [activeCategory, setActiveCategory] = useState('Tous');
+  const [activeCategory, setActiveCategory] = useState(null); // null = premier onglet disponible
   const [showCart, setShowCart] = useState(false);
   const [success, setSuccess] = useState(false);
   const [loading, setLoading] = useState(true);
@@ -1783,7 +1783,8 @@ function ClientView() {
     ...menu.map(i => i.category).filter(c => !CAT_ORDER.includes(c)).filter((c, i, a) => a.indexOf(c) === i),
     'Tous'
   ];
-  const filtered = activeCategory === 'Tous' ? menu : menu.filter(i => i.category === activeCategory);
+  const activeTab = activeCategory || (categories.length > 0 ? categories[0] : 'Tous');
+  const filtered = activeTab === 'Tous' ? menu : menu.filter(i => i.category === activeTab);
   const totalItems = Object.values(cart).reduce((s, q) => s + q, 0);
   const basePrice = menu.reduce((s, item) => s + (cart[item.id] || 0) * item.price, 0);
   const setQty = (id, qty) => setCart(c => ({ ...c, [id]: Math.max(0, qty) }));
@@ -1925,7 +1926,7 @@ function ClientView() {
         <>
           <div className="category-tabs">
             {categories.map(cat => (
-              <button key={cat} className={`cat-tab ${activeCategory === cat ? 'active' : ''}`} onClick={() => setActiveCategory(cat)}>{cat}</button>
+              <button key={cat} className={`cat-tab ${activeTab === cat ? 'active' : ''}`} onClick={() => setActiveCategory(cat)}>{cat}</button>
             ))}
           </div>
           <div className="menu-grid">
