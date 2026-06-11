@@ -4551,8 +4551,6 @@ export default function App() {
             noisyenfete.fr
           </a>
           <span style={{ color: 'var(--border)' }}>·</span>
-          <span>Développé par William H.</span>
-          <span style={{ color: 'var(--border)' }}>·</span>
           <a href="mailto:noisyenfete@gmail.com"
             style={{ color: 'var(--accent2)', fontWeight: 600, textDecoration: 'none' }}>
             Prendre contact
