@@ -1340,7 +1340,7 @@ function ClientView({ installPrompt, appInstalled, setAppInstalled }) {
                       const offer = loyaltyOffers.find(o => o.product_name === item.name);
                       if (!offer) return null;
                       return (
-                        <div style={{ display: 'inline-flex', alignItems: 'center', gap: '0.3rem', marginTop: '0.3rem', background: '#FFF8EE', border: '1px solid var(--accent2)', borderRadius: 6, padding: '0.2rem 0.5rem', fontSize: '0.72rem', color: 'var(--accent2)', fontWeight: 600 }}>
+                        <div style={{ display: 'inline-flex', alignItems: 'center', gap: '0.3rem', marginTop: '0.3rem', background: '#F0FFF4', border: '1px solid #BBF7D0', borderRadius: 6, padding: '0.2rem 0.5rem', fontSize: '0.72rem', color: '#00A847', fontWeight: 600 }}>
                           🎁 1 offerte toutes les {offer.every_n} achetées
                         </div>
                       );
