@@ -1288,7 +1288,7 @@ const _settingsStore = {
   loaded: false,
 
   subscribe(fn) { this.listeners.add(fn); return () => this.listeners.delete(fn); },
-  notify() { this.listeners.forEach(fn => fn({ ...this.data })); },
+  notify() { this.listeners.forEach(fn => fn({ ...this.data })); if (this.data.staff_pin) STAFF_PIN = this.data.staff_pin; },
 
   async load() {
     const { data } = await supabase.from('settings').select('*');
@@ -1304,7 +1304,9 @@ const _settingsStore = {
 };
 
 // Charger au démarrage
-_settingsStore.load();
+_settingsStore.load().then(() => {
+  if (_settingsStore.data.staff_pin) STAFF_PIN = _settingsStore.data.staff_pin;
+});
 _settingsStore.startRealtime();
 
 function useSettings() {
@@ -3446,7 +3448,10 @@ function ThemeTab() {
       </div>
 
       <div style={{ display: 'flex', gap: '0.75rem', alignItems: 'center' }}>
-        {/* GRAND ECRAN TV */}
+        {/* CHANGEMENT PIN */}
+      <ChangePinSection />
+
+      {/* GRAND ECRAN TV */}
       <div style={{ background: 'white', border: '1.5px solid var(--border)', borderRadius: 14, padding: '1.2rem', marginBottom: '1rem' }}>
         <div style={{ fontWeight: 600, marginBottom: '0.3rem' }}>📺 Grand écran TV</div>
         <div style={{ fontSize: '0.78rem', color: 'var(--text2)', marginBottom: '0.75rem' }}>
@@ -3635,6 +3640,80 @@ function LoyaltyOffersSection({ loyaltyMenu }) {
   );
 }
 
+// ─── CHANGE PIN SECTION ──────────────────────────────────────────────────────
+function ChangePinSection() {
+  const [open, setOpen] = useState(false);
+  const [current, setCurrent] = useState('');
+  const [newPin, setNewPin] = useState('');
+  const [confirm, setConfirm] = useState('');
+  const [msg, setMsg] = useState(null);
+
+  const handleChange = async () => {
+    setMsg(null);
+    if (current !== STAFF_PIN) { setMsg({ ok: false, txt: '❌ Code actuel incorrect' }); return; }
+    if (newPin.length < 4) { setMsg({ ok: false, txt: '❌ Le nouveau code doit faire au moins 4 chiffres' }); return; }
+    if (newPin !== confirm) { setMsg({ ok: false, txt: '❌ Les deux codes ne correspondent pas' }); return; }
+    if (!/^\d+$/.test(newPin)) { setMsg({ ok: false, txt: '❌ Le code doit contenir uniquement des chiffres' }); return; }
+
+    await saveSetting('staff_pin', newPin);
+    STAFF_PIN = newPin;
+    setMsg({ ok: true, txt: '✅ Code PIN mis à jour !' });
+    setCurrent(''); setNewPin(''); setConfirm('');
+    setTimeout(() => { setOpen(false); setMsg(null); }, 2000);
+  };
+
+  return (
+    <div style={{ background: 'white', border: '1.5px solid var(--border)', borderRadius: 14, padding: '1.2rem', marginBottom: '1rem' }}>
+      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+        <div>
+          <div style={{ fontWeight: 600 }}>🔐 Code PIN d&apos;accès</div>
+          <div style={{ fontSize: '0.78rem', color: 'var(--text2)', marginTop: '0.2rem' }}>
+            Protège l&apos;accès à la cuisine et à l&apos;administration
+          </div>
+        </div>
+        <button onClick={() => { setOpen(!open); setMsg(null); }}
+          style={{ padding: '0.5rem 1rem', background: open ? 'var(--surface)' : 'var(--text)', color: open ? 'var(--text)' : '#fff', border: '1.5px solid var(--border)', borderRadius: 8, cursor: 'pointer', fontWeight: 600, fontFamily: 'Inter, sans-serif', fontSize: '0.82rem' }}>
+          {open ? 'Annuler' : '✏️ Modifier'}
+        </button>
+      </div>
+
+      {open && (
+        <div style={{ marginTop: '1rem', display: 'flex', flexDirection: 'column', gap: '0.6rem' }}>
+          {[
+            { label: 'Code actuel', value: current, setter: setCurrent, placeholder: '······' },
+            { label: 'Nouveau code', value: newPin, setter: setNewPin, placeholder: 'Min. 4 chiffres' },
+            { label: 'Confirmer le nouveau code', value: confirm, setter: setConfirm, placeholder: 'Répétez le code' },
+          ].map(({ label, value, setter, placeholder }) => (
+            <div key={label} className="form-field">
+              <label>{label}</label>
+              <input
+                type="password"
+                inputMode="numeric"
+                maxLength={8}
+                value={value}
+                onChange={e => setter(e.target.value.replace(/\D/g, ''))}
+                placeholder={placeholder}
+                style={{ maxWidth: 200, letterSpacing: '0.2em', fontSize: '1.1rem' }}
+              />
+            </div>
+          ))}
+
+          {msg && (
+            <div style={{ padding: '0.6rem 0.8rem', borderRadius: 8, fontSize: '0.82rem', fontWeight: 600, background: msg.ok ? '#DCFCE7' : '#FEE2E2', color: msg.ok ? '#166534' : '#991B1B' }}>
+              {msg.txt}
+            </div>
+          )}
+
+          <button onClick={handleChange}
+            style={{ alignSelf: 'flex-start', padding: '0.6rem 1.2rem', background: 'var(--text)', color: '#fff', border: 'none', borderRadius: 8, cursor: 'pointer', fontWeight: 700, fontFamily: 'Inter, sans-serif', fontSize: '0.85rem' }}>
+            💾 Enregistrer le nouveau code
+          </button>
+        </div>
+      )}
+    </div>
+  );
+}
+
 // ─── CONFIG TAB ──────────────────────────────────────────────────────────────
 function ConfigTab() {
   const settings = useSettings();
@@ -3748,6 +3827,9 @@ function ConfigTab() {
 
       {/* Fidélité - multi-offres */}
       <LoyaltyOffersSection loyaltyMenu={loyaltyMenu} />
+
+      {/* CHANGEMENT PIN */}
+      <ChangePinSection />
 
       {/* GRAND ECRAN TV */}
       <div style={{ background: 'white', border: '1.5px solid var(--border)', borderRadius: 14, padding: '1.2rem', marginBottom: '1rem' }}>
@@ -4446,7 +4528,7 @@ function AdminView() {
 }
 
 // ─── PIN MODAL ────────────────────────────────────────────────────────────────
-const STAFF_PIN = '917764'; // Change ce code ici
+let STAFF_PIN = '917764'; // Modifiable via Config
 
 function PinModal({ title, onSuccess, onClose }) {
   const [pin, setPin] = useState('');
