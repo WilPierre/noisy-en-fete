@@ -2,12 +2,36 @@
 <html lang="fr">
   <head>
     <meta charset="utf-8" />
-    <meta name="viewport" content="width=device-width, initial-scale=1" />
-    <meta name="theme-color" content="#1A1208" />
-    <meta name="description" content="Noisy en Fête — Commander à table" />
+    <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
+    <meta name="theme-color" content="#111111" />
+    <meta name="description" content="Noisy en Fête — Commandez depuis votre emplacement" />
+    <meta name="apple-mobile-web-app-capable" content="yes" />
+    <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent" />
+    <meta name="apple-mobile-web-app-title" content="Noisy en Fête" />
+    <meta name="mobile-web-app-capable" content="yes" />
+    <!-- Open Graph -->
+    <meta property="og:title" content="Noisy en Fête" />
+    <meta property="og:description" content="Commandez directement depuis votre emplacement" />
+    <meta property="og:type" content="website" />
+    <!-- Apple Touch Icons -->
+    <link rel="apple-touch-icon" href="/logo.png" />
+    <link rel="apple-touch-icon" sizes="152x152" href="/logo.png" />
+    <link rel="apple-touch-icon" sizes="180x180" href="/logo.png" />
+    <!-- Manifest PWA -->
+    <link rel="manifest" href="/manifest.json" />
     <title>Noisy en Fête</title>
   </head>
   <body>
     <div id="root"></div>
+    <script>
+      // Enregistrement du Service Worker
+      if ('serviceWorker' in navigator) {
+        window.addEventListener('load', () => {
+          navigator.serviceWorker.register('/sw.js')
+            .then(reg => console.log('SW enregistré:', reg.scope))
+            .catch(err => console.log('SW erreur:', err));
+        });
+      }
+    </script>
   </body>
 </html>
