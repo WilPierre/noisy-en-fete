@@ -1147,7 +1147,7 @@ function PaymentForm({ totalPrice, tableNum, cartItems, comment, consigneAmount,
 }
 
 // ─── TABLE SELECTOR ───────────────────────────────────────────────────────────
-function TableSelector({ onSelect, welcomeMsg }) {
+function TableSelector({ onSelect, welcomeMsg, installPrompt, appInstalled, setAppInstalled }) {
   return (
     <div className="table-select-wrap">
       <img src="/logo.png" alt="Noisy en Fête" style={{ width: '140px', maxWidth: '55vw', margin: '0 auto 1.2rem', display: 'block', filter: 'drop-shadow(0 8px 24px rgba(200,149,58,0.3))' }} />
@@ -1721,7 +1721,7 @@ function ReceiptEmailForm({ orderId }) {
 }
 
 // ─── CLIENT VIEW ──────────────────────────────────────────────────────────────
-function ClientView() {
+function ClientView({ installPrompt, appInstalled, setAppInstalled }) {
   const [tableNum, setTableNum] = useState(null);
   const [menu, setMenu] = useState([]);
   const [cart, setCart] = useState({});
@@ -1831,7 +1831,7 @@ function ClientView() {
   const totalPrice = basePrice + extrasTotal - loyaltyDiscount - promoAmount;
 
   if (isClosed) return <ClosedBanner closingTime={settings.closing_time || '22:00'} />;
-  if (!tableNum) return <TableSelector onSelect={setTableNum} welcomeMsg={settings.welcome} />;
+  if (!tableNum) return <TableSelector onSelect={setTableNum} welcomeMsg={settings.welcome} installPrompt={installPrompt} appInstalled={appInstalled} setAppInstalled={setAppInstalled} />;
 
   // Si suivi activé et commande passée → afficher le tracking
   if (success && settings.tracking_active === 'true') return (
@@ -1910,6 +1910,32 @@ function ClientView() {
     <div className="client-wrap">
       <div style={{ padding: '1.25rem 1.25rem 0.5rem', textAlign: 'center' }}>
         <img src="/logo.png" alt="Noisy en Fête" style={{ height: 140, maxWidth: '55vw', width: 'auto', display: 'block', margin: '0 auto 0.75rem' }} />
+      {/* Bouton installation PWA */}
+      {installPrompt && !appInstalled && (
+        <button onClick={async () => {
+          installPrompt.prompt();
+          const { outcome } = await installPrompt.userChoice;
+          if (outcome === 'accepted') setAppInstalled(true);
+        }} style={{
+          display: 'flex', alignItems: 'center', gap: '0.5rem',
+          margin: '0 auto 1rem',
+          padding: '0.6rem 1.25rem',
+          background: 'linear-gradient(135deg, var(--accent2), #E8B96A)',
+          color: '#fff',
+          border: 'none',
+          borderRadius: 100,
+          fontFamily: 'Inter, sans-serif',
+          fontSize: '0.85rem',
+          fontWeight: 700,
+          cursor: 'pointer',
+          boxShadow: '0 4px 20px rgba(200,149,58,0.4)',
+          animation: 'pulse 2s ease-in-out infinite',
+          letterSpacing: '-0.01em'
+        }}>
+          <span style={{ fontSize: '1.1rem' }}>📲</span>
+          Installer l&apos;app
+        </button>
+      )}
         <span className="table-badge" style={{ margin: 0 }}>Emplacement {tableNum}</span>
       </div>
 
@@ -4573,7 +4599,19 @@ export default function App() {
   const [view, setView] = useState('client');
   const [pinTarget, setPinTarget] = useState(null);
   const [visualTheme, setVisualTheme] = useState(() => localStorage.getItem('nef-visual-theme') || 'light');
+  const [installPrompt, setInstallPrompt] = useState(null);
+  const [appInstalled, setAppInstalled] = useState(false);
   useTheme();
+
+  useEffect(() => {
+    // Capturer l'événement beforeinstallprompt
+    const handler = (e) => { e.preventDefault(); setInstallPrompt(e); };
+    window.addEventListener('beforeinstallprompt', handler);
+    // Détecter si déjà installée
+    window.addEventListener('appinstalled', () => setAppInstalled(true));
+    if (window.matchMedia('(display-mode: standalone)').matches) setAppInstalled(true);
+    return () => window.removeEventListener('beforeinstallprompt', handler);
+  }, []);
 
   // Grand écran TV accessible via ?ecran=1
   if (new URLSearchParams(window.location.search).get('ecran') === '1') return <GrandEcran />;
@@ -4619,7 +4657,7 @@ export default function App() {
           <button className={`nav-btn ${view === 'kitchen' ? 'active' : ''}`} onClick={() => requestView('kitchen')}>🍳</button>
           <button className={`nav-btn ${view === 'admin' ? 'active' : ''}`} onClick={() => requestView('admin')}>⚙️</button>
         </nav>
-        {view === 'client' && <><UrgentBanner /><ClientView /></>}
+        {view === 'client' && <><UrgentBanner /><ClientView installPrompt={installPrompt} appInstalled={appInstalled} setAppInstalled={setAppInstalled} /></>}
         {view === 'kitchen' && <KitchenView />}
         {view === 'admin' && <AdminView />}
         <footer style={{
