@@ -1715,9 +1715,9 @@ function DashboardTab() {
           <div style={{ ...numStyle, color: 'var(--gold)' }}>{totalCA.toFixed(2)} €</div>
           <div style={{ ...lblStyle, color: '#aaa' }}>CA commandes</div>
         </div>
-        <div style={{ ...statStyle, background: 'var(--text)' }}>
-          <div style={{ ...numStyle, color: '#C8953A' }}>{totalEncaisse.toFixed(2)} €</div>
-          <div style={{ ...lblStyle, color: '#aaa' }}>Total encaissé</div>
+        <div style={{ ...statStyle, background: totalTips > 0 ? '#00C553' : 'var(--text)' }}>
+          <div style={{ ...numStyle, color: totalTips > 0 ? '#fff' : '#C8953A' }}>{totalTips.toFixed(2)} €</div>
+          <div style={{ ...lblStyle, color: totalTips > 0 ? 'rgba(255,255,255,0.85)' : '#aaa' }}>🎒 Dons A.P.E</div>
         </div>
       </div>
 
@@ -1844,9 +1844,9 @@ function CaisseTab() {
     <tbody>${salesRows}</tbody></table>
     <hr class="divider">
     <div class="info"><span>Ventes</span><span>${totalCA.toFixed(2)} €</span></div>
-    ${totalTips > 0 ? `<div class="info"><span>Pourboires</span><span>+${totalTips.toFixed(2)} €</span></div>` : ''}
     ${totalRemises > 0 ? `<div class="info"><span>Remises fidélité</span><span>-${totalRemises.toFixed(2)} €</span></div>` : ''}
     <div class="info total-row"><span>TOTAL ENCAISSÉ</span><span>${totalEncaisse.toFixed(2)} €</span></div>
+    ${totalTips > 0 ? `<hr class="divider"><div class="info" style="font-weight:800;font-size:1rem"><span>🎒 Dont dons A.P.E à reverser</span><span>${totalTips.toFixed(2)} €</span></div>` : ''}
     <div class="footer">Généré le ${new Date().toLocaleString('fr-FR')}</div>
     </body></html>`;
     const win = window.open('', '_blank');
@@ -1912,13 +1912,27 @@ function CaisseTab() {
         <div style={{ borderTop: '2px solid var(--text)', paddingTop: '0.75rem' }}>
           <div style={rowStyle}><span>Ventes</span><span>{totalCA.toFixed(2)} €</span></div>
           {totalRemises > 0 && <div style={{ ...rowStyle, color: 'var(--green)' }}><span>Remises fidélité</span><span>-{totalRemises.toFixed(2)} €</span></div>}
-          {totalTips > 0 && <div style={{ ...rowStyle, color: 'var(--gold)' }}><span>🙏 Pourboires</span><span>+{totalTips.toFixed(2)} €</span></div>}
           <div style={{ ...totalRowStyle, borderTop: '2px solid var(--text)', marginTop: '0.5rem' }}>
             <span>TOTAL ENCAISSÉ</span>
             <span style={{ color: 'var(--gold)', fontSize: '1.3rem' }}>{totalEncaisse.toFixed(2)} €</span>
           </div>
         </div>
       </div>
+
+      {/* Dons A.P.E - bloc séparé et bien visible */}
+      {totalTips > 0 && (
+        <div style={{ background: '#F0FFF4', border: '2px solid #00C553', borderRadius: 14, padding: '1.2rem', marginBottom: '1rem' }}>
+          <div style={{ fontWeight: 700, fontSize: '0.95rem', color: 'var(--text)', marginBottom: '0.3rem', display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
+            🎒 Dons collectés pour l&apos;A.P.E des écoles de Noisy
+          </div>
+          <div style={{ fontSize: '0.78rem', color: 'var(--text2)', marginBottom: '0.6rem' }}>
+            Ce montant est distinct des ventes et doit être intégralement reversé à l&apos;association.
+          </div>
+          <div style={{ fontSize: '1.8rem', fontWeight: 800, color: '#00C553' }}>
+            {totalTips.toFixed(2)} €
+          </div>
+        </div>
+      )}
 
       {/* Remise à zéro */}
       <div style={{ background: '#FFF5F5', border: '1.5px solid #F5C6CB', borderRadius: 14, padding: '1.2rem' }}>
