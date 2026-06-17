@@ -436,10 +436,13 @@ function PaymentForm({ totalPrice, tableNum, cartItems, comment, consigneAmount,
 
   return (
     <div className="payment-section">
-      {/* POURBOIRE */}
+      {/* DON APE */}
       <div style={{ marginBottom: '1rem', background: 'var(--surface)', borderRadius: 12, padding: '0.9rem' }}>
-        <div style={{ fontSize: '0.85rem', fontWeight: 600, marginBottom: '0.6rem', color: 'var(--text)' }}>
-          🙏 Laisser un pourboire ?
+        <div style={{ fontSize: '0.85rem', fontWeight: 600, marginBottom: '0.2rem', color: 'var(--text)' }}>
+          🎒 Faire un don à l&apos;A.P.E des écoles de Noisy ?
+        </div>
+        <div style={{ fontSize: '0.74rem', color: 'var(--text2)', marginBottom: '0.6rem', lineHeight: 1.4 }}>
+          100% reversé à l&apos;association des parents d&apos;élèves
         </div>
         <div style={{ display: 'flex', gap: '0.4rem', marginBottom: '0.5rem', flexWrap: 'wrap' }}>
           {tipOptions.map(t => (
@@ -467,7 +470,7 @@ function PaymentForm({ totalPrice, tableNum, cartItems, comment, consigneAmount,
         </div>
         {tipAmount > 0 && (
           <div style={{ fontSize: '0.78rem', color: 'var(--green)', fontWeight: 500 }}>
-            ❤️ Merci ! Pourboire de {tipAmount.toFixed(2)} € ajouté
+            ❤️ Merci pour votre don de {tipAmount.toFixed(2)} € à l&apos;A.P.E !
           </div>
         )}
       </div>
