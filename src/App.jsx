@@ -510,11 +510,31 @@ function PaymentForm({ totalPrice, tableNum, cartItems, comment, consigneAmount,
 }
 
 // ─── TABLE SELECTOR ───────────────────────────────────────────────────────────
-function TableSelector({ onSelect, welcomeMsg, installPrompt, appInstalled, setAppInstalled }) {
+function TableSelector({ onSelect, welcomeMsg, installPrompt, appInstalled, setAppInstalled, isClosed = false }) {
   return (
-    <div className="table-select-wrap">
+    <div className="table-select-wrap" style={{ position: 'relative' }}>
       <img src="/logo.png" alt="Noisy en Fête" style={{ width: '140px', maxWidth: '55vw', margin: '0 auto 1.2rem', display: 'block', filter: 'drop-shadow(0 8px 24px rgba(200,149,58,0.3))' }} />
-      {welcomeMsg && (
+
+      {/* Bandeau fermé */}
+      {isClosed && (
+        <div style={{
+          background: 'linear-gradient(135deg, #0B3D0B, #00C553)',
+          borderRadius: 14, padding: '1.1rem 1.25rem',
+          marginBottom: '1.25rem', textAlign: 'center',
+          boxShadow: '0 4px 20px rgba(0,197,83,0.25)',
+        }}>
+          <div style={{ fontSize: '1.8rem', marginBottom: '0.4rem' }}>🦄</div>
+          <div style={{ fontWeight: 800, fontSize: '1rem', color: '#fff', marginBottom: '0.3rem', letterSpacing: '-0.2px' }}>
+            Commandes fermées pour le moment
+          </div>
+          <div style={{ fontSize: '0.78rem', color: 'rgba(255,255,255,0.8)', lineHeight: 1.5 }}>
+            L&apos;app sera disponible lors du prochain événement Noisy en Fête.<br />
+            Revenez nous voir bientôt ! 🎉
+          </div>
+        </div>
+      )}
+
+      {!isClosed && welcomeMsg && (
         <div style={{
           background: 'linear-gradient(135deg, var(--gold), var(--accent2))',
           color: '#000', borderRadius: 12,
@@ -522,37 +542,44 @@ function TableSelector({ onSelect, welcomeMsg, installPrompt, appInstalled, setA
           fontWeight: 600, lineHeight: 1.5, boxShadow: '0 4px 16px rgba(200,149,58,0.3)'
         }}>🎉 {welcomeMsg}</div>
       )}
-      <div style={{ fontSize: "1.5rem", color: 'var(--text)', fontWeight: 800, letterSpacing: '-0.03em' }}>Votre emplacement</div>
-      <p style={{ color: "var(--text2)", fontSize: "0.85rem", marginTop: "0.3rem", fontWeight: 400 }}>Choisissez votre numéro ci-dessous</p>
 
-      {/* Bouton comptoir */}
-      <button onClick={() => onSelect('Comptoir')} style={{
-        width: '100%', marginTop: '1rem', marginBottom: '0.25rem',
-        padding: '0.85rem 1rem',
-        background: 'var(--accent3)',
-        border: '2px solid var(--accent2)',
-        borderRadius: 'var(--r2)',
-        cursor: 'pointer',
-        display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '0.6rem',
-        fontFamily: 'Montserrat, sans-serif',
-        fontWeight: 700, fontSize: '0.95rem',
-        color: 'var(--accent)',
-        transition: 'all 0.15s',
-      }}>
-        <span style={{ fontSize: '1.2rem' }}>🍺</span>
-        Je commande au comptoir
-      </button>
-      <div style={{ display: 'flex', alignItems: 'center', gap: '0.75rem', margin: '0.85rem 0 0.1rem', color: 'var(--text2)', fontSize: '0.75rem', fontWeight: 500 }}>
-        <div style={{ flex: 1, height: 1, background: 'var(--border)' }} />
-        ou choisissez votre emplacement
-        <div style={{ flex: 1, height: 1, background: 'var(--border)' }} />
-      </div>
+      <div style={{ fontSize: "1.5rem", color: 'var(--text)', fontWeight: 800, letterSpacing: '-0.03em', opacity: isClosed ? 0.35 : 1 }}>Votre emplacement</div>
+      <p style={{ color: "var(--text2)", fontSize: "0.85rem", marginTop: "0.3rem", fontWeight: 400, opacity: isClosed ? 0.35 : 1 }}>
+        {isClosed ? 'Disponible lors du prochain événement' : 'Choisissez votre numéro ci-dessous'}
+      </p>
 
-      <div className="table-grid">
+      {!isClosed && (
+        <>
+          <button onClick={() => onSelect('Comptoir')} style={{
+            width: '100%', marginTop: '1rem', marginBottom: '0.25rem',
+            padding: '0.85rem 1rem', background: 'var(--accent3)',
+            border: '2px solid var(--accent2)', borderRadius: 'var(--r2)',
+            cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '0.6rem',
+            fontFamily: 'Montserrat, sans-serif', fontWeight: 700, fontSize: '0.95rem',
+            color: 'var(--accent)', transition: 'all 0.15s',
+          }}>
+            <span style={{ fontSize: '1.2rem' }}>🍺</span>
+            Je commande au comptoir
+          </button>
+          <div style={{ display: 'flex', alignItems: 'center', gap: '0.75rem', margin: '0.85rem 0 0.1rem', color: 'var(--text2)', fontSize: '0.75rem', fontWeight: 500 }}>
+            <div style={{ flex: 1, height: 1, background: 'var(--border)' }} />
+            ou choisissez votre emplacement
+            <div style={{ flex: 1, height: 1, background: 'var(--border)' }} />
+          </div>
+        </>
+      )}
+
+      <div className="table-grid" style={{ opacity: isClosed ? 0.2 : 1, pointerEvents: isClosed ? 'none' : 'auto', marginTop: isClosed ? '0.75rem' : undefined }}>
         {Array.from({ length: 28 }, (_, i) => i + 1).map(n => (
           <button key={n} className="table-btn" onClick={() => onSelect(n)}>{n}</button>
         ))}
       </div>
+
+      {isClosed && (
+        <div style={{ textAlign: 'center', marginTop: '0.75rem', fontSize: '0.75rem', color: 'var(--text2)', fontWeight: 500 }}>
+          🔒 Commandes désactivées
+        </div>
+      )}
     </div>
   );
 }
@@ -1217,8 +1244,8 @@ function ClientView({ installPrompt, appInstalled, setAppInstalled }) {
   const promoAmount = promoDiscount > 0 ? Math.round((basePrice + extrasTotal - loyaltyDiscount) * promoDiscount) / 100 : 0;
   const totalPrice = basePrice + extrasTotal - loyaltyDiscount - promoAmount;
 
-  if (isClosed) return <ClosedBanner closingTime={settings.closing_time || '22:00'} />;
-  if (!tableNum) return <TableSelector onSelect={setTableNum} welcomeMsg={settings.welcome} installPrompt={installPrompt} appInstalled={appInstalled} setAppInstalled={setAppInstalled} />;
+  if (isClosed) return <TableSelector onSelect={() => {}} welcomeMsg={settings.welcome} installPrompt={null} appInstalled={appInstalled} setAppInstalled={setAppInstalled} isClosed={true} />;
+  if (!tableNum) return <TableSelector onSelect={setTableNum} welcomeMsg={settings.welcome} installPrompt={installPrompt} appInstalled={appInstalled} setAppInstalled={setAppInstalled} isClosed={false} />;
 
   // Si suivi activé et commande passée → afficher le tracking
   if (success && settings.tracking_active === 'true') return (
@@ -3178,32 +3205,63 @@ function ConfigTab() {
     <div>
       <div className="section-title">🛠 Configuration de la soirée</div>
 
-      {/* Statut ouvert/fermé */}
-      <div style={{ background: isClosed ? '#FFF5F5' : '#F0FFF4', border: `2px solid ${isClosed ? '#F5C6CB' : '#C3E6CB'}`, borderRadius: 14, padding: '1.2rem', marginBottom: '1rem' }}>
-        <div style={{ fontWeight: 700, fontSize: '1rem', color: isClosed ? 'var(--red)' : 'var(--green)', marginBottom: '0.3rem' }}>
-          {isClosed ? '🔒 Commandes fermées' : '✅ Commandes ouvertes'}
+      {/* Statut ouvert/fermé - Bouton ON/OFF */}
+      <div style={{
+        background: isClosed ? '#FFF5F5' : '#F0FFF4',
+        border: `2px solid ${isClosed ? '#FECACA' : '#86EFAC'}`,
+        borderRadius: 16, padding: '1.25rem', marginBottom: '1rem'
+      }}>
+        <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: '1rem' }}>
+          <div>
+            <div style={{ fontWeight: 800, fontSize: '1.05rem', color: isClosed ? '#DC2626' : '#16A34A', marginBottom: '0.25rem', display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
+              <span style={{ fontSize: '1.2rem' }}>{isClosed ? '🔒' : '🟢'}</span>
+              {isClosed ? 'Commandes fermées' : 'Commandes ouvertes'}
+            </div>
+            <div style={{ fontSize: '0.78rem', color: 'var(--text2)', lineHeight: 1.5 }}>
+              {isClosed
+                ? 'Les clients voient un message de fermeture et ne peuvent pas commander.'
+                : 'Les clients peuvent passer commande normalement.'}
+            </div>
+          </div>
+
+          {/* Toggle ON/OFF */}
+          <div
+            onClick={() => saveSetting('closed', isClosed ? 'false' : 'true')}
+            style={{
+              width: 64, height: 34, borderRadius: 100,
+              background: isClosed ? '#FCA5A5' : '#4ADE80',
+              cursor: 'pointer', position: 'relative',
+              transition: 'background 0.3s ease',
+              flexShrink: 0,
+              boxShadow: isClosed ? '0 2px 8px rgba(220,38,38,0.3)' : '0 2px 8px rgba(74,222,128,0.4)',
+            }}
+          >
+            <div style={{
+              position: 'absolute', top: 3,
+              left: isClosed ? 3 : 33,
+              width: 28, height: 28, borderRadius: '50%',
+              background: '#fff',
+              boxShadow: '0 2px 6px rgba(0,0,0,0.2)',
+              transition: 'left 0.3s ease',
+              display: 'flex', alignItems: 'center', justifyContent: 'center',
+              fontSize: '0.85rem'
+            }}>
+              {isClosed ? '🔒' : '✅'}
+            </div>
+          </div>
         </div>
-        <div style={{ fontSize: '0.78rem', color: 'var(--text2)', marginBottom: '0.9rem' }}>
+
+        {/* Confirmation visuelle */}
+        <div style={{
+          marginTop: '0.85rem', padding: '0.6rem 0.9rem',
+          background: isClosed ? 'rgba(220,38,38,0.08)' : 'rgba(22,163,74,0.08)',
+          borderRadius: 8, fontSize: '0.75rem', fontWeight: 600,
+          color: isClosed ? '#DC2626' : '#16A34A',
+          display: 'flex', alignItems: 'center', gap: '0.4rem'
+        }}>
           {isClosed
-            ? 'Les clients ne peuvent plus passer de commande.'
-            : 'Les clients peuvent commander normalement.'}
-        </div>
-        <div style={{ display: 'flex', gap: '0.5rem', flexWrap: 'wrap' }}>
-          <button onClick={() => saveSetting('closed', 'false')} style={{
-            flex: 1, minWidth: 140, padding: '0.7rem 1rem', borderRadius: 8, border: 'none', cursor: 'pointer',
-            fontWeight: 700, fontFamily: "'DM Sans', sans-serif", fontSize: '0.85rem',
-            background: 'var(--green)', color: 'white',
-            opacity: !isClosed ? 0.5 : 1
-          }}>🟢 Forcer l&apos;ouverture</button>
-          <button onClick={() => saveSetting('closed', 'true')} style={{
-            flex: 1, minWidth: 140, padding: '0.7rem 1rem', borderRadius: 8, border: 'none', cursor: 'pointer',
-            fontWeight: 700, fontFamily: "'DM Sans', sans-serif", fontSize: '0.85rem',
-            background: 'var(--red)', color: 'white',
-            opacity: isClosed ? 0.5 : 1
-          }}>🔴 Fermer maintenant</button>
-        </div>
-        <div style={{ fontSize: '0.72rem', color: 'var(--text2)', marginTop: '0.6rem' }}>
-          💡 &quot;Forcer l&apos;ouverture&quot; ignore l&apos;heure de fermeture automatique
+            ? '⚠️ Appuyez sur le bouton pour rouvrir les commandes'
+            : '💡 Appuyez sur le bouton pour fermer les commandes'}
         </div>
       </div>
 
@@ -3543,6 +3601,46 @@ function AdminView() {
         <div className="stat-card"><div className="stat-num">{pending}</div><div className="stat-label">En cours</div></div>
         <div className="stat-card"><div className="stat-num">{totalRevenue.toFixed(0)} €</div><div className="stat-label">CA total</div></div>
       </div>
+
+      {/* Bouton ON/OFF rapide */}
+      {(() => {
+        const isClosed = settings.closed === 'true';
+        return (
+          <div
+            onClick={() => saveSetting('closed', isClosed ? 'false' : 'true')}
+            style={{
+              display: 'flex', alignItems: 'center', justifyContent: 'space-between',
+              padding: '1rem 1.25rem', borderRadius: 14, marginBottom: '1.25rem', cursor: 'pointer',
+              background: isClosed ? '#FFF5F5' : '#F0FFF4',
+              border: `2px solid ${isClosed ? '#FECACA' : '#86EFAC'}`,
+              transition: 'all 0.2s',
+              userSelect: 'none',
+            }}
+          >
+            <div>
+              <div style={{ fontWeight: 800, fontSize: '0.95rem', color: isClosed ? '#DC2626' : '#16A34A' }}>
+                {isClosed ? '🔒 Commandes fermées' : '🟢 Commandes ouvertes'}
+              </div>
+              <div style={{ fontSize: '0.72rem', color: 'var(--text2)', marginTop: '0.15rem' }}>
+                {isClosed ? 'Appuyez pour rouvrir' : 'Appuyez pour fermer'}
+              </div>
+            </div>
+            <div style={{
+              width: 52, height: 28, borderRadius: 100,
+              background: isClosed ? '#FCA5A5' : '#4ADE80',
+              position: 'relative', transition: 'background 0.3s', flexShrink: 0,
+            }}>
+              <div style={{
+                position: 'absolute', top: 2,
+                left: isClosed ? 2 : 26,
+                width: 24, height: 24, borderRadius: '50%',
+                background: '#fff', boxShadow: '0 1px 4px rgba(0,0,0,0.2)',
+                transition: 'left 0.3s',
+              }} />
+            </div>
+          </div>
+        );
+      })()}
 
       <div style={{ display: 'flex', gap: '0.5rem', margin: '1.5rem 0 1rem', flexWrap: 'wrap' }}>
         <button style={tabStyle('menu')} onClick={() => setActiveTab('menu')}>🍽 Menu</button>
