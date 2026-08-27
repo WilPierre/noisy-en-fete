@@ -1244,8 +1244,7 @@ function ClientView({ installPrompt, appInstalled, setAppInstalled }) {
   const promoAmount = promoDiscount > 0 ? Math.round((basePrice + extrasTotal - loyaltyDiscount) * promoDiscount) / 100 : 0;
   const totalPrice = basePrice + extrasTotal - loyaltyDiscount - promoAmount;
 
-  if (isClosed) return <TableSelector onSelect={() => {}} welcomeMsg={settings.welcome} installPrompt={null} appInstalled={appInstalled} setAppInstalled={setAppInstalled} isClosed={true} />;
-  if (!tableNum) return <TableSelector onSelect={setTableNum} welcomeMsg={settings.welcome} installPrompt={installPrompt} appInstalled={appInstalled} setAppInstalled={setAppInstalled} isClosed={false} />;
+  if (!tableNum) return <TableSelector onSelect={isClosed ? () => {} : setTableNum} welcomeMsg={settings.welcome} installPrompt={installPrompt} appInstalled={appInstalled} setAppInstalled={setAppInstalled} isClosed={isClosed} />;
 
   // Si suivi activé et commande passée → afficher le tracking
   if (success && settings.tracking_active === 'true') return (
