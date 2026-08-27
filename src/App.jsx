@@ -719,7 +719,10 @@ const _settingsStore = {
 
 // Charger au démarrage
 _settingsStore.load().then(() => {
-  if (_settingsStore.data.staff_pin) STAFF_PIN = _settingsStore.data.staff_pin;
+  const storedPin = _settingsStore.data.staff_pin;
+  if (storedPin && storedPin.length >= 4 && /^\d+$/.test(storedPin)) {
+    STAFF_PIN = storedPin;
+  }
 });
 _settingsStore.startRealtime();
 
@@ -3451,6 +3454,7 @@ function AdminView() {
   const [activeTab, setActiveTab] = useState('menu');
   const [resetting, setResetting] = useState(false);
   const appUrl = window.location.origin;
+  const settings = useSettings();
 
   const loadOrders = () => supabase.from('orders').select('*').then(({ data }) => data && setOrders(data));
 
@@ -4151,6 +4155,32 @@ export default function App() {
         {view === 'kitchen' && <KitchenView />}
         {view === 'admin' && <AdminView />}
         <footer style={{
+          padding: '1rem 1.5rem', fontSize: '0.72rem',
+          color: 'var(--text2)', borderTop: '1px solid var(--border)',
+          marginTop: '2rem', display: 'flex', alignItems: 'center',
+          justifyContent: 'center', gap: '0.5rem', flexWrap: 'wrap'
+        }}>
+          <a href="https://noisyenfete.fr" target="_blank" rel="noreferrer"
+            style={{ color: 'var(--accent2)', fontWeight: 700, textDecoration: 'none' }}>
+            noisyenfete.fr
+          </a>
+          <span style={{ color: 'var(--border)' }}>·</span>
+          <a href="mailto:noisyenfete@gmail.com"
+            style={{ color: 'var(--accent2)', fontWeight: 600, textDecoration: 'none' }}>
+            Prendre contact
+          </a>
+        </footer>
+        {pinTarget && (
+          <PinModal
+            title={pinTarget === 'kitchen' ? 'Accès Cuisine' : 'Accès Administration'}
+            onSuccess={() => { setView(pinTarget); setPinTarget(null); }}
+            onClose={() => setPinTarget(null)}
+          />
+        )}
+      </div>
+    </>
+  );
+}
           padding: '1rem 1.5rem', fontSize: '0.72rem',
           color: 'var(--text2)', borderTop: '1px solid var(--border)',
           marginTop: '2rem', display: 'flex', alignItems: 'center',
