@@ -4181,29 +4181,3 @@ export default function App() {
     </>
   );
 }
-          padding: '1rem 1.5rem', fontSize: '0.72rem',
-          color: 'var(--text2)', borderTop: '1px solid var(--border)',
-          marginTop: '2rem', display: 'flex', alignItems: 'center',
-          justifyContent: 'center', gap: '0.5rem', flexWrap: 'wrap'
-        }}>
-          <a href="https://noisyenfete.fr" target="_blank" rel="noreferrer"
-            style={{ color: 'var(--accent2)', fontWeight: 700, textDecoration: 'none' }}>
-            noisyenfete.fr
-          </a>
-          <span style={{ color: 'var(--border)' }}>·</span>
-          <a href="mailto:noisyenfete@gmail.com"
-            style={{ color: 'var(--accent2)', fontWeight: 600, textDecoration: 'none' }}>
-            Prendre contact
-          </a>
-        </footer>
-        {pinTarget && (
-          <PinModal
-            title={pinTarget === 'kitchen' ? 'Accès Cuisine' : 'Accès Administration'}
-            onSuccess={() => { setView(pinTarget); setPinTarget(null); }}
-            onClose={() => setPinTarget(null)}
-          />
-        )}
-      </div>
-    </>
-  );
-}
