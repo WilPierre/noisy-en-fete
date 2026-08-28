@@ -561,10 +561,10 @@ function TableSelector({ onSelect, welcomeMsg, installPrompt, appInstalled, setA
             <span style={{ fontSize: '1.2rem' }}>🍺</span>
             Je commande au comptoir
           </button>
-          <div style={{ display: 'flex', alignItems: 'center', gap: '0.75rem', margin: '0.85rem 0 0.1rem', color: 'var(--text2)', fontSize: '0.75rem', fontWeight: 500 }}>
-            <div style={{ flex: 1, height: 1, background: 'var(--border)' }} />
+          <div style={{ display: 'flex', alignItems: 'center', gap: '0.75rem', margin: '0.85rem 0 0.1rem', color: 'var(--text)', fontSize: '0.82rem', fontWeight: 700, letterSpacing: '-0.1px' }}>
+            <div style={{ flex: 1, height: 1.5, background: 'var(--border)' }} />
             ou choisissez votre emplacement
-            <div style={{ flex: 1, height: 1, background: 'var(--border)' }} />
+            <div style={{ flex: 1, height: 1.5, background: 'var(--border)' }} />
           </div>
         </>
       )}
@@ -1477,10 +1477,10 @@ function ClientView({ installPrompt, appInstalled, setAppInstalled }) {
               Je paie au comptoir — {totalPrice.toFixed(2)} €
             </button>
 
-            <div style={{ display: 'flex', alignItems: 'center', gap: '0.75rem', marginBottom: '1rem', color: 'var(--text2)', fontSize: '0.72rem', fontWeight: 500 }}>
-              <div style={{ flex: 1, height: 1, background: 'var(--border)' }} />
+            <div style={{ display: 'flex', alignItems: 'center', gap: '0.75rem', marginBottom: '1rem', color: 'var(--text)', fontSize: '0.82rem', fontWeight: 700, letterSpacing: '-0.1px' }}>
+              <div style={{ flex: 1, height: 1.5, background: 'var(--border)' }} />
               ou payer par carte
-              <div style={{ flex: 1, height: 1, background: 'var(--border)' }} />
+              <div style={{ flex: 1, height: 1.5, background: 'var(--border)' }} />
             </div>
             {cartItems.map((item, i) => (
               <div key={i}>
