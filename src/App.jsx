@@ -1450,7 +1450,38 @@ function ClientView({ installPrompt, appInstalled, setAppInstalled }) {
         <div className="modal-overlay" onClick={e => e.target === e.currentTarget && setShowCart(false)}>
           <div className="modal">
             <div className="modal-handle" />
-            <div className="modal-title">Ma commande — Table {tableNum}</div>
+            <div className="modal-title">Ma commande — {tableNum === 'Comptoir' ? 'Comptoir' : `Table ${tableNum}`}</div>
+
+            {/* BOUTON PAYER AU COMPTOIR */}
+            <button onClick={async () => {
+              const items = cartItems.map(i => ({ name: i.name, qty: i.qty, price: i.price, emoji: i.emoji, free: i.free || 0 }));
+              const { data, error } = await supabase.from('orders').insert({
+                table_num: tableNum, items, total: totalPrice, tip: 0,
+                comment: comment ? `[COMPTOIR] ${comment}` : '[COMPTOIR] Paiement en liquide au comptoir',
+                consigne: consigneAmount || 0, consigne_liquide: true,
+                paid: true, status: 'en attente'
+              }).select().single();
+              if (!error && data) {
+                setOrderId(data.id); setSuccess(true); setCart({});
+                setShowCart(false); setComment(''); setPromoDiscount(0); setConsigneLiquide(false);
+              }
+            }} style={{
+              width: '100%', padding: '0.9rem', marginBottom: '1rem',
+              background: 'var(--accent3)', border: '2px solid var(--accent2)',
+              borderRadius: 12, cursor: 'pointer',
+              display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '0.6rem',
+              fontFamily: 'Montserrat, sans-serif', fontWeight: 700, fontSize: '0.9rem',
+              color: 'var(--accent)',
+            }}>
+              <span style={{ fontSize: '1.1rem' }}>💵</span>
+              Je paie au comptoir — {totalPrice.toFixed(2)} €
+            </button>
+
+            <div style={{ display: 'flex', alignItems: 'center', gap: '0.75rem', marginBottom: '1rem', color: 'var(--text2)', fontSize: '0.72rem', fontWeight: 500 }}>
+              <div style={{ flex: 1, height: 1, background: 'var(--border)' }} />
+              ou payer par carte
+              <div style={{ flex: 1, height: 1, background: 'var(--border)' }} />
+            </div>
             {cartItems.map((item, i) => (
               <div key={i}>
                 <div className="cart-line">
