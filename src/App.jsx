@@ -1215,7 +1215,25 @@ function ClientView({ installPrompt, appInstalled, setAppInstalled }) {
   const filtered = activeTab === 'Tous' ? menu : menu.filter(i => i.category === activeTab);
   const totalItems = Object.values(cart).reduce((s, q) => s + q, 0);
   const basePrice = menu.reduce((s, item) => s + (cart[item.id] || 0) * item.price, 0);
-  const setQty = (id, qty) => setCart(c => ({ ...c, [id]: Math.max(0, qty) }));
+  const setQty = (id, qty) => setCart(c => {
+    const it = menu.find(m => m.id === id);
+    const max = it && it.stock !== null && it.stock !== undefined ? it.stock : Infinity;
+    return { ...c, [id]: Math.min(max, Math.max(0, qty)) };
+  });
+  const decrementStock = async (cartNow) => {
+    for (const it of menu) {
+      const q = cartNow[it.id] || 0;
+      if (q > 0 && it.stock !== null && it.stock !== undefined) {
+        const { data } = await supabase.from('menu').select('stock').eq('id', it.id).single();
+        if (data && data.stock !== null && data.stock !== undefined) {
+          const ns = Math.max(0, data.stock - q);
+          await supabase.from('menu').update({ stock: ns, available: ns > 0 }).eq('id', it.id);
+        }
+      }
+    }
+    const { data: fresh } = await supabase.from('menu').select('*').eq('available', true).order('position', { ascending: true, nullsFirst: false });
+    if (fresh) setMenu(fresh);
+  };
   const extrasTotal = Object.entries(selectedExtras).reduce((sum, [id, exs]) => {
     const qty = cart[parseInt(id)] || 0;
     return sum + qty * exs.reduce((s, e) => s + Number(e.price), 0);
@@ -1411,10 +1429,13 @@ function ClientView({ installPrompt, appInstalled, setAppInstalled }) {
                       );
                     })()}
                   </div>
+                  {item.stock !== null && item.stock !== undefined && item.stock <= 10 && (
+                    <div style={{ fontSize: '0.68rem', fontWeight: 700, color: '#C2410C', textAlign: 'right', marginBottom: 2 }}>Plus que {item.stock}</div>
+                  )}
                   <div className="qty-ctrl">
                     <button className="qty-btn" onClick={() => setQty(item.id, (cart[item.id] || 0) - 1)}>−</button>
                     <span className="qty-num">{cart[item.id] || 0}</span>
-                    <button className="qty-btn" onClick={() => setQty(item.id, (cart[item.id] || 0) + 1)}>+</button>
+                    <button className="qty-btn" disabled={item.stock !== null && item.stock !== undefined && (cart[item.id] || 0) >= item.stock} style={item.stock !== null && item.stock !== undefined && (cart[item.id] || 0) >= item.stock ? { opacity: 0.35 } : undefined} onClick={() => setQty(item.id, (cart[item.id] || 0) + 1)}>+</button>
                   </div>
                 </div>
                 {cart[item.id] > 0 && item.extras && item.extras.length > 0 && (
@@ -1545,7 +1566,7 @@ function ClientView({ installPrompt, appInstalled, setAppInstalled }) {
                 comment={comment}
                 consigneAmount={consigneAmount}
                 consigneLiquide={consigneLiquide}
-                onSuccess={(id) => { setOrderId(id); setSuccess(true); setCart({}); setShowCart(false); setComment(''); setPromoDiscount(0); setConsigneLiquide(false); }}
+                onSuccess={(id) => { decrementStock(cart); setOrderId(id); setSuccess(true); setCart({}); setShowCart(false); setComment(''); setPromoDiscount(0); setConsigneLiquide(false); }}
               />
             </Elements>
           </div>
@@ -3848,13 +3869,16 @@ function AdminView() {
                     }}
                     title="Réduire le stock (à 0 = illimité)"
                     style={{ width: 20, height: 20, border: 'none', background: 'none', cursor: 'pointer', fontWeight: 700, fontSize: '1rem', color: 'var(--text)' }}>−</button>
-                  <span
-                    style={{ minWidth: 28, textAlign: 'center', fontSize: '0.82rem', fontWeight: 600, cursor: 'pointer', color: item.stock === null || item.stock === undefined ? 'var(--green)' : 'var(--text)' }}
-                    title="Cliquer pour basculer illimité/limité"
-                    onClick={() => updateStock(item, item.stock === null || item.stock === undefined ? 10 : null)}
-                  >
-                    {item.stock === null || item.stock === undefined ? '∞' : item.stock}
-                  </span>
+                  <input type="number" min="0" key={String(item.stock)}
+                    defaultValue={item.stock === null || item.stock === undefined ? '' : item.stock}
+                    placeholder="∞" title="Quantité disponible (vide = illimité)"
+                    onBlur={e => {
+                      const v = e.target.value.trim();
+                      const nv = v === '' ? null : Math.max(0, parseInt(v) || 0);
+                      if (nv !== (item.stock ?? null)) updateStock(item, nv, true);
+                    }}
+                    onKeyDown={e => { if (e.key === 'Enter') e.target.blur(); }}
+                    style={{ width: 46, textAlign: 'center', fontSize: '0.82rem', fontWeight: 600, border: 'none', background: 'transparent', color: 'var(--text)', outline: 'none' }} />
                   <button onClick={() => updateStock(item, (item.stock ?? 0) + 1)} style={{ width: 20, height: 20, border: 'none', background: 'none', cursor: 'pointer', fontWeight: 700, fontSize: '1rem', color: 'var(--text)' }}>+</button>
                 </div>
                 <button className={`avail-toggle ${item.available ? 'on' : 'off'}`} onClick={() => toggleAvail(item)}>
