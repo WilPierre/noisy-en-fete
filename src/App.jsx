@@ -512,6 +512,10 @@ function PaymentForm({ totalPrice, tableNum, cartItems, comment, consigneAmount,
 
 // ─── TABLE SELECTOR ───────────────────────────────────────────────────────────
 function TableSelector({ onSelect, welcomeMsg, installPrompt, appInstalled, setAppInstalled, isClosed = false }) {
+  const tsettings = useSettings();
+  const tablesCount = Math.min(200, Math.max(1, parseInt(tsettings.tables_count) || 28));
+  let tableNames = {};
+  try { tableNames = JSON.parse(tsettings.tables_names || '{}') || {}; } catch (e) { tableNames = {}; }
   return (
     <div className="table-select-wrap" style={{ position: 'relative' }}>
       <img src="/logo.png" alt="Noisy en Fête" style={{ width: '140px', maxWidth: '55vw', margin: '0 auto 1.2rem', display: 'block', filter: 'drop-shadow(0 8px 24px rgba(200,149,58,0.3))' }} />
@@ -571,8 +575,12 @@ function TableSelector({ onSelect, welcomeMsg, installPrompt, appInstalled, setA
       )}
 
       <div className="table-grid" style={{ opacity: isClosed ? 0.2 : 1, pointerEvents: isClosed ? 'none' : 'auto', marginTop: isClosed ? '0.75rem' : undefined }}>
-        {Array.from({ length: 28 }, (_, i) => i + 1).map(n => (
-          <button key={n} className="table-btn" onClick={() => onSelect(n)}>{n}</button>
+        {Array.from({ length: tablesCount }, (_, i) => i + 1).map(n => (
+          <button key={n} className="table-btn" onClick={() => onSelect(n)}
+            style={tableNames[n] ? { display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', lineHeight: 1.1, gap: 2 } : undefined}>
+            <span>{n}</span>
+            {tableNames[n] && <span style={{ fontSize: '0.55rem', fontWeight: 600, opacity: 0.75, maxWidth: '100%', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap', padding: '0 2px' }}>{tableNames[n]}</span>}
+          </button>
         ))}
       </div>
 
@@ -3176,6 +3184,14 @@ function ConfigTab() {
   const [loyaltyActive, setLoyaltyActive] = useState(false);
   const [loyaltyMenu, setLoyaltyMenu] = useState([]);
   const [saved, setSaved] = useState(false);
+  const [tablesCount, setTablesCount] = useState('28');
+  const [tablesNames, setTablesNames] = useState({});
+  const [showNames, setShowNames] = useState(false);
+
+  useEffect(() => {
+    setTablesCount(settings.tables_count || '28');
+    try { setTablesNames(JSON.parse(settings.tables_names || '{}') || {}); } catch (e) { setTablesNames({}); }
+  }, [settings.tables_count, settings.tables_names]);
 
   useEffect(() => {
     setWelcome(settings.welcome || '');
@@ -3197,6 +3213,11 @@ function ConfigTab() {
     await saveSetting('consigne_prix', consignePrix);
     await saveSetting('consigne_produits', consigneProduits);
     await saveSetting('closing_time', closingTime);
+    const nTables = Math.min(200, Math.max(1, parseInt(tablesCount) || 28));
+    const cleanNames = {};
+    Object.entries(tablesNames).forEach(([k, v]) => { if (v && v.trim() && Number(k) <= nTables) cleanNames[k] = v.trim(); });
+    await saveSetting('tables_count', String(nTables));
+    await saveSetting('tables_names', JSON.stringify(cleanNames));
     await saveSetting('loyalty_item', loyaltyItem);
     await saveSetting('loyalty_every', loyaltyEvery);
     await saveSetting('loyalty_active', loyaltyActive ? 'true' : 'false');
@@ -3266,6 +3287,33 @@ function ConfigTab() {
             ? '⚠️ Appuyez sur le bouton pour rouvrir les commandes'
             : '💡 Appuyez sur le bouton pour fermer les commandes'}
         </div>
+      </div>
+
+      {/* Tables */}
+      <div style={{ background: 'var(--surface)', border: '1.5px solid var(--border)', borderRadius: 16, padding: '1.25rem', marginBottom: '1rem' }}>
+        <div style={{ fontWeight: 600, marginBottom: '0.3rem' }}>🪑 Tables / emplacements</div>
+        <div style={{ fontSize: '0.75rem', color: 'var(--text2)', marginBottom: '0.75rem' }}>Nombre affiché sur la page d'accueil des commandes (1 à 200). Pense à cliquer sur « Sauvegarder » en bas.</div>
+        <div style={{ display: 'flex', alignItems: 'center', gap: '0.6rem', marginBottom: '0.75rem' }}>
+          <span style={{ fontSize: '0.85rem' }}>Nombre de tables :</span>
+          <input type="number" min="1" max="200" value={tablesCount} onChange={e => setTablesCount(e.target.value)}
+            style={{ width: 80, padding: '0.5rem', borderRadius: 8, border: '1.5px solid var(--border)', fontSize: '1rem', background: 'var(--bg)', color: 'var(--text)' }} />
+        </div>
+        <button onClick={() => setShowNames(v => !v)}
+          style={{ padding: '0.45rem 0.8rem', borderRadius: 8, border: '1.5px solid var(--border)', background: 'var(--bg)', color: 'var(--text)', cursor: 'pointer', fontSize: '0.8rem', fontWeight: 600 }}>
+          {showNames ? '▲ Masquer les noms' : '✏️ Donner un nom aux tables (optionnel)'}
+        </button>
+        {showNames && (
+          <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(200px, 1fr))', gap: '0.5rem', marginTop: '0.75rem' }}>
+            {Array.from({ length: Math.min(200, Math.max(1, parseInt(tablesCount) || 1)) }, (_, i) => i + 1).map(n => (
+              <div key={n} style={{ display: 'flex', alignItems: 'center', gap: '0.4rem' }}>
+                <span style={{ width: 26, fontWeight: 700, fontSize: '0.85rem' }}>{n}</span>
+                <input type="text" maxLength={14} placeholder="Nom (ex: Terrasse)" value={tablesNames[n] || ''}
+                  onChange={e => setTablesNames(p => ({ ...p, [n]: e.target.value }))}
+                  style={{ flex: 1, minWidth: 0, padding: '0.4rem', borderRadius: 8, border: '1.5px solid var(--border)', fontSize: '0.8rem', background: 'var(--bg)', color: 'var(--text)' }} />
+              </div>
+            ))}
+          </div>
+        )}
       </div>
 
       {/* Heure de fermeture automatique */}
