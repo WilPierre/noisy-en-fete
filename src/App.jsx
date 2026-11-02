@@ -397,9 +397,16 @@ function PaymentForm({ totalPrice, tableNum, cartItems, comment, consigneAmount,
   const [tip, setTip] = useState(0);
   const [customTip, setCustomTip] = useState('');
 
-  const tipAmount = customTip !== '' ? parseFloat(customTip) || 0 : tip;
+  const [tipNef, setTipNef] = useState(0);
+  const [customTipNef, setCustomTipNef] = useState('');
+  const paySettings = useSettings();
+  const apeActive = paySettings.don_ape_active !== 'false';
+  const nefActive = paySettings.don_nef_active === 'true';
+
+  const tipAmount = !apeActive ? 0 : (customTip !== '' ? Math.max(0, parseFloat(customTip) || 0) : tip);
+  const tipNefAmount = !nefActive ? 0 : (customTipNef !== '' ? Math.max(0, parseFloat(customTipNef) || 0) : tipNef);
   const consignePayee = consigneAmount > 0 && !consigneLiquide ? consigneAmount : 0;
-  const grandTotal = totalPrice + tipAmount + consignePayee;
+  const grandTotal = totalPrice + tipAmount + tipNefAmount + consignePayee;
 
   const handlePay = async () => {
     if (!stripe || !elements) return;
@@ -408,7 +415,7 @@ function PaymentForm({ totalPrice, tableNum, cartItems, comment, consigneAmount,
     try {
       const { data: order, error: dbErr } = await supabase
         .from('orders')
-        .insert({ table_num: tableNum, items: cartItems, total: totalPrice, tip: tipAmount, comment: comment || '', consigne: consigneAmount || 0, consigne_liquide: consigneLiquide || false, paid: false, status: 'en attente paiement' })
+        .insert({ table_num: tableNum, items: cartItems, total: totalPrice, tip: tipAmount, ...(tipNefAmount > 0 ? { tip_nef: tipNefAmount } : {}), comment: comment || '', consigne: consigneAmount || 0, consigne_liquide: consigneLiquide || false, paid: false, status: 'en attente paiement' })
         .select().single();
       if (dbErr) throw new Error('Erreur base de données');
 
@@ -435,46 +442,47 @@ function PaymentForm({ totalPrice, tableNum, cartItems, comment, consigneAmount,
 
   const tipOptions = [0, 1, 2, 5];
 
-  return (
-    <div className="payment-section">
-      {/* DON APE */}
+  const renderDon = (title, subtitle, value, setValue, custom, setCustom, merci) => {
+    const amount = custom !== '' ? Math.max(0, parseFloat(custom) || 0) : value;
+    return (
       <div style={{ marginBottom: '1rem', background: 'var(--surface)', borderRadius: 12, padding: '0.9rem' }}>
-        <div style={{ fontSize: '0.85rem', fontWeight: 600, marginBottom: '0.2rem', color: 'var(--text)' }}>
-          🎒 Faire un don à l&apos;A.P.E des écoles de Noisy ?
-        </div>
-        <div style={{ fontSize: '0.74rem', color: 'var(--text2)', marginBottom: '0.6rem', lineHeight: 1.4 }}>
-          100% reversé à l&apos;association des parents d&apos;élèves
-        </div>
+        <div style={{ fontSize: '0.85rem', fontWeight: 600, marginBottom: '0.2rem', color: 'var(--text)' }}>{title}</div>
+        <div style={{ fontSize: '0.74rem', color: 'var(--text2)', marginBottom: '0.6rem', lineHeight: 1.4 }}>{subtitle}</div>
         <div style={{ display: 'flex', gap: '0.4rem', marginBottom: '0.5rem', flexWrap: 'wrap' }}>
           {tipOptions.map(t => (
-            <button key={t} onClick={() => { setTip(t); setCustomTip(''); }}
+            <button key={t} onClick={() => { setValue(t); setCustom(''); }}
               style={{
                 flex: 1, minWidth: 48, padding: '0.45rem 0.3rem', borderRadius: 8, cursor: 'pointer',
-                border: tip === t && customTip === '' ? '2px solid var(--gold)' : '1.5px solid var(--border)',
-                background: tip === t && customTip === '' ? '#FFF8EE' : 'white',
-                fontWeight: 600, fontSize: '0.82rem', fontFamily: "'DM Sans', sans-serif",
-                transition: 'all 0.15s'
+                border: value === t && custom === '' ? '2px solid var(--gold)' : '1.5px solid var(--border)',
+                background: value === t && custom === '' ? '#FFF8EE' : 'white',
+                fontWeight: 600, fontSize: '0.82rem', fontFamily: "'DM Sans', sans-serif", transition: 'all 0.15s'
               }}>
               {t === 0 ? 'Non' : `${t} €`}
             </button>
           ))}
-          <input
-            type="number" placeholder="Autre €" value={customTip}
-            onChange={e => { setCustomTip(e.target.value); setTip(0); }}
+          <input type="number" placeholder="Autre €" value={custom}
+            onChange={e => { setCustom(e.target.value); setValue(0); }}
             style={{
               flex: 1, minWidth: 64, padding: '0.45rem 0.5rem', borderRadius: 8, textAlign: 'center',
-              border: customTip !== '' ? '2px solid var(--gold)' : '1.5px solid var(--border)',
-              background: customTip !== '' ? '#FFF8EE' : 'white',
+              border: custom !== '' ? '2px solid var(--gold)' : '1.5px solid var(--border)',
+              background: custom !== '' ? '#FFF8EE' : 'white',
               fontFamily: "'DM Sans', sans-serif", fontSize: '0.82rem', outline: 'none'
-            }}
-          />
+            }} />
         </div>
-        {tipAmount > 0 && (
+        {amount > 0 && (
           <div style={{ fontSize: '0.78rem', color: 'var(--green)', fontWeight: 500 }}>
-            ❤️ Merci pour votre don de {tipAmount.toFixed(2)} € à l&apos;A.P.E !
+            ❤️ Merci pour votre don de {amount.toFixed(2)} € {merci} !
           </div>
         )}
       </div>
+    );
+  };
+
+  return (
+    <div className="payment-section">
+      {/* DONS */}
+      {apeActive && renderDon('🎒 Faire un don à l\u2019A.P.E des écoles de Noisy ?', '100% reversé à l\u2019association des parents d\u2019élèves', tip, setTip, customTip, setCustomTip, 'à l\u2019A.P.E')}
+      {nefActive && renderDon('🎉 Faire un don à Noisy en Fête ?', 'Pour aider l\u2019association à organiser les prochains événements', tipNef, setTipNef, customTipNef, setCustomTipNef, 'à Noisy en Fête')}
 
       <div className="payment-title">💳 Paiement sécurisé par carte</div>
       <div className="card-icons">
@@ -3226,6 +3234,8 @@ function ConfigTab() {
   const [tablesCount, setTablesCount] = useState('28');
   const [tablesNames, setTablesNames] = useState({});
   const [showNames, setShowNames] = useState(false);
+  const apeOn = settings.don_ape_active !== 'false';
+  const nefOn = settings.don_nef_active === 'true';
 
   useEffect(() => {
     setTablesCount(settings.tables_count || '28');
@@ -3326,6 +3336,21 @@ function ConfigTab() {
             ? '⚠️ Appuyez sur le bouton pour rouvrir les commandes'
             : '💡 Appuyez sur le bouton pour fermer les commandes'}
         </div>
+      </div>
+
+      {/* Dons */}
+      <div style={{ background: 'var(--surface)', border: '1.5px solid var(--border)', borderRadius: 16, padding: '1.25rem', marginBottom: '1rem' }}>
+        <div style={{ fontWeight: 600, marginBottom: '0.3rem' }}>💝 Dons au moment du paiement</div>
+        <div style={{ fontSize: '0.75rem', color: 'var(--text2)', marginBottom: '0.75rem' }}>Active ou désactive chaque proposition de don (effet immédiat).</div>
+        {[['🎒 Don à l\u2019A.P.E des écoles', apeOn, 'don_ape_active'], ['🎉 Don à Noisy en Fête', nefOn, 'don_nef_active']].map(([label, on, key]) => (
+          <div key={key} style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', padding: '0.5rem 0', borderTop: '1px solid var(--border)' }}>
+            <span style={{ fontSize: '0.88rem' }}>{label}</span>
+            <button onClick={() => saveSetting(key, on ? 'false' : 'true')}
+              style={{ padding: '0.45rem 1rem', borderRadius: 20, border: 'none', cursor: 'pointer', fontWeight: 700, fontSize: '0.8rem', background: on ? '#00C553' : '#CCC', color: on ? '#fff' : '#555' }}>
+              {on ? 'ON' : 'OFF'}
+            </button>
+          </div>
+        ))}
       </div>
 
       {/* Tables */}
@@ -4025,14 +4050,20 @@ function AdminView() {
             </div>
             {(() => { const tips = paidOrders.reduce((s,o) => s + Number(o.tip||0), 0); return tips > 0 && (
               <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '0.5rem', borderTop: '1px solid #333', paddingTop: '0.5rem' }}>
-                <span style={{ color: '#aaa', fontSize: '0.88rem' }}>dont pourboires</span>
+                <span style={{ color: '#aaa', fontSize: '0.88rem' }}>dont dons A.P.E</span>
                 <span style={{ color: '#C8953A', fontWeight: 600 }}>+{tips.toFixed(2)} €</span>
+              </div>
+            );})()}
+            {(() => { const nef = paidOrders.reduce((s,o) => s + Number(o.tip_nef||0), 0); return nef > 0 && (
+              <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '0.5rem', borderTop: '1px solid #333', paddingTop: '0.5rem' }}>
+                <span style={{ color: '#aaa', fontSize: '0.88rem' }}>dont dons Noisy en Fête</span>
+                <span style={{ color: '#C8953A', fontWeight: 600 }}>+{nef.toFixed(2)} €</span>
               </div>
             );})()}
             <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', borderTop: '1px solid #333', paddingTop: '0.5rem' }}>
               <span style={{ fontWeight: 700 }}>Total encaissé</span>
               <span style={{ fontFamily: "'Playfair Display', serif", fontSize: '1.3rem', color: 'var(--gold)' }}>
-                {(totalRevenue + paidOrders.reduce((s,o) => s + Number(o.tip||0), 0)).toFixed(2)} €
+                {(totalRevenue + paidOrders.reduce((s,o) => s + Number(o.tip||0) + Number(o.tip_nef||0), 0)).toFixed(2)} €
               </span>
             </div>
           </div>
