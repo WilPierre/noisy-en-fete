@@ -152,8 +152,8 @@ const css = `
 
   /* CATEGORIES */
   .category-tabs {
-    display: flex; gap: 0.4rem; overflow-x: auto;
-    padding: 0 1.25rem 1rem; -webkit-overflow-scrolling: touch;
+    display: flex; flex-wrap: wrap; gap: 0.4rem;
+    padding: 0 1.25rem 1rem;
   }
   .category-tabs::-webkit-scrollbar { display: none; }
   .cat-tab {
