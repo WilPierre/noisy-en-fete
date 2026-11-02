@@ -561,10 +561,10 @@ function TableSelector({ onSelect, welcomeMsg, installPrompt, appInstalled, setA
             <span style={{ fontSize: '1.2rem' }}>🍺</span>
             Je commande au comptoir
           </button>
-          <div style={{ display: 'flex', alignItems: 'center', gap: '0.75rem', margin: '0.85rem 0 0.1rem', color: 'var(--text)', fontSize: '0.82rem', fontWeight: 700, letterSpacing: '-0.1px' }}>
-            <div style={{ flex: 1, height: 1.5, background: 'var(--border)' }} />
+          <div style={{ display: 'flex', alignItems: 'center', gap: '0.75rem', margin: '0.85rem 0 0.1rem', color: 'var(--text2)', fontSize: '0.75rem', fontWeight: 500 }}>
+            <div style={{ flex: 1, height: 1, background: 'var(--border)' }} />
             ou choisissez votre emplacement
-            <div style={{ flex: 1, height: 1.5, background: 'var(--border)' }} />
+            <div style={{ flex: 1, height: 1, background: 'var(--border)' }} />
           </div>
         </>
       )}
@@ -1450,38 +1450,7 @@ function ClientView({ installPrompt, appInstalled, setAppInstalled }) {
         <div className="modal-overlay" onClick={e => e.target === e.currentTarget && setShowCart(false)}>
           <div className="modal">
             <div className="modal-handle" />
-            <div className="modal-title">Ma commande — {tableNum === 'Comptoir' ? 'Comptoir' : `Table ${tableNum}`}</div>
-
-            {/* BOUTON PAYER AU COMPTOIR */}
-            <button onClick={async () => {
-              const items = cartItems.map(i => ({ name: i.name, qty: i.qty, price: i.price, emoji: i.emoji, free: i.free || 0 }));
-              const { data, error } = await supabase.from('orders').insert({
-                table_num: tableNum, items, total: totalPrice, tip: 0,
-                comment: comment ? `[COMPTOIR] ${comment}` : '[COMPTOIR] Paiement en liquide au comptoir',
-                consigne: consigneAmount || 0, consigne_liquide: true,
-                paid: true, status: 'en attente'
-              }).select().single();
-              if (!error && data) {
-                setOrderId(data.id); setSuccess(true); setCart({});
-                setShowCart(false); setComment(''); setPromoDiscount(0); setConsigneLiquide(false);
-              }
-            }} style={{
-              width: '100%', padding: '0.9rem', marginBottom: '1rem',
-              background: 'var(--accent3)', border: '2px solid var(--accent2)',
-              borderRadius: 12, cursor: 'pointer',
-              display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '0.6rem',
-              fontFamily: 'Montserrat, sans-serif', fontWeight: 700, fontSize: '0.9rem',
-              color: 'var(--accent)',
-            }}>
-              <span style={{ fontSize: '1.1rem' }}>💵</span>
-              Je paie au comptoir — {totalPrice.toFixed(2)} €
-            </button>
-
-            <div style={{ display: 'flex', alignItems: 'center', gap: '0.75rem', marginBottom: '1rem', color: 'var(--text)', fontSize: '0.82rem', fontWeight: 700, letterSpacing: '-0.1px' }}>
-              <div style={{ flex: 1, height: 1.5, background: 'var(--border)' }} />
-              ou payer par carte
-              <div style={{ flex: 1, height: 1.5, background: 'var(--border)' }} />
-            </div>
+            <div className="modal-title">Ma commande — Table {tableNum}</div>
             {cartItems.map((item, i) => (
               <div key={i}>
                 <div className="cart-line">
@@ -3694,7 +3663,13 @@ function AdminView() {
       {/* TAB MENU */}
       {activeTab === 'menu' && <>
         <div className="section-title">Menu ({menu.length} articles)</div>
-        {menu.map((item, idx) => (
+        <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(340px, 1fr))', gap: '1rem', alignItems: 'start' }}>
+        {[true, false].map(av => (
+          <div key={String(av)} style={{ minWidth: 0 }}>
+            <div style={{ fontWeight: 700, fontSize: '0.9rem', padding: '0.5rem 0.75rem', marginBottom: '0.5rem', borderRadius: 8, background: av ? '#E8FFE8' : '#F0F0F0', color: av ? '#0B3D0B' : '#666' }}>
+              {av ? '✅ Activés' : '⏸ Désactivés'} ({menu.filter(m => !!m.available === av).length})
+            </div>
+        {menu.map((item, idx) => !!item.available !== av ? null : (
           <div key={item.id}>
             {editingId === item.id ? (
               <div style={{ background: '#FFFBF0', border: '2px solid var(--gold)', borderRadius: 12, padding: '1rem', marginBottom: '0.5rem' }}>
@@ -3842,6 +3817,9 @@ function AdminView() {
             )}
           </div>
         ))}
+          </div>
+        ))}
+        </div>
         <div className="add-item-form">
           <div style={{ fontWeight: 600, marginBottom: '0.8rem', fontSize: '0.9rem' }}>+ Ajouter un plat</div>
 
