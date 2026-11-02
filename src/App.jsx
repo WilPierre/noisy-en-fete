@@ -1786,7 +1786,7 @@ function DashboardTab() {
 
   const today = orders.filter(o => new Date(o.created_at).toDateString() === new Date().toDateString());
   const totalCA = today.reduce((s, o) => s + Number(o.total), 0);
-  const totalTips = today.reduce((s, o) => s + Number(o.tip || 0), 0);
+  const totalTips = today.reduce((s, o) => s + Number(o.tip || 0) + Number(o.tip_nef || 0), 0);
   const totalEncaisse = totalCA + totalTips;
   const enCours = today.filter(o => o.status !== 'servi').length;
   const servis = today.filter(o => o.status === 'servi').length;
@@ -1794,7 +1794,7 @@ function DashboardTab() {
   // Ventes par article
   const salesByItem = {};
   today.forEach(o => o.items.forEach(it => {
-    if (!salesByItem[it.name]) salesByItem[it.name] = { emoji: it.emoji, qty: 0, revenue: 0 };
+    if (!salesByItem[it.name]) salesByItem[it.name] = { name: it.name, emoji: it.emoji, qty: 0, revenue: 0 };
     salesByItem[it.name].qty += it.qty;
     salesByItem[it.name].revenue += it.qty * Number(it.price);
   }));
@@ -1919,7 +1919,7 @@ function CaisseTab() {
 
   const today = orders.filter(o => new Date(o.created_at).toDateString() === new Date().toDateString());
   const totalCA = today.reduce((s, o) => s + Number(o.total), 0);
-  const totalTips = today.reduce((s, o) => s + Number(o.tip || 0), 0);
+  const totalTips = today.reduce((s, o) => s + Number(o.tip || 0) + Number(o.tip_nef || 0), 0);
   const totalRemises = today.reduce((s, o) => {
     const items = o.items || [];
     return s + items.reduce((ss, i) => ss + (i.free || 0) * Number(i.price), 0);
@@ -1928,7 +1928,7 @@ function CaisseTab() {
 
   const salesByItem = {};
   today.forEach(o => o.items.forEach(it => {
-    if (!salesByItem[it.name]) salesByItem[it.name] = { emoji: it.emoji, qty: 0, revenue: 0 };
+    if (!salesByItem[it.name]) salesByItem[it.name] = { name: it.name, emoji: it.emoji, qty: 0, revenue: 0 };
     salesByItem[it.name].qty += it.qty;
     salesByItem[it.name].revenue += it.qty * Number(it.price);
   }));
@@ -2036,7 +2036,7 @@ function CaisseTab() {
         <div style={{ borderTop: '2px solid var(--text)', paddingTop: '0.75rem' }}>
           <div style={rowStyle}><span>Ventes</span><span>{totalCA.toFixed(2)} €</span></div>
           {totalRemises > 0 && <div style={{ ...rowStyle, color: 'var(--green)' }}><span>Remises fidélité</span><span>-{totalRemises.toFixed(2)} €</span></div>}
-          {totalTips > 0 && <div style={{ ...rowStyle, color: 'var(--gold)' }}><span>🙏 Pourboires</span><span>+{totalTips.toFixed(2)} €</span></div>}
+          {totalTips > 0 && <div style={{ ...rowStyle, color: 'var(--gold)' }}><span>🙏 Dons</span><span>+{totalTips.toFixed(2)} €</span></div>}
           <div style={{ ...totalRowStyle, borderTop: '2px solid var(--text)', marginTop: '0.5rem' }}>
             <span>TOTAL ENCAISSÉ</span>
             <span style={{ color: 'var(--gold)', fontSize: '1.3rem' }}>{totalEncaisse.toFixed(2)} €</span>
