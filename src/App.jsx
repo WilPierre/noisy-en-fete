@@ -305,6 +305,13 @@ const css = `
   /* ── SUCCESS ── */
   .success-box { text-align: center; padding: 3rem 1.5rem; }
   .success-icon { font-size: 3rem; margin-bottom: 1rem; animation: bounceIn 0.5s; }
+  @keyframes confettiFall { 0% { transform: translateY(-10vh) rotate(0deg); opacity: 1; } 100% { transform: translateY(105vh) rotate(720deg); opacity: 0.9; } }
+  @keyframes mascotDance { 0%,100% { transform: rotate(-8deg) translateY(0); } 50% { transform: rotate(8deg) translateY(-10px); } }
+  @keyframes mascotFloat { 0%,100% { transform: translateY(0); } 50% { transform: translateY(-6px); } }
+  @keyframes mascotSleep { 0%,100% { transform: scale(1); } 50% { transform: scale(1.06); } }
+  @keyframes cartBump { 0% { transform: scale(1); } 40% { transform: scale(1.18); } 100% { transform: scale(1); } }
+  @keyframes qtyPop { 0% { transform: scale(1); } 50% { transform: scale(1.5); } 100% { transform: scale(1); } }
+  @keyframes flyUp { 0% { opacity: 1; transform: translateY(0) scale(1); } 100% { opacity: 0; transform: translateY(-60px) scale(1.4); } }
   @keyframes bounceIn { 0% { transform: scale(0.5); opacity: 0; } 70% { transform: scale(1.1); } 100% { transform: scale(1); opacity: 1; } }
   .success-title { font-size: 1.4rem; font-weight: 800; margin-bottom: 0.4rem; color: var(--text); letter-spacing: -0.3px; }
   .success-sub { color: var(--text2); font-size: 0.88rem; line-height: 1.7; }
@@ -844,6 +851,7 @@ function GrandEcran() {
   const [orders, setOrders] = useState([]);
   const [time, setTime] = useState(new Date());
   const settings = useSettings();
+  const nightStats = useNightStats();
 
   const bgColor = settings.ecran_bg || '#1A1208';
   const numColor = settings.ecran_num_color || '#C8953A';
@@ -897,6 +905,8 @@ function GrandEcran() {
           </div>
         </div>
 
+        <ChallengeBar big />
+
         {orders.length === 0 ? (
           <div style={{ textAlign: 'center', padding: '5rem', color: `${textColor}44` }}>
             <div style={{ fontSize: '5rem', marginBottom: '1rem' }}>👨‍🍳</div>
@@ -928,6 +938,27 @@ function GrandEcran() {
           </>
         )}
 
+        {settings.ecran_ranking !== 'false' && nightStats.ranking.length > 0 && (
+          <div style={{ marginTop: '3rem', paddingBottom: '3rem' }}>
+            <div style={{ fontFamily: "'Playfair Display', serif", fontSize: '1.6rem', color: numColor, marginBottom: '0.8rem' }}>🏆 Classement des tables</div>
+            <div style={{ display: 'flex', gap: '1rem', flexWrap: 'wrap' }}>
+              {nightStats.ranking.map(([t, amt], i) => (
+                <div key={t} style={{ background: `${textColor}12`, border: `2px solid ${i === 0 ? numColor : textColor + '22'}`, borderRadius: 16, padding: '0.9rem 1.4rem', minWidth: 140, textAlign: 'center' }}>
+                  <div style={{ fontSize: '1.6rem' }}>{['🥇', '🥈', '🥉', '4️⃣', '5️⃣'][i]}</div>
+                  <div style={{ fontSize: '1.5rem', fontWeight: 800 }}>Emplacement {t}</div>
+                  <div style={{ color: `${textColor}99`, fontSize: '0.95rem' }}>{Math.round(amt)} € dépensés</div>
+                </div>
+              ))}
+            </div>
+          </div>
+        )}
+        {(nightStats.donApe > 0 && settings.don_ape_active !== 'false') || (nightStats.donNef > 0 && settings.don_nef_active === 'true') ? (
+          <div style={{ textAlign: 'center', fontSize: '1.3rem', marginBottom: '3rem', color: numColor, fontWeight: 700 }}>
+            {nightStats.donApe > 0 && settings.don_ape_active !== 'false' && <span style={{ marginRight: '2rem' }}>🎒 {nightStats.donApe.toFixed(0)} € déjà récoltés pour l'A.P.E !</span>}
+            {nightStats.donNef > 0 && settings.don_nef_active === 'true' && <span>🎉 {nightStats.donNef.toFixed(0)} € pour Noisy en Fête !</span>}
+          </div>
+        ) : null}
+
         <div style={{ position: 'fixed', bottom: '1rem', left: 0, right: 0, textAlign: 'center', color: `${textColor}22`, fontSize: '0.75rem' }}>
           🔴 Diffusion en direct • noisy-en-fete.vercel.app
         </div>
@@ -936,9 +967,192 @@ function GrandEcran() {
   );
 }
 
+// ─── FUN : confettis, son, mascotte, messages ────────────────────────────────
+function Confetti({ duration = 4500 }) {
+  const [show, setShow] = useState(true);
+  useEffect(() => { const t = setTimeout(() => setShow(false), duration); return () => clearTimeout(t); }, [duration]);
+  const pieces = useState(() => Array.from({ length: 60 }, (_, i) => ({
+    left: Math.random() * 100, delay: Math.random() * 1.2, dur: 2.5 + Math.random() * 2,
+    size: 7 + Math.random() * 7, color: ['#00C553', '#C8953A', '#FF5E7E', '#3B82F6', '#FACC15', '#A855F7'][i % 6],
+    round: Math.random() > 0.5,
+  })))[0];
+  if (!show) return null;
+  return (
+    <div style={{ position: 'fixed', inset: 0, pointerEvents: 'none', zIndex: 9999, overflow: 'hidden' }}>
+      {pieces.map((p, i) => (
+        <span key={i} style={{
+          position: 'absolute', top: 0, left: p.left + '%', width: p.size, height: p.size * (p.round ? 1 : 0.5),
+          background: p.color, borderRadius: p.round ? '50%' : 2,
+          animation: `confettiFall ${p.dur}s ${p.delay}s linear forwards`, opacity: 0,
+        }} />
+      ))}
+    </div>
+  );
+}
+
+let _audioCtx = null;
+function playChime(kind = 'ready') {
+  try {
+    const AC = window.AudioContext || window.webkitAudioContext;
+    if (!AC) return;
+    if (!_audioCtx) _audioCtx = new AC();
+    const ctx = _audioCtx;
+    if (ctx.state === 'suspended') ctx.resume();
+    if (kind === 'silent') return;
+    const notes = kind === 'kitchen' ? [880, 660, 880, 660] : [523, 659, 784, 1047];
+    notes.forEach((f, i) => {
+      const o = ctx.createOscillator(); const g = ctx.createGain();
+      o.type = 'sine'; o.frequency.value = f;
+      const t0 = ctx.currentTime + i * 0.18;
+      g.gain.setValueAtTime(0.0001, t0);
+      g.gain.exponentialRampToValueAtTime(0.25, t0 + 0.02);
+      g.gain.exponentialRampToValueAtTime(0.0001, t0 + 0.3);
+      o.connect(g); g.connect(ctx.destination);
+      o.start(t0); o.stop(t0 + 0.32);
+    });
+  } catch (e) {}
+}
+function soundEnabled() { try { return localStorage.getItem('nef_sound') !== 'off'; } catch (e) { return true; } }
+function setSoundEnabled(v) { try { localStorage.setItem('nef_sound', v ? 'on' : 'off'); } catch (e) {} }
+
+function Mascot({ mood = 'wait', size = '3.4rem' }) {
+  const mset = useSettings();
+  const hat = (EVENT_THEMES[mset.event_theme || 'none'] || {}).hat;
+  const anim = mood === 'dance' ? 'mascotDance 0.7s ease-in-out infinite'
+    : mood === 'sleep' ? 'mascotSleep 3s ease-in-out infinite'
+    : 'mascotFloat 2s ease-in-out infinite';
+  return (
+    <div style={{ position: 'relative', display: 'inline-block', fontSize: size, animation: anim, lineHeight: 1 }}>
+      🦄
+      {hat && <span style={{ position: 'absolute', top: -14, left: -6, fontSize: '1.4rem' }}>{hat}</span>}
+      {mood === 'sleep' && <span style={{ position: 'absolute', top: -6, right: -14, fontSize: '1rem' }}>💤</span>}
+      {mood === 'dance' && <span style={{ position: 'absolute', top: -8, right: -18, fontSize: '1.2rem' }}>🎶</span>}
+      {mood === 'work' && <span style={{ position: 'absolute', top: -8, right: -16, fontSize: '1.1rem' }}>🍳</span>}
+    </div>
+  );
+}
+
+const FUN_MESSAGES = {
+  received: [
+    ['Commande reçue !', 'Les bénévoles ont reçu ton message, ils s’y mettent !'],
+    ['C’est noté !', 'Ta commande est dans les mains de l’équipe 🙌'],
+    ['Top, on a ça !', 'Tiens bon, ça arrive bientôt !'],
+  ],
+  preparing: [
+    ['Ça mijote…', 'Nos bénévoles sont à fond sur ta commande 🔥'],
+    ['En cuisine !', 'Les petites mains s’activent pour toi 👨‍🍳'],
+    ['Ça chauffe !', 'Encore un peu de patience, ça sent bon !'],
+  ],
+  ready: [
+    ['C’est prêt, fonce !', '🎪 Viens récupérer ta commande au stand'],
+    ['Ta commande t’attend !', '🎉 Elle est chaude, elle est belle, viens la chercher'],
+    ['À table !', '🍻 Ta commande est prête au stand'],
+  ],
+  done: [
+    ['Bonne dégustation !', 'Merci d’être là, tu fais vivre la fête 💚'],
+    ['Régale-toi !', 'Merci et à très vite pour la prochaine !'],
+  ],
+};
+function pickFun(kind, seed) { const a = FUN_MESSAGES[kind]; return a[Math.abs(seed || 0) % a.length]; }
+
+// ─── THÈMES ÉVÉNEMENT ────────────────────────────────────────────────────────
+const EVENT_THEMES = {
+  none:      { label: 'Aucun (classique)', emoji: '', hat: '', title: '' },
+  halloween: { label: '🎃 Halloween', emoji: '🎃', hat: '🎃', title: 'Soirée Halloween',
+    light: { '--accent': '#4A1D7A', '--accent2': '#FF7A00', '--accent3': '#FFF1E0', '--surface2': '#FFF1E0', '--gold': '#FF9F1C' },
+    dark:  { '--accent': '#FF7A00', '--accent2': '#FFB347', '--accent3': '#2A1245', '--surface2': '#2A1245', '--gold': '#FF9F1C' } },
+  noel:      { label: '🎄 Noël', emoji: '🎄', hat: '🎅', title: 'Fête de Noël',
+    light: { '--accent': '#8B0000', '--accent2': '#16A34A', '--accent3': '#FDECEC', '--surface2': '#FDECEC', '--gold': '#FACC15' },
+    dark:  { '--accent': '#EF4444', '--accent2': '#4ADE80', '--accent3': '#3A0A0A', '--surface2': '#3A0A0A', '--gold': '#FACC15' } },
+  ete:       { label: '☀️ Fête d’été', emoji: '🏖️', hat: '😎', title: 'Fête d’été',
+    light: { '--accent': '#0369A1', '--accent2': '#F59E0B', '--accent3': '#FEF3C7', '--surface2': '#FEF3C7', '--gold': '#FBBF24' },
+    dark:  { '--accent': '#38BDF8', '--accent2': '#FBBF24', '--accent3': '#0C2A3D', '--surface2': '#0C2A3D', '--gold': '#FBBF24' } },
+  annees80:  { label: '🕺 Années 80', emoji: '🪩', hat: '🕶️', title: 'Soirée Années 80',
+    light: { '--accent': '#6D28D9', '--accent2': '#EC4899', '--accent3': '#FDF2F8', '--surface2': '#FDF2F8', '--gold': '#22D3EE' },
+    dark:  { '--accent': '#C084FC', '--accent2': '#F472B6', '--accent3': '#2A0A3D', '--surface2': '#2A0A3D', '--gold': '#22D3EE' } },
+};
+
+function EventBanner() {
+  const settings = useSettings();
+  const t = EVENT_THEMES[settings.event_theme || 'none'];
+  if (!t || !t.emoji) return null;
+  return (
+    <div style={{ textAlign: 'center', padding: '0.45rem 1rem', fontSize: '0.8rem', fontWeight: 700, background: 'var(--accent3)', color: 'var(--accent)', letterSpacing: '0.02em' }}>
+      {t.emoji} {t.title} {t.emoji}
+    </div>
+  );
+}
+
+// ─── STATS DE LA SOIRÉE (défi + classement + dons) ───────────────────────────
+function useNightStats() {
+  const settings = useSettings();
+  const [orders, setOrders] = useState([]);
+  useEffect(() => {
+    let alive = true;
+    const load = async () => {
+      const { data } = await supabase.from('orders').select('*').eq('paid', true).order('created_at', { ascending: false }).limit(1000);
+      if (alive && data) setOrders(data);
+    };
+    load();
+    const ch = supabase.channel('night-stats-' + Math.random().toString(36).slice(2))
+      .on('postgres_changes', { event: '*', schema: 'public', table: 'orders' }, load).subscribe();
+    const poll = setInterval(load, 30000);
+    return () => { alive = false; supabase.removeChannel(ch); clearInterval(poll); };
+  }, []);
+  const todayStr = new Date().toDateString();
+  const today = orders.filter(o => new Date(o.created_at).toDateString() === todayStr);
+  const start = settings.challenge_start ? new Date(settings.challenge_start) : null;
+  const challengeOrders = today.filter(o => !start || new Date(o.created_at) >= start);
+  const challengeCount = challengeOrders.reduce((s, o) => s + (o.items || []).reduce((a, i) => a + (Number(i.qty) || 0), 0), 0);
+  const byTable = {};
+  today.forEach(o => { if (o.table_num > 0) byTable[o.table_num] = (byTable[o.table_num] || 0) + Number(o.total || 0); });
+  const ranking = Object.entries(byTable).sort((a, b) => b[1] - a[1]).slice(0, 5);
+  const donApe = today.reduce((s, o) => s + Number(o.tip || 0), 0);
+  const donNef = today.reduce((s, o) => s + Number(o.tip_nef || 0), 0);
+  return { challengeCount, ranking, donApe, donNef };
+}
+
+function ChallengeBar({ big = false }) {
+  const settings = useSettings();
+  const { challengeCount } = useNightStats();
+  if (settings.challenge_active !== 'true') return null;
+  const goal = Math.max(1, parseInt(settings.challenge_goal) || 100);
+  const pct = Math.min(100, Math.round((challengeCount / goal) * 100));
+  const reached = challengeCount >= goal;
+  return (
+    <div style={{
+      margin: big ? '0 0 1.5rem' : '0.75rem 1.25rem', padding: big ? '1.2rem 1.5rem' : '0.8rem 1rem', borderRadius: 16,
+      background: reached ? 'linear-gradient(135deg,#00C553,#FFD54F)' : (big ? 'rgba(255,255,255,0.08)' : 'var(--surface)'),
+      border: big ? '2px solid rgba(255,255,255,0.18)' : '1.5px solid var(--border)', color: reached ? '#0A0A0A' : (big ? 'inherit' : 'var(--text)'),
+    }}>
+      {reached && <Confetti key={settings.challenge_start || 'c'} duration={6000} />}
+      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'baseline', gap: '0.5rem', flexWrap: 'wrap' }}>
+        <div style={{ fontWeight: 800, fontSize: big ? '1.5rem' : '0.88rem' }}>🎯 {settings.challenge_label || 'Défi de la soirée'}</div>
+        <div style={{ fontWeight: 800, fontSize: big ? '1.5rem' : '0.88rem' }}>{Math.min(challengeCount, goal)} / {goal}</div>
+      </div>
+      <div style={{ height: big ? 22 : 12, borderRadius: 20, background: 'rgba(128,128,128,0.25)', margin: '0.5rem 0', overflow: 'hidden' }}>
+        <div style={{ width: pct + '%', height: '100%', borderRadius: 20, background: reached ? '#0A0A0A' : 'linear-gradient(90deg,#00C553,#FFD54F)', transition: 'width 1s ease' }} />
+      </div>
+      <div style={{ fontSize: big ? '1.05rem' : '0.74rem', fontWeight: 600, opacity: 0.9 }}>
+        {reached ? `🎉 Objectif atteint ! ${settings.challenge_reward || ''}` : `🎁 ${settings.challenge_reward || 'Une surprise pour tout le monde !'} — plus que ${goal - challengeCount} !`}
+      </div>
+    </div>
+  );
+}
+
 // ─── ORDER TRACKING ──────────────────────────────────────────────────────────
 function OrderTracking({ orderId, tableNum, onNewOrder }) {
   const [order, setOrder] = useState(null);
+  const [soundOn, setSoundOn] = useState(soundEnabled());
+  const [confettiKey, setConfettiKey] = useState(1);
+  const prevStatusRef = useState({ current: null })[0];
+  useEffect(() => {
+    if (!order) return;
+    if (prevStatusRef.current !== null && prevStatusRef.current !== order.status) {
+      if (order.status === 'prêt') { setConfettiKey(k => k + 1); if (soundEnabled()) playChime('ready'); }
+    }
+    prevStatusRef.current = order.status;
+  }, [order && order.status]);
 
   useEffect(() => {
     if (!orderId) return;
@@ -1007,8 +1221,13 @@ function OrderTracking({ orderId, tableNum, onNewOrder }) {
   const isReady = order.status === 'prêt';
   const isDone = order.status === 'servi';
 
+  const funKind = isReady ? 'ready' : isDone ? 'done' : order.status === 'en préparation' ? 'preparing' : 'received';
+  const [funTitle, funSub] = pickFun(funKind, Number(orderId));
+  const mascotMood = isReady ? 'dance' : isDone ? 'sleep' : order.status === 'en préparation' ? 'work' : 'wait';
+
   return (
     <div style={{ minHeight: '100vh', background: 'var(--bg)', display: 'flex', flexDirection: 'column' }}>
+      <Confetti key={confettiKey} />
       <UrgentBanner />
       <div style={{ background: 'var(--text)', padding: '0.85rem 1.25rem', display: 'flex', alignItems: 'center', gap: '0.6rem' }}>
         <img src="/logo.png" alt="Noisy en Fête" style={{ height: 30, width: 'auto' }} />
@@ -1026,15 +1245,13 @@ function OrderTracking({ orderId, tableNum, onNewOrder }) {
           color: isReady || isDone ? 'var(--text)' : '#fff',
           transition: 'all 0.5s ease'
         }}>
-          <div style={{ fontSize: '3rem', marginBottom: '0.75rem', animation: isReady ? 'bounceIn 0.5s' : 'none' }}>
-            {isReady ? '🔔' : isDone ? '🎉' : order.status === 'en préparation' ? '👨‍🍳' : '⏳'}
-          </div>
-          <div style={{ fontSize: '1.3rem', fontWeight: 800, letterSpacing: '-0.03em', marginBottom: '0.4rem' }}>
-            {isReady ? 'Votre commande est prête !' : isDone ? 'Bonne dégustation !' : order.status === 'en préparation' ? 'En cours de préparation...' : 'Commande reçue !'}
-          </div>
-          <div style={{ fontSize: '0.82rem', opacity: 0.7 }}>
-            {isReady ? '🎪 Venez récupérer au stand' : isDone ? 'Merci et à bientôt !' : 'Nous préparons votre commande'}
-          </div>
+          <div style={{ marginBottom: '0.9rem' }}><Mascot mood={mascotMood} /></div>
+          <div style={{ fontSize: '1.3rem', fontWeight: 800, letterSpacing: '-0.03em', marginBottom: '0.4rem' }}>{funTitle}</div>
+          <div style={{ fontSize: '0.82rem', opacity: 0.75 }}>{funSub}</div>
+          <button onClick={() => { const v = !soundOn; setSoundOn(v); setSoundEnabled(v); if (v) playChime('ready'); }}
+            style={{ marginTop: '0.9rem', background: 'rgba(128,128,128,0.18)', border: 'none', borderRadius: 20, padding: '0.35rem 0.8rem', fontSize: '0.72rem', cursor: 'pointer', color: 'inherit', fontWeight: 600 }}>
+            {soundOn ? '🔔 Son activé (toucher pour couper)' : '🔕 Son coupé (toucher pour activer)'}
+          </button>
         </div>
 
         <div style={{ background: 'var(--surface)', borderRadius: 14, padding: '1.25rem', marginBottom: '1.25rem', border: '1.5px solid var(--border)' }}>
@@ -1261,6 +1478,28 @@ function ClientView({ installPrompt, appInstalled, setAppInstalled }) {
     const max = it && it.stock !== null && it.stock !== undefined ? it.stock : Infinity;
     return { ...c, [id]: Math.min(max, Math.max(0, qty)) };
   });
+  let menuBadges = {}; let menuSuggest = {};
+  try { menuBadges = JSON.parse(settings.menu_badges || '{}') || {}; } catch (e) {}
+  try { menuSuggest = JSON.parse(settings.menu_suggest || '{}') || {}; } catch (e) {}
+  const BADGES = { hot: ['🔥 Le plus commandé', '#FEE2E2', '#B91C1C'], fav: ['⭐ Coup de cœur', '#FEF3C7', '#92400E'], new: ['🆕 Nouveau', '#DBEAFE', '#1D4ED8'] };
+  let lastCart = null;
+  try { lastCart = JSON.parse(localStorage.getItem('nef_last_cart') || 'null'); } catch (e) {}
+  const lastCartValid = lastCart ? Object.entries(lastCart).filter(([id, q]) => menu.some(m => String(m.id) === String(id) && (m.stock === null || m.stock === undefined || m.stock > 0)) && q > 0) : [];
+  const repeatLast = () => {
+    const next = {};
+    lastCartValid.forEach(([id, q]) => { const it = menu.find(m => String(m.id) === String(id)); const max = it.stock === null || it.stock === undefined ? Infinity : it.stock; next[it.id] = Math.min(q, max); });
+    setCart(next);
+  };
+  const suggestions = (() => {
+    const out = [];
+    Object.keys(cart).forEach(id => {
+      if (!(cart[id] > 0)) return;
+      const sid = menuSuggest[id];
+      const sug = sid && menu.find(m => String(m.id) === String(sid));
+      if (sug && !(cart[sug.id] > 0) && (sug.stock === null || sug.stock === undefined || sug.stock > 0) && !out.some(o => o.id === sug.id)) out.push(sug);
+    });
+    return out;
+  })();
   const decrementStock = async (cartNow) => {
     for (const it of menu) {
       const q = cartNow[it.id] || 0;
@@ -1314,6 +1553,22 @@ function ClientView({ installPrompt, appInstalled, setAppInstalled }) {
   const loyaltyDiscount = cartItems.reduce((s, i) => s + i.free * i.price, 0);
   const promoAmount = promoDiscount > 0 ? Math.round((basePrice + extrasTotal - loyaltyDiscount) * promoDiscount) / 100 : 0;
   const totalPrice = basePrice + extrasTotal - loyaltyDiscount - promoAmount;
+  const [payingCounter, setPayingCounter] = useState(false);
+  const payAtCounter = async () => {
+    if (payingCounter || cartItems.length === 0) return;
+    if (!window.confirm('Valider la commande et payer au comptoir ?')) return;
+    setPayingCounter(true);
+    const { data: order, error } = await supabase.from('orders').insert({
+      table_num: tableNum, items: cartItems, total: totalPrice, tip: 0,
+      comment: '[COMPTOIR - à encaisser] ' + (comment || ''),
+      consigne: consigneAmount || 0, consigne_liquide: true, paid: true, status: 'en attente',
+    }).select().single();
+    setPayingCounter(false);
+    if (error || !order) { alert('Erreur : ' + (error ? error.message : 'commande non enregistrée')); return; }
+    try { localStorage.setItem('nef_last_cart', JSON.stringify(cart)); } catch (e) {}
+    decrementStock(cart);
+    setOrderId(order.id); setSuccess(true); setCart({}); setShowCart(false); setComment(''); setPromoDiscount(0); setConsigneLiquide(false);
+  };
 
   if (!tableNum) return <TableSelector onSelect={isClosed ? () => {} : setTableNum} welcomeMsg={settings.welcome} installPrompt={installPrompt} appInstalled={appInstalled} setAppInstalled={setAppInstalled} isClosed={isClosed} />;
 
@@ -1447,6 +1702,12 @@ function ClientView({ installPrompt, appInstalled, setAppInstalled }) {
               <button key={cat} className={`cat-tab ${activeTab === cat ? 'active' : ''}`} onClick={() => setActiveCategory(cat)}>{cat}</button>
             ))}
           </div>
+          {lastCartValid.length > 0 && totalItems === 0 && (
+            <button onClick={repeatLast}
+              style={{ display: 'block', width: 'calc(100% - 2.5rem)', margin: '0 1.25rem 0.9rem', padding: '0.75rem', borderRadius: 14, border: '1.5px dashed var(--accent2)', background: 'var(--accent3)', color: 'var(--accent)', fontWeight: 700, fontSize: '0.85rem', cursor: 'pointer', fontFamily: "'Montserrat', sans-serif" }}>
+              🔁 Refaire ma dernière commande ({lastCartValid.reduce((a, [, q]) => a + q, 0)} article{lastCartValid.reduce((a, [, q]) => a + q, 0) > 1 ? 's' : ''})
+            </button>
+          )}
           <div className="menu-grid">
             {filtered.map(item => (
               <div key={item.id} className="menu-item" style={{ flexDirection: 'column', alignItems: 'stretch' }}>
@@ -1454,6 +1715,9 @@ function ClientView({ installPrompt, appInstalled, setAppInstalled }) {
                   <div className="item-emoji">{item.emoji}</div>
                   <div className="item-info">
                     <div className="item-name">{item.name}</div>
+                    {BADGES[menuBadges[item.id]] && (
+                      <div style={{ display: 'inline-block', margin: '0.15rem 0', padding: '0.1rem 0.5rem', borderRadius: 20, fontSize: '0.66rem', fontWeight: 700, background: BADGES[menuBadges[item.id]][1], color: BADGES[menuBadges[item.id]][2] }}>{BADGES[menuBadges[item.id]][0]}</div>
+                    )}
                     <div className="item-price">{Number(item.price).toFixed(2)} €</div>
                     {item.ingredients && (
                       <div style={{ fontSize: '0.7rem', color: 'var(--text2)', marginTop: '0.2rem', lineHeight: 1.4 }}>
@@ -1475,7 +1739,7 @@ function ClientView({ installPrompt, appInstalled, setAppInstalled }) {
                   )}
                   <div className="qty-ctrl">
                     <button className="qty-btn" onClick={() => setQty(item.id, (cart[item.id] || 0) - 1)}>−</button>
-                    <span className="qty-num">{cart[item.id] || 0}</span>
+                    <span key={cart[item.id] || 0} className="qty-num" style={{ display: 'inline-block', animation: (cart[item.id] || 0) > 0 ? 'qtyPop 0.3s ease' : 'none' }}>{cart[item.id] || 0}</span>
                     <button className="qty-btn" disabled={item.stock !== null && item.stock !== undefined && (cart[item.id] || 0) >= item.stock} style={item.stock !== null && item.stock !== undefined && (cart[item.id] || 0) >= item.stock ? { opacity: 0.35 } : undefined} onClick={() => setQty(item.id, (cart[item.id] || 0) + 1)}>+</button>
                   </div>
                 </div>
@@ -1510,7 +1774,7 @@ function ClientView({ installPrompt, appInstalled, setAppInstalled }) {
       {totalItems > 0 && (
         <div className="cart-bar" onClick={() => setShowCart(true)}>
           <div style={{ display: 'flex', alignItems: 'center', gap: '0.75rem' }}>
-            <div className="cart-count">{totalItems}</div>
+            <div key={totalItems} className="cart-count" style={{ animation: 'cartBump 0.3s ease' }}>{totalItems}</div>
             <span style={{ fontWeight: 700, color: 'var(--accent)', fontSize: '0.88rem', letterSpacing: '-0.2px' }}>Voir ma commande</span>
           </div>
           <span className="cart-total">{totalPrice.toFixed(2)} €</span>
@@ -1522,6 +1786,26 @@ function ClientView({ installPrompt, appInstalled, setAppInstalled }) {
           <div className="modal">
             <div className="modal-handle" />
             <div className="modal-title">Ma commande — Table {tableNum}</div>
+            {suggestions.length > 0 && (
+              <div style={{ background: 'var(--accent3)', borderRadius: 12, padding: '0.7rem 0.8rem', marginBottom: '0.8rem' }}>
+                <div style={{ fontSize: '0.75rem', fontWeight: 700, color: 'var(--accent)', marginBottom: '0.4rem' }}>😋 Avec ça, une petite envie ?</div>
+                <div style={{ display: 'flex', gap: '0.4rem', flexWrap: 'wrap' }}>
+                  {suggestions.map(sg => (
+                    <button key={sg.id} onClick={() => setQty(sg.id, 1)}
+                      style={{ padding: '0.4rem 0.7rem', borderRadius: 20, border: '1.5px solid var(--accent2)', background: 'var(--surface)', cursor: 'pointer', fontSize: '0.78rem', fontWeight: 600, color: 'var(--text)' }}>
+                      {sg.emoji} {sg.name} · {Number(sg.price).toFixed(2)} € <span style={{ color: 'var(--accent2)', fontWeight: 800 }}>＋</span>
+                    </button>
+                  ))}
+                </div>
+              </div>
+            )}
+            <button onClick={payAtCounter} disabled={payingCounter}
+              style={{ width: '100%', padding: '0.9rem', marginBottom: '0.9rem', borderRadius: 14, border: '2px solid var(--accent)', background: 'var(--accent3)', color: 'var(--accent)', fontWeight: 800, fontSize: '0.95rem', cursor: 'pointer', fontFamily: "'Montserrat', sans-serif" }}>
+              {payingCounter ? '⏳ Envoi…' : '🏪 Je paie au comptoir'}
+            </button>
+            <div style={{ display: 'flex', alignItems: 'center', gap: '0.6rem', margin: '0 0 0.9rem', fontSize: '0.82rem', fontWeight: 700, color: 'var(--text)' }}>
+              <div style={{ flex: 1, height: 1.5, background: 'var(--text2)', opacity: 0.4 }} />ou payer par carte ci-dessous<div style={{ flex: 1, height: 1.5, background: 'var(--text2)', opacity: 0.4 }} />
+            </div>
             {cartItems.map((item, i) => (
               <div key={i}>
                 <div className="cart-line">
@@ -1607,7 +1891,7 @@ function ClientView({ installPrompt, appInstalled, setAppInstalled }) {
                 comment={comment}
                 consigneAmount={consigneAmount}
                 consigneLiquide={consigneLiquide}
-                onSuccess={(id) => { decrementStock(cart); setOrderId(id); setSuccess(true); setCart({}); setShowCart(false); setComment(''); setPromoDiscount(0); setConsigneLiquide(false); }}
+                onSuccess={(id) => { try { localStorage.setItem('nef_last_cart', JSON.stringify(cart)); } catch (e) {} decrementStock(cart); setOrderId(id); setSuccess(true); setCart({}); setShowCart(false); setComment(''); setPromoDiscount(0); setConsigneLiquide(false); }}
               />
             </Elements>
           </div>
@@ -1624,21 +1908,14 @@ function KitchenView() {
   const prevCountRef = useCallback((n) => { prevCountRef.current = n; }, []);
   const orderCountRef = useState(0);
 
-  const playBeep = () => {
-    try {
-      const ctx = new (window.AudioContext || window.webkitAudioContext)();
-      [0, 0.15, 0.3].forEach(delay => {
-        const osc = ctx.createOscillator();
-        const gain = ctx.createGain();
-        osc.connect(gain); gain.connect(ctx.destination);
-        osc.frequency.value = 880;
-        gain.gain.setValueAtTime(0.3, ctx.currentTime + delay);
-        gain.gain.exponentialRampToValueAtTime(0.001, ctx.currentTime + delay + 0.2);
-        osc.start(ctx.currentTime + delay);
-        osc.stop(ctx.currentTime + delay + 0.2);
-      });
-    } catch(e) {}
-  };
+  const playBeep = () => playChime('kitchen');
+  const seenIds = useState(() => ({ set: null }))[0];
+  // Débloquer l'audio au premier toucher (obligatoire sur mobile)
+  useEffect(() => {
+    const unlock = () => { try { playChime('silent'); } catch (e) {} window.removeEventListener('pointerdown', unlock); };
+    window.addEventListener('pointerdown', unlock);
+    return () => window.removeEventListener('pointerdown', unlock);
+  }, []);
 
   const [tick, setTick] = useState(0);
 
@@ -1647,9 +1924,9 @@ function KitchenView() {
       .select('*').eq('paid', true).neq('status', 'servi')
       .order('created_at', { ascending: true });
     if (data) {
-      const newCount = data.filter(o => o.status === 'en attente').length;
-      if (soundEnabled && newCount > orderCountRef[0]) playBeep();
-      orderCountRef[0] = newCount;
+      const pendingIds = data.filter(o => o.status === 'en attente').map(o => o.id);
+      if (seenIds.set && soundEnabled && pendingIds.some(id => !seenIds.set.has(id))) playBeep();
+      seenIds.set = new Set([...(seenIds.set || []), ...pendingIds]);
       setOrders(data);
     }
   }, [soundEnabled]);
@@ -1660,7 +1937,7 @@ function KitchenView() {
       .on('postgres_changes', { event: '*', schema: 'public', table: 'orders' }, fetchOrders)
       .subscribe();
     // Rafraîchir les minuteurs toutes les 30 secondes
-    const timer = setInterval(() => setTick(t => t + 1), 30000);
+    const timer = setInterval(() => setTick(t => t + 1), 15000);
     return () => { supabase.removeChannel(channel); clearInterval(timer); };
   }, [fetchOrders]);
 
@@ -1712,7 +1989,7 @@ function KitchenView() {
       ) : (
         <div className="orders-grid">
           {orders.map(order => (
-            <div key={order.id} className={`order-card ${cardClass[order.status] || ''} ${elapsedUrgent(order.created_at) && order.status === 'en attente' ? 'urgent' : ''}`}>
+            <div key={order.id} className={`order-card ${cardClass[order.status] || ''} ${elapsedUrgent(order.created_at) && order.status !== 'prêt' ? 'urgent' : ''}`}>
               <div className="order-top">
                 <div>
                   <div className="order-table">Emplacement {order.table_num}</div>
@@ -1726,6 +2003,9 @@ function KitchenView() {
                 display: 'flex', alignItems: 'center', gap: '0.3rem'
               }}>
                 {elapsedUrgent(order.created_at) ? '🔴' : '⏱'} {elapsed(order.created_at)}
+                <span style={{ marginLeft: 'auto', padding: '0.15rem 0.6rem', borderRadius: 100, fontSize: '0.78rem', fontWeight: 800, color: '#fff', background: elapsedColor(order.created_at), animation: elapsedUrgent(order.created_at) && order.status !== 'prêt' ? 'pulse 1s infinite' : 'none' }}>
+                  {Math.floor((Date.now() - new Date(order.created_at)) / 60000)} min
+                </span>
                 {elapsedUrgent(order.created_at) && <span style={{ fontSize: '0.65rem', background: '#FEE2E2', color: '#DC2626', padding: '0.1rem 0.4rem', borderRadius: 100, fontWeight: 700 }}>URGENT</span>}
               </div>
               {order.comment && (
@@ -3249,6 +3529,15 @@ function ConfigTab() {
   const [tablesCount, setTablesCount] = useState('28');
   const [tablesNames, setTablesNames] = useState({});
   const [showNames, setShowNames] = useState(false);
+  const [chLabel, setChLabel] = useState('');
+  const [chGoal, setChGoal] = useState('100');
+  const [chReward, setChReward] = useState('');
+  useEffect(() => {
+    setChLabel(settings.challenge_label || '');
+    setChGoal(settings.challenge_goal || '100');
+    setChReward(settings.challenge_reward || '');
+  }, [settings.challenge_label, settings.challenge_goal, settings.challenge_reward]);
+  const chOn = settings.challenge_active === 'true';
   const apeOn = settings.don_ape_active !== 'false';
   const nefOn = settings.don_nef_active === 'true';
 
@@ -3280,6 +3569,9 @@ function ConfigTab() {
     const nTables = Math.min(200, Math.max(1, parseInt(tablesCount) || 28));
     const cleanNames = {};
     Object.entries(tablesNames).forEach(([k, v]) => { if (v && v.trim() && Number(k) <= nTables) cleanNames[k] = v.trim(); });
+    await saveSetting('challenge_label', chLabel);
+    await saveSetting('challenge_goal', String(Math.max(1, parseInt(chGoal) || 100)));
+    await saveSetting('challenge_reward', chReward);
     await saveSetting('tables_count', String(nTables));
     await saveSetting('tables_names', JSON.stringify(cleanNames));
     await saveSetting('loyalty_item', loyaltyItem);
@@ -3350,6 +3642,45 @@ function ConfigTab() {
           {isClosed
             ? '⚠️ Appuyez sur le bouton pour rouvrir les commandes'
             : '💡 Appuyez sur le bouton pour fermer les commandes'}
+        </div>
+      </div>
+
+      {/* Thème événement */}
+      <div style={{ background: 'var(--surface)', border: '1.5px solid var(--border)', borderRadius: 16, padding: '1.25rem', marginBottom: '1rem' }}>
+        <div style={{ fontWeight: 600, marginBottom: '0.3rem' }}>🎨 Thème de l&apos;événement</div>
+        <div style={{ fontSize: '0.75rem', color: 'var(--text2)', marginBottom: '0.75rem' }}>Change les couleurs de l&apos;appli, affiche un bandeau et habille la licorne (effet immédiat).</div>
+        <select value={settings.event_theme || 'none'} onChange={e => saveSetting('event_theme', e.target.value)}
+          style={{ width: '100%', padding: '0.6rem', borderRadius: 8, border: '1.5px solid var(--border)', background: 'var(--bg)', color: 'var(--text)', fontSize: '0.9rem' }}>
+          {Object.entries(EVENT_THEMES).map(([k, v]) => <option key={k} value={k}>{v.label}</option>)}
+        </select>
+      </div>
+
+      {/* Défi de la soirée */}
+      <div style={{ background: 'var(--surface)', border: '1.5px solid var(--border)', borderRadius: 16, padding: '1.25rem', marginBottom: '1rem' }}>
+        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '0.3rem' }}>
+          <div style={{ fontWeight: 600 }}>🎯 Défi de la soirée</div>
+          <button onClick={() => saveSetting('challenge_active', chOn ? 'false' : 'true')}
+            style={{ padding: '0.45rem 1rem', borderRadius: 20, border: 'none', cursor: 'pointer', fontWeight: 700, fontSize: '0.8rem', background: chOn ? '#00C553' : '#CCC', color: chOn ? '#fff' : '#555' }}>{chOn ? 'ON' : 'OFF'}</button>
+        </div>
+        <div style={{ fontSize: '0.75rem', color: 'var(--text2)', marginBottom: '0.75rem' }}>Barre de progression visible sur les téléphones et sur l&apos;écran TV. Elle compte les articles vendus (commandes payées). Pense à « Sauvegarder » en bas.</div>
+        <div style={{ display: 'grid', gap: '0.5rem' }}>
+          <input value={chLabel} onChange={e => setChLabel(e.target.value)} placeholder="Ex: 100 bières vendues"
+            style={{ padding: '0.55rem', borderRadius: 8, border: '1.5px solid var(--border)', background: 'var(--bg)', color: 'var(--text)' }} />
+          <div style={{ display: 'flex', gap: '0.5rem', alignItems: 'center' }}>
+            <span style={{ fontSize: '0.85rem' }}>Objectif :</span>
+            <input type="number" min="1" value={chGoal} onChange={e => setChGoal(e.target.value)}
+              style={{ width: 90, padding: '0.55rem', borderRadius: 8, border: '1.5px solid var(--border)', background: 'var(--bg)', color: 'var(--text)' }} />
+            <span style={{ fontSize: '0.85rem' }}>articles</span>
+          </div>
+          <input value={chReward} onChange={e => setChReward(e.target.value)} placeholder="Récompense. Ex: Tournée offerte à tout le monde !"
+            style={{ padding: '0.55rem', borderRadius: 8, border: '1.5px solid var(--border)', background: 'var(--bg)', color: 'var(--text)' }} />
+          <button onClick={() => { if (window.confirm('Remettre le compteur du défi à zéro ?')) saveSetting('challenge_start', new Date().toISOString()); }}
+            style={{ padding: '0.5rem', borderRadius: 8, border: '1.5px solid var(--border)', background: 'var(--bg)', color: 'var(--text)', cursor: 'pointer', fontWeight: 600, fontSize: '0.8rem' }}>🔄 Redémarrer le compteur à zéro</button>
+        </div>
+        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginTop: '0.9rem', paddingTop: '0.7rem', borderTop: '1px solid var(--border)' }}>
+          <span style={{ fontSize: '0.88rem' }}>🏆 Classement des tables sur l&apos;écran TV</span>
+          <button onClick={() => saveSetting('ecran_ranking', settings.ecran_ranking === 'false' ? 'true' : 'false')}
+            style={{ padding: '0.45rem 1rem', borderRadius: 20, border: 'none', cursor: 'pointer', fontWeight: 700, fontSize: '0.8rem', background: settings.ecran_ranking !== 'false' ? '#00C553' : '#CCC', color: settings.ecran_ranking !== 'false' ? '#fff' : '#555' }}>{settings.ecran_ranking !== 'false' ? 'ON' : 'OFF'}</button>
         </div>
       </div>
 
@@ -3702,7 +4033,9 @@ function AdminView() {
       emoji: item.emoji,
       category: item.category,
       extras: item.extras || [],
-      ingredients: item.ingredients || ''
+      ingredients: item.ingredients || '',
+      badge: (() => { try { return (JSON.parse(settings.menu_badges || '{}') || {})[item.id] || ''; } catch (e) { return ''; } })(),
+      suggest: (() => { try { return (JSON.parse(settings.menu_suggest || '{}') || {})[item.id] || ''; } catch (e) { return ''; } })(),
     });
   };
 
@@ -3717,6 +4050,16 @@ function AdminView() {
       ingredients: editForm.ingredients || ''
     };
     const { error } = await supabase.from('menu').update(updates).eq('id', id);
+    if (!error) {
+      const upd = async (key, val) => {
+        let obj = {};
+        try { obj = JSON.parse(settings[key] || '{}') || {}; } catch (e) {}
+        if (val) obj[id] = val; else delete obj[id];
+        await saveSetting(key, JSON.stringify(obj));
+      };
+      await upd('menu_badges', editForm.badge || '');
+      await upd('menu_suggest', editForm.suggest || '');
+    }
     if (error) { console.error('Erreur saveEdit:', error); alert('Erreur lors de la sauvegarde : ' + error.message); return; }
     setMenu(m => m.map(i => i.id === id ? { ...i, ...updates } : i));
     setEditingId(null);
@@ -3887,6 +4230,24 @@ function AdminView() {
                 <div className="form-field" style={{ marginBottom: '0.75rem' }}>
                   <label>Ingrédients (optionnel)</label>
                   <input value={editForm.ingredients || ''} onChange={e => setEditForm(f => ({ ...f, ingredients: e.target.value }))} placeholder="Ex: Tomates, poivrons, ketchup..." />
+                </div>
+                <div className="form-row" style={{ marginBottom: '0.75rem' }}>
+                  <div className="form-field">
+                    <label>Badge (optionnel)</label>
+                    <select value={editForm.badge || ''} onChange={e => setEditForm(f => ({ ...f, badge: e.target.value }))}>
+                      <option value="">Aucun</option>
+                      <option value="hot">🔥 Le plus commandé</option>
+                      <option value="fav">⭐ Coup de cœur</option>
+                      <option value="new">🆕 Nouveau</option>
+                    </select>
+                  </div>
+                  <div className="form-field">
+                    <label>Suggérer avec ce produit</label>
+                    <select value={editForm.suggest || ''} onChange={e => setEditForm(f => ({ ...f, suggest: e.target.value }))}>
+                      <option value="">Aucune suggestion</option>
+                      {menu.filter(m => m.id !== editingId).map(m => <option key={m.id} value={m.id}>{m.emoji} {m.name}</option>)}
+                    </select>
+                  </div>
                 </div>
                 {/* Suppléments */}
                 <div style={{ marginBottom: '0.75rem' }}>
@@ -4273,6 +4634,7 @@ export default function App() {
   const [visualTheme, setVisualTheme] = useState(() => localStorage.getItem('nef-visual-theme') || 'light');
   const [installPrompt, setInstallPrompt] = useState(null);
   const [appInstalled, setAppInstalled] = useState(false);
+  const appSettings = useSettings();
   useTheme();
 
   useEffect(() => {
@@ -4303,9 +4665,11 @@ export default function App() {
   useEffect(() => {
     const t = VISUAL_THEMES[visualTheme];
     if (t) Object.entries(t).forEach(([k, v]) => document.documentElement.style.setProperty(k, v));
+    const ev = EVENT_THEMES[appSettings.event_theme || 'none'];
+    if (ev && ev[visualTheme]) Object.entries(ev[visualTheme]).forEach(([k, v]) => document.documentElement.style.setProperty(k, v));
     document.body.style.background = t?.['--bg'] || '#FAFAF8';
     localStorage.setItem('nef-visual-theme', visualTheme);
-  }, [visualTheme]);
+  }, [visualTheme, appSettings.event_theme]);
 
   const requestView = (target) => {
     if (target === 'client') { setView('client'); return; }
@@ -4329,7 +4693,7 @@ export default function App() {
           <button className={`nav-btn ${view === 'kitchen' ? 'active' : ''}`} onClick={() => requestView('kitchen')}>🍳</button>
           <button className={`nav-btn ${view === 'admin' ? 'active' : ''}`} onClick={() => requestView('admin')}>⚙️</button>
         </nav>
-        {view === 'client' && <><UrgentBanner /><ClientView installPrompt={installPrompt} appInstalled={appInstalled} setAppInstalled={setAppInstalled} /></>}
+        {view === 'client' && <><UrgentBanner /><EventBanner /><ChallengeBar /><ClientView installPrompt={installPrompt} appInstalled={appInstalled} setAppInstalled={setAppInstalled} /></>}
         {view === 'kitchen' && <KitchenView />}
         {view === 'admin' && <AdminView />}
         <footer style={{
