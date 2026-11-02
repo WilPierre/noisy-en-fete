@@ -3748,7 +3748,16 @@ function AdminView() {
             <div style={{ fontWeight: 700, fontSize: '0.9rem', padding: '0.5rem 0.75rem', marginBottom: '0.5rem', borderRadius: 8, background: av ? '#E8FFE8' : '#F0F0F0', color: av ? '#0B3D0B' : '#666' }}>
               {av ? '✅ Activés' : '⏸ Désactivés'} ({menu.filter(m => !!m.available === av).length})
             </div>
-        {menu.map((item, idx) => !!item.available !== av ? null : (
+        {(() => {
+          const order = ['Boissons', 'Entrées', 'Plats', 'Desserts'];
+          const cats = [...new Set(menu.filter(m => !!m.available === av).map(m => m.category))]
+            .sort((a, b) => { const ia = order.indexOf(a), ib = order.indexOf(b); return (ia < 0 ? 99 : ia) - (ib < 0 ? 99 : ib); });
+          return cats.map(cat => (
+            <div key={cat}>
+              <div style={{ fontSize: '0.72rem', fontWeight: 800, textTransform: 'uppercase', letterSpacing: '0.08em', color: 'var(--text2)', margin: '0.9rem 0 0.4rem', paddingBottom: 3, borderBottom: '1.5px solid var(--border)' }}>
+                {cat} ({menu.filter(m => !!m.available === av && m.category === cat).length})
+              </div>
+        {menu.map((item, idx) => (!!item.available !== av || item.category !== cat) ? null : (
           <div key={item.id}>
             {editingId === item.id ? (
               <div style={{ background: '#FFFBF0', border: '2px solid var(--gold)', borderRadius: 12, padding: '1rem', marginBottom: '0.5rem' }}>
@@ -3900,6 +3909,9 @@ function AdminView() {
             )}
           </div>
         ))}
+            </div>
+          ));
+        })()}
           </div>
         ))}
         </div>
