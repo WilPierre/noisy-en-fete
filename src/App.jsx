@@ -1222,7 +1222,7 @@ function ClientView({ installPrompt, appInstalled, setAppInstalled }) {
     setNotifState(granted ? 'accepted' : 'declined');
   };
 
-  const CAT_ORDER = ['Boissons', 'Entrées', 'Plats', 'Desserts'];
+  const CAT_ORDER = ['Boissons sans alcool', 'Boissons alcoolisées', 'Boissons', 'Entrées', 'Plats', 'Desserts'];
   const categories = [
     ...CAT_ORDER.filter(c => menu.some(i => i.category === c)),
     ...menu.map(i => i.category).filter(c => !CAT_ORDER.includes(c)).filter((c, i, a) => a.indexOf(c) === i),
@@ -3775,7 +3775,7 @@ function AdminView() {
               {av ? '✅ Activés' : '⏸ Désactivés'} ({menu.filter(m => !!m.available === av).length})
             </div>
         {(() => {
-          const order = ['Boissons', 'Entrées', 'Plats', 'Desserts'];
+          const order = ['Boissons sans alcool', 'Boissons alcoolisées', 'Boissons', 'Entrées', 'Plats', 'Desserts'];
           const cats = [...new Set(menu.filter(m => !!m.available === av).map(m => m.category))]
             .sort((a, b) => { const ia = order.indexOf(a), ib = order.indexOf(b); return (ia < 0 ? 99 : ia) - (ib < 0 ? 99 : ib); });
           return cats.map(cat => (
@@ -3792,7 +3792,7 @@ function AdminView() {
                   <div className="form-field">
                     <label>Catégorie</label>
                     <select value={editForm.category} onChange={e => setEditForm(f => ({ ...f, category: e.target.value }))}>
-                      {['Entrées', 'Plats', 'Desserts', 'Boissons'].map(c => <option key={c}>{c}</option>)}
+                      {['Entrées', 'Plats', 'Desserts', 'Boissons sans alcool', 'Boissons alcoolisées', 'Boissons'].map(c => <option key={c}>{c}</option>)}
                     </select>
                   </div>
                 </div>
@@ -3986,7 +3986,7 @@ function AdminView() {
           <div className="form-row">
             <div className="form-field"><label>Catégorie</label>
               <select value={form.category} onChange={e => setForm(f => ({ ...f, category: e.target.value }))}>
-                {['Entrées', 'Plats', 'Desserts', 'Boissons'].map(c => <option key={c}>{c}</option>)}
+                {['Entrées', 'Plats', 'Desserts', 'Boissons sans alcool', 'Boissons alcoolisées', 'Boissons'].map(c => <option key={c}>{c}</option>)}
               </select>
             </div>
             <div className="form-field"><label>Prix (€)</label><input type="number" value={form.price} onChange={e => setForm(f => ({ ...f, price: e.target.value }))} placeholder="0.00" /></div>
