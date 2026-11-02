@@ -1554,13 +1554,13 @@ function ClientView({ installPrompt, appInstalled, setAppInstalled }) {
   const promoAmount = promoDiscount > 0 ? Math.round((basePrice + extrasTotal - loyaltyDiscount) * promoDiscount) / 100 : 0;
   const totalPrice = basePrice + extrasTotal - loyaltyDiscount - promoAmount;
   const [payingCounter, setPayingCounter] = useState(false);
-  const payAtCounter = async () => {
+  const payAtCounter = async (method) => {
     if (payingCounter || cartItems.length === 0) return;
-    if (!window.confirm('Valider la commande et payer au comptoir ?')) return;
+    if (!window.confirm('Valider la commande et payer ' + (method === 'cb' ? 'par CARTE' : 'en ESPÈCES') + ' au comptoir ?')) return;
     setPayingCounter(true);
     const { data: order, error } = await supabase.from('orders').insert({
       table_num: tableNum, items: cartItems, total: totalPrice, tip: 0,
-      comment: '[COMPTOIR - à encaisser] ' + (comment || ''),
+      comment: '[COMPTOIR ' + (method === 'cb' ? '💳 CB' : '💵 ESPÈCES') + ' - à encaisser] ' + (comment || ''),
       consigne: consigneAmount || 0, consigne_liquide: true, paid: true, status: 'en attente',
     }).select().single();
     setPayingCounter(false);
@@ -1799,10 +1799,15 @@ function ClientView({ installPrompt, appInstalled, setAppInstalled }) {
                 </div>
               </div>
             )}
-            <button onClick={payAtCounter} disabled={payingCounter}
-              style={{ width: '100%', padding: '0.9rem', marginBottom: '0.9rem', borderRadius: 14, border: '2px solid var(--accent)', background: 'var(--accent3)', color: 'var(--accent)', fontWeight: 800, fontSize: '0.95rem', cursor: 'pointer', fontFamily: "'Montserrat', sans-serif" }}>
-              {payingCounter ? '⏳ Envoi…' : '🏪 Je paie au comptoir'}
-            </button>
+            <div style={{ fontWeight: 800, fontSize: '0.88rem', color: 'var(--accent)', marginBottom: '0.4rem' }}>🏪 Je paie au comptoir :</div>
+            <div style={{ display: 'flex', gap: '0.5rem', marginBottom: '0.9rem' }}>
+              {[['cb', '💳 Par carte'], ['cash', '💵 En espèces']].map(([m, lbl]) => (
+                <button key={m} onClick={() => payAtCounter(m)} disabled={payingCounter}
+                  style={{ flex: 1, padding: '0.85rem 0.5rem', borderRadius: 14, border: '2px solid var(--accent)', background: 'var(--accent3)', color: 'var(--accent)', fontWeight: 800, fontSize: '0.9rem', cursor: 'pointer', fontFamily: "'Montserrat', sans-serif" }}>
+                  {payingCounter ? '⏳' : lbl}
+                </button>
+              ))}
+            </div>
             <div style={{ display: 'flex', alignItems: 'center', gap: '0.6rem', margin: '0 0 0.9rem', fontSize: '0.82rem', fontWeight: 700, color: 'var(--text)' }}>
               <div style={{ flex: 1, height: 1.5, background: 'var(--text2)', opacity: 0.4 }} />ou payer par carte ci-dessous<div style={{ flex: 1, height: 1.5, background: 'var(--text2)', opacity: 0.4 }} />
             </div>
