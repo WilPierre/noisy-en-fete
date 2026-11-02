@@ -359,7 +359,8 @@ const css = `
   .stat-num { font-family: 'Bebas Neue', sans-serif; font-size: 2.2rem; color: var(--accent2); letter-spacing: 0.02em; line-height: 1; }
   .stat-label { font-size: 0.7rem; color: var(--text2); margin-top: 0.25rem; font-weight: 600; text-transform: uppercase; letter-spacing: 0.06em; }
   .section-title { font-size: 0.95rem; font-weight: 700; margin: 1.5rem 0 0.7rem; color: var(--text); letter-spacing: -0.2px; }
-  .menu-admin-item { background: var(--surface); border: 1.5px solid var(--border); border-radius: var(--r); padding: 0.8rem 1rem; display: flex; align-items: center; gap: 0.7rem; margin-bottom: 0.4rem; transition: border-color 0.15s; }
+  .menu-admin-item { background: var(--surface); border: 1.5px solid var(--border); border-radius: var(--r); padding: 0.8rem 1rem; display: flex; align-items: center; flex-wrap: wrap; gap: 0.5rem 0.7rem; margin-bottom: 0.4rem; transition: border-color 0.15s; }
+  .menu-admin-item .menu-admin-info { flex: 1 1 120px; min-width: 100px; }
   .menu-admin-item:hover { border-color: var(--accent2); }
   .menu-admin-info { flex: 1; }
   .menu-admin-name { font-weight: 700; font-size: 0.88rem; color: var(--text); letter-spacing: -0.2px; }
@@ -3663,7 +3664,7 @@ function AdminView() {
       {/* TAB MENU */}
       {activeTab === 'menu' && <>
         <div className="section-title">Menu ({menu.length} articles)</div>
-        <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(340px, 1fr))', gap: '1rem', alignItems: 'start' }}>
+        <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(460px, 1fr))', gap: '1rem', alignItems: 'start' }}>
         {[true, false].map(av => (
           <div key={String(av)} style={{ minWidth: 0 }}>
             <div style={{ fontWeight: 700, fontSize: '0.9rem', padding: '0.5rem 0.75rem', marginBottom: '0.5rem', borderRadius: 8, background: av ? '#E8FFE8' : '#F0F0F0', color: av ? '#0B3D0B' : '#666' }}>
