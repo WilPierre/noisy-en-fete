@@ -1063,8 +1063,23 @@ function OrderTracking({ orderId, tableNum, onNewOrder }) {
               <span style={{ fontWeight: 600 }}>{(item.price * item.qty).toFixed(2)} €</span>
             </div>
           ))}
+          {Number(order.consigne) > 0 && !order.consigne_liquide && (
+            <div style={{ display: 'flex', justifyContent: 'space-between', padding: '0.4rem 0', fontSize: '0.85rem', color: 'var(--text)' }}>
+              <span>🍺 Consigne verre(s)</span><span style={{ fontWeight: 600 }}>{Number(order.consigne).toFixed(2)} €</span>
+            </div>
+          )}
+          {Number(order.tip) > 0 && (
+            <div style={{ display: 'flex', justifyContent: 'space-between', padding: '0.4rem 0', fontSize: '0.85rem', color: 'var(--text)' }}>
+              <span>🎒 Don A.P.E</span><span style={{ fontWeight: 600 }}>{Number(order.tip).toFixed(2)} €</span>
+            </div>
+          )}
+          {Number(order.tip_nef) > 0 && (
+            <div style={{ display: 'flex', justifyContent: 'space-between', padding: '0.4rem 0', fontSize: '0.85rem', color: 'var(--text)' }}>
+              <span>🎉 Don Noisy en Fête</span><span style={{ fontWeight: 600 }}>{Number(order.tip_nef).toFixed(2)} €</span>
+            </div>
+          )}
           <div style={{ display: 'flex', justifyContent: 'space-between', fontWeight: 800, paddingTop: '0.6rem', fontSize: '0.9rem', color: 'var(--text)' }}>
-            <span>Total payé</span><span>{Number(order.total).toFixed(2)} €</span>
+            <span>Total payé</span><span>{(Number(order.total) + Number(order.tip || 0) + Number(order.tip_nef || 0) + (Number(order.consigne) > 0 && !order.consigne_liquide ? Number(order.consigne) : 0)).toFixed(2)} €</span>
           </div>
         </div>
 
