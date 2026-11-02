@@ -1799,17 +1799,19 @@ function ClientView({ installPrompt, appInstalled, setAppInstalled }) {
                 </div>
               </div>
             )}
-            <div style={{ fontWeight: 800, fontSize: '0.88rem', color: 'var(--accent)', marginBottom: '0.4rem' }}>🏪 Je paie au comptoir :</div>
-            <div style={{ display: 'flex', gap: '0.5rem', marginBottom: '0.9rem' }}>
-              {[['cb', '💳 Par carte'], ['cash', '💵 En espèces']].map(([m, lbl]) => (
-                <button key={m} onClick={() => payAtCounter(m)} disabled={payingCounter}
-                  style={{ flex: 1, padding: '0.85rem 0.5rem', borderRadius: 14, border: '2px solid var(--accent)', background: 'var(--accent3)', color: 'var(--accent)', fontWeight: 800, fontSize: '0.9rem', cursor: 'pointer', fontFamily: "'Montserrat', sans-serif" }}>
-                  {payingCounter ? '⏳' : lbl}
-                </button>
-              ))}
+            <div style={{ background: 'var(--surface)', border: '1.5px solid var(--border)', borderRadius: 12, padding: '0.6rem 0.75rem', marginBottom: '0.8rem' }}>
+              <div style={{ fontWeight: 700, fontSize: '0.78rem', color: 'var(--text)', marginBottom: '0.4rem' }}>🏪 Je suis au comptoir, je paie sur place :</div>
+              <div style={{ display: 'flex', gap: '0.4rem' }}>
+                {[['cb', '💳 CB au comptoir'], ['cash', '💵 Espèces au comptoir']].map(([m, lbl]) => (
+                  <button key={m} onClick={() => payAtCounter(m)} disabled={payingCounter}
+                    style={{ flex: 1, padding: '0.4rem 0.3rem', borderRadius: 8, border: '1.5px solid var(--border)', background: 'var(--bg)', color: 'var(--text)', fontWeight: 600, fontSize: '0.74rem', cursor: 'pointer', fontFamily: "'Montserrat', sans-serif" }}>
+                    {payingCounter ? '⏳' : lbl}
+                  </button>
+                ))}
+              </div>
             </div>
-            <div style={{ display: 'flex', alignItems: 'center', gap: '0.6rem', margin: '0 0 0.9rem', fontSize: '0.82rem', fontWeight: 700, color: 'var(--text)' }}>
-              <div style={{ flex: 1, height: 1.5, background: 'var(--text2)', opacity: 0.4 }} />ou payer par carte ci-dessous<div style={{ flex: 1, height: 1.5, background: 'var(--text2)', opacity: 0.4 }} />
+            <div style={{ textAlign: 'center', margin: '0 0 1rem', padding: '0.7rem', borderRadius: 12, background: 'var(--accent)', color: '#fff', fontSize: '1rem', fontWeight: 800 }}>
+              💳 Sinon, payer par carte en ligne ⬇️
             </div>
             {cartItems.map((item, i) => (
               <div key={i}>
