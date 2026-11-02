@@ -1183,6 +1183,23 @@ function ClientView({ installPrompt, appInstalled, setAppInstalled }) {
       if (data) setMenu(data);
       setLoading(false);
     });
+    const ch = supabase.channel('client-menu-live')
+      .on('postgres_changes', { event: 'UPDATE', schema: 'public', table: 'menu' }, (p) => {
+        const n = p.new;
+        setMenu(m => {
+          if (!n.available) return m.filter(i => i.id !== n.id);
+          return m.some(i => i.id === n.id) ? m.map(i => i.id === n.id ? { ...i, ...n } : i) : [...m, n].sort((a, b) => (a.position ?? 9999) - (b.position ?? 9999));
+        });
+        if (!n.available || (n.stock !== null && n.stock !== undefined)) {
+          setCart(c => {
+            if (!c[n.id]) return c;
+            const max = !n.available ? 0 : n.stock;
+            return c[n.id] > max ? { ...c, [n.id]: max } : c;
+          });
+        }
+      })
+      .subscribe();
+    return () => { supabase.removeChannel(ch); };
   }, []);
 
   useEffect(() => {
@@ -3529,8 +3546,15 @@ function AdminView() {
   const loadOrders = () => supabase.from('orders').select('*').then(({ data }) => data && setOrders(data));
 
   useEffect(() => {
-    supabase.from('menu').select('*').order('position', { ascending: true, nullsFirst: false }).then(({ data }) => data && setMenu(data));
+    const loadMenu = () => supabase.from('menu').select('*').order('position', { ascending: true, nullsFirst: false }).then(({ data }) => data && setMenu(data));
+    loadMenu();
     loadOrders();
+    const ch = supabase.channel('admin-menu-live')
+      .on('postgres_changes', { event: 'UPDATE', schema: 'public', table: 'menu' }, (p) => {
+        setMenu(m => m.map(i => i.id === p.new.id ? { ...i, ...p.new } : i));
+      })
+      .subscribe();
+    return () => { supabase.removeChannel(ch); };
   }, []);
 
   const paidOrders = orders.filter(o => o.paid);
@@ -3553,8 +3577,10 @@ function AdminView() {
 
   const addItem = async () => {
     if (!form.name || !form.price) return;
-    const { data } = await supabase.from('menu').insert({ ...form, price: parseFloat(form.price), available: true }).select();
-    if (data) { setMenu(m => [...m, data[0]]); setForm({ name: '', category: 'Plats', price: '', emoji: '🍽' }); }
+    const { stock: formStock, ...formRest } = form;
+    const stockVal = formStock === undefined || formStock === '' ? null : Math.max(0, parseInt(formStock) || 0);
+    const { data } = await supabase.from('menu').insert({ ...formRest, price: parseFloat(form.price), available: stockVal !== 0, stock: stockVal }).select();
+    if (data) { setMenu(m => [...m, data[0]]); setForm({ name: '', category: 'Plats', price: '', emoji: '🍽', stock: '' }); }
   };
 
   const delItem = async (id) => {
@@ -3964,6 +3990,7 @@ function AdminView() {
               </select>
             </div>
             <div className="form-field"><label>Prix (€)</label><input type="number" value={form.price} onChange={e => setForm(f => ({ ...f, price: e.target.value }))} placeholder="0.00" /></div>
+            <div className="form-field"><label>Quantité (option)</label><input type="number" min="0" value={form.stock || ''} onChange={e => setForm(f => ({ ...f, stock: e.target.value }))} placeholder="∞ illimité" /></div>
           </div>
           <div className="form-field" style={{ marginBottom: '0.75rem' }}>
             <label>Nom du plat</label>
