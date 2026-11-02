@@ -745,9 +745,10 @@ function useSettings() {
 }
 
 async function saveSetting(key, value) {
-  const { error } = await supabase.from('settings').update({ value }).eq('key', key);
-  if (error) {
-    await supabase.from('settings').insert({ key, value });
+  const { data, error } = await supabase.from('settings').update({ value }).eq('key', key).select();
+  if (error || !data || data.length === 0) {
+    const { error: e2 } = await supabase.from('settings').insert({ key, value });
+    if (e2) { console.error('saveSetting', key, e2); alert('Erreur de sauvegarde (' + key + ') : ' + e2.message); }
   }
 }
 
