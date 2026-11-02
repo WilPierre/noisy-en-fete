@@ -3618,6 +3618,15 @@ function AdminView() {
     setMenu(newMenu);
   };
 
+  const duplicateItem = async (item) => {
+    const { id, created_at, ...rest } = item;
+    const maxPos = menu.reduce((m, i) => Math.max(m, i.position ?? 0), 0);
+    const { data, error } = await supabase.from('menu').insert({ ...rest, name: item.name + ' (copie)', position: maxPos + 1 }).select();
+    if (error || !data) { alert('Impossible de dupliquer : ' + (error?.message || '')); return; }
+    setMenu(m => [...m, data[0]]);
+    startEdit(data[0]);
+  };
+
   const startEdit = (item) => {
     setEditingId(item.id);
     setEditForm({
@@ -3885,6 +3894,7 @@ function AdminView() {
                   {item.available ? '✓ Dispo' : '✗ Indispo'}
                 </button>
                 <button onClick={() => startEdit(item)} style={{ padding: '0.3rem 0.6rem', background: 'transparent', border: '1.5px solid var(--border)', borderRadius: 6, cursor: 'pointer', fontSize: '0.8rem', color: 'var(--blue)', transition: 'all 0.2s' }}>✏️</button>
+                <button onClick={() => duplicateItem(item)} title="Dupliquer ce produit" style={{ padding: '0.3rem 0.6rem', background: 'transparent', border: '1.5px solid var(--border)', borderRadius: 6, cursor: 'pointer', fontSize: '0.8rem', color: 'var(--text)' }}>📋</button>
                 <button className="del-btn" onClick={() => delItem(item.id)}>✕</button>
               </div>
             )}
