@@ -3831,6 +3831,7 @@ function ConfigTab() {
 function ArchivesTab() {
   const [allOrders, setAllOrders] = useState([]);
   const [loading, setLoading] = useState(true);
+  const [openDate, setOpenDate] = useState(null);
 
   useEffect(() => {
     supabase.from('orders').select('*').eq('paid', true).order('created_at', { ascending: false })
@@ -3893,18 +3894,45 @@ function ArchivesTab() {
         const topItems = Object.entries(items).sort((a,b) => b[1].qty - a[1].qty).slice(0, 3);
         return (
           <div key={date} style={{ background: 'var(--bg)', border: '1.5px solid var(--border)', borderRadius: 14, padding: '1.1rem', marginBottom: '0.6rem' }}>
-            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: '0.6rem' }}>
+            <div onClick={() => setOpenDate(openDate === date ? null : date)} style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: '0.6rem', cursor: 'pointer' }}>
               <div>
-                <div style={{ fontWeight: 700, fontSize: '0.9rem', color: 'var(--text)', textTransform: 'capitalize' }}>{date}</div>
+                <div style={{ fontWeight: 700, fontSize: '0.9rem', color: 'var(--text)', textTransform: 'capitalize' }}>{openDate === date ? '▼' : '▶'} {date}</div>
                 <div style={{ fontSize: '0.72rem', color: 'var(--text2)', marginTop: '0.1rem' }}>{orders.length} commandes</div>
               </div>
               <div style={{ textAlign: 'right' }}>
                 <div style={{ fontWeight: 800, fontSize: '1rem', color: 'var(--text)' }}>{total.toFixed(2)} €</div>
                 {diff && <div style={{ fontSize: '0.7rem', color: Number(diff) >= 0 ? 'var(--success)' : 'var(--error)', fontWeight: 600 }}>{Number(diff) >= 0 ? '↑' : '↓'} {Math.abs(Number(diff))}% vs soirée précédente</div>}
-                {tips > 0 && <div style={{ fontSize: '0.68rem', color: 'var(--text2)' }}>+{tips.toFixed(2)} € pourboires</div>}
+                {tips > 0 && <div style={{ fontSize: '0.68rem', color: 'var(--text2)' }}>+{tips.toFixed(2)} € de dons</div>}
               </div>
             </div>
             <div style={{ fontSize: '0.75rem', color: 'var(--text2)' }}>🏆 {topItems.map(([name, d]) => `${d.emoji} ${name} ×${d.qty}`).join(' · ')}</div>
+            <button onClick={() => setOpenDate(openDate === date ? null : date)}
+              style={{ marginTop: '0.7rem', width: '100%', padding: '0.5rem', borderRadius: 8, border: '1.5px solid var(--border)', background: 'var(--surface)', color: 'var(--text)', fontWeight: 700, fontSize: '0.8rem', cursor: 'pointer' }}>
+              {openDate === date ? '▲ Masquer les articles vendus' : '▼ Voir tous les articles vendus'}
+            </button>
+            {openDate === date && (() => {
+              const full = {};
+              orders.forEach(o => o.items.forEach(it => {
+                if (!full[it.name]) full[it.name] = { emoji: it.emoji, qty: 0, revenue: 0 };
+                full[it.name].qty += it.qty; full[it.name].revenue += it.qty * Number(it.price || 0);
+              }));
+              const list = Object.entries(full).sort((a, b) => b[1].qty - a[1].qty);
+              return (
+                <div style={{ marginTop: '0.6rem' }}>
+                  {list.map(([name, d]) => (
+                    <div key={name} style={{ display: 'flex', alignItems: 'center', gap: '0.6rem', padding: '0.45rem 0', borderBottom: '1px solid var(--border)', fontSize: '0.85rem', color: 'var(--text)' }}>
+                      <span style={{ fontSize: '1.2rem', width: 28, textAlign: 'center' }}>{d.emoji}</span>
+                      <span style={{ flex: 1 }}>{name}</span>
+                      <span style={{ fontWeight: 700 }}>×{d.qty}</span>
+                      <span style={{ width: 70, textAlign: 'right', color: 'var(--text2)' }}>{d.revenue.toFixed(2)} €</span>
+                    </div>
+                  ))}
+                  <div style={{ display: 'flex', justifyContent: 'space-between', paddingTop: '0.5rem', fontWeight: 800, fontSize: '0.85rem', color: 'var(--text)' }}>
+                    <span>Total articles</span><span>{list.reduce((s, [, d]) => s + d.qty, 0)}</span>
+                  </div>
+                </div>
+              );
+            })()}
           </div>
         );
       })}
@@ -3941,8 +3969,13 @@ function AdminView() {
   const todayOrders = paidOrders.filter(o => new Date(o.created_at).toDateString() === new Date().toDateString()).length;
   const pending = paidOrders.filter(o => o.status !== 'servi').length;
 
+  const [salesDate, setSalesDate] = useState('all');
+  const soireeKey = (o) => new Date(o.created_at).toLocaleDateString('fr-FR', { weekday: 'long', day: 'numeric', month: 'long', year: 'numeric' });
+  const soireeDates = [...new Set([...paidOrders].sort((a, b) => new Date(b.created_at) - new Date(a.created_at)).map(soireeKey))];
+  const salesOrders = salesDate === 'all' ? paidOrders : paidOrders.filter(o => soireeKey(o) === salesDate);
+  const salesTotal = salesOrders.reduce((s, o) => s + Number(o.total), 0);
   const salesByItem = {};
-  paidOrders.forEach(order => {
+  salesOrders.forEach(order => {
     order.items.forEach(item => {
       if (!salesByItem[item.name]) salesByItem[item.name] = { name: item.name, emoji: item.emoji, qty: 0, revenue: 0 };
       salesByItem[item.name].qty += item.qty;
@@ -4411,7 +4444,12 @@ function AdminView() {
 
       {/* TAB HISTORIQUE */}
       {activeTab === 'historique' && <>
-        <div className="section-title">Ventes de la soirée</div>
+        <div className="section-title">Articles vendus</div>
+        <select value={salesDate} onChange={e => setSalesDate(e.target.value)}
+          style={{ width: '100%', padding: '0.65rem', borderRadius: 10, border: '1.5px solid var(--border)', background: 'var(--surface)', color: 'var(--text)', fontSize: '0.9rem', fontWeight: 600, marginBottom: '1rem', textTransform: 'capitalize' }}>
+          <option value="all">📅 Toutes les soirées</option>
+          {soireeDates.map(d => <option key={d} value={d}>{d}</option>)}
+        </select>
         {salesList.length === 0 ? (
           <div className="empty-state"><div className="empty-icon">📊</div><div>Aucune vente pour le moment</div></div>
         ) : <>
@@ -4429,15 +4467,15 @@ function AdminView() {
           <div style={{ background: 'var(--text)', color: 'white', borderRadius: 12, padding: '1rem 1.2rem', marginTop: '1rem' }}>
             <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '0.5rem' }}>
               <span style={{ fontWeight: 600 }}>Total commandes</span>
-              <span style={{ fontFamily: "'Playfair Display', serif", fontSize: '1.1rem', color: 'var(--gold)' }}>{totalRevenue.toFixed(2)} €</span>
+              <span style={{ fontFamily: "'Playfair Display', serif", fontSize: '1.1rem', color: 'var(--gold)' }}>{salesTotal.toFixed(2)} €</span>
             </div>
-            {(() => { const tips = paidOrders.reduce((s,o) => s + Number(o.tip||0), 0); return tips > 0 && (
+            {(() => { const tips = salesOrders.reduce((s,o) => s + Number(o.tip||0), 0); return tips > 0 && (
               <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '0.5rem', borderTop: '1px solid #333', paddingTop: '0.5rem' }}>
                 <span style={{ color: '#aaa', fontSize: '0.88rem' }}>dont dons A.P.E</span>
                 <span style={{ color: '#C8953A', fontWeight: 600 }}>+{tips.toFixed(2)} €</span>
               </div>
             );})()}
-            {(() => { const nef = paidOrders.reduce((s,o) => s + Number(o.tip_nef||0), 0); return nef > 0 && (
+            {(() => { const nef = salesOrders.reduce((s,o) => s + Number(o.tip_nef||0), 0); return nef > 0 && (
               <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '0.5rem', borderTop: '1px solid #333', paddingTop: '0.5rem' }}>
                 <span style={{ color: '#aaa', fontSize: '0.88rem' }}>dont dons Noisy en Fête</span>
                 <span style={{ color: '#C8953A', fontWeight: 600 }}>+{nef.toFixed(2)} €</span>
@@ -4446,18 +4484,18 @@ function AdminView() {
             <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', borderTop: '1px solid #333', paddingTop: '0.5rem' }}>
               <span style={{ fontWeight: 700 }}>Total encaissé</span>
               <span style={{ fontFamily: "'Playfair Display', serif", fontSize: '1.3rem', color: 'var(--gold)' }}>
-                {(totalRevenue + paidOrders.reduce((s,o) => s + Number(o.tip||0) + Number(o.tip_nef||0), 0)).toFixed(2)} €
+                {(salesTotal + salesOrders.reduce((s,o) => s + Number(o.tip||0) + Number(o.tip_nef||0), 0)).toFixed(2)} €
               </span>
             </div>
           </div>
 
           {/* Rapport de fin de soirée */}
-          {paidOrders.length > 0 && (() => {
-            const tips = paidOrders.reduce((s,o) => s + Number(o.tip||0), 0);
-            const times = paidOrders.map(o => new Date(o.created_at));
+          {salesOrders.length > 0 && (() => {
+            const tips = salesOrders.reduce((s,o) => s + Number(o.tip||0), 0);
+            const times = salesOrders.map(o => new Date(o.created_at));
             const start = new Date(Math.min(...times)).toLocaleTimeString('fr-FR', {hour:'2-digit', minute:'2-digit'});
             const end = new Date(Math.max(...times)).toLocaleTimeString('fr-FR', {hour:'2-digit', minute:'2-digit'});
-            const topTable = Object.entries(paidOrders.reduce((acc, o) => {
+            const topTable = Object.entries(salesOrders.reduce((acc, o) => {
               acc[o.table_num] = (acc[o.table_num] || 0) + Number(o.total);
               return acc;
             }, {})).sort((a,b) => b[1]-a[1])[0];
@@ -4471,7 +4509,7 @@ function AdminView() {
                     ['🕐 Dernière commande', end],
                     ['🪑 Table top dépense', `Table ${topTable?.[0]} (${Number(topTable?.[1]||0).toFixed(2)} €)`],
                     ['🏆 Plat le + vendu', topItem ? `${topItem.emoji} ${topItem.name} ×${topItem.qty}` : '-'],
-                    ['🧾 Nb commandes', paidOrders.length],
+                    ['🧾 Nb commandes', salesOrders.length],
                     ['🙏 Pourboires', `${tips.toFixed(2)} €`],
                   ].map(([label, val]) => (
                     <div key={label} style={{ background: 'white', borderRadius: 8, padding: '0.6rem 0.75rem' }}>
@@ -4484,8 +4522,8 @@ function AdminView() {
             );
           })()}
 
-          <div className="section-title" style={{ marginTop: '1.5rem' }}>Détail des commandes ({paidOrders.length})</div>
-          {paidOrders.slice().reverse().map(order => (
+          <div className="section-title" style={{ marginTop: '1.5rem' }}>Détail des commandes ({salesOrders.length})</div>
+          {salesOrders.slice().reverse().map(order => (
             <div key={order.id} style={{ background: 'white', border: '1.5px solid var(--border)', borderRadius: 12, padding: '0.9rem 1rem', marginBottom: '0.5rem' }}>
               <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: '0.4rem' }}>
                 <span style={{ fontWeight: 600 }}>Table {order.table_num} — #{order.id}</span>
@@ -4508,7 +4546,7 @@ function AdminView() {
             </p>
             <button onClick={() => {
               const rows = [['#', 'Table', 'Heure', 'Articles', 'Total €', 'Pourboire €', 'Statut']];
-              paidOrders.forEach(o => {
+              salesOrders.forEach(o => {
                 rows.push([
                   o.id,
                   o.table_num,
